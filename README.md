@@ -18,6 +18,7 @@ On server:
 On client:
 * Copy file ```ZomBerry.cfg``` from ```ZomBerry\Config``` to ```C:\Users\[Your Username]\Documents\DayZ``` dir and change menuKey (if you wish to)
 
+Default menu key is ```M```
 
 ### For developers:
 ZomBerry was created to be as simple and lightweight for users and developers as possible. Right now, there are two main functions available:
