@@ -1,5 +1,6 @@
 # ZomBerry Admin Tools
 ZomBerry is still in early testing stage, please report about any issues!
+Don't forget to mention game version in issue description
 
 ## Usage
 ### Installation:
@@ -12,6 +13,7 @@ ZomBerry is still in early testing stage, please report about any issues!
 On server:
 * Copy file ```admins.cfg``` from ```ZomBerry\Config``` to server profile dir (alternatives: default dir, custom dir (passed through  
 ```-zbryDir=path_to_dir``` launch option), mission dir (you might need to modify your mission ```init.c``` and add line   ```g_Game.SetMissionPath(path);``` in ```CreateCustomMission``` method)
+* Add your BIGUID into ```admins.cfg``` file (use new line for each admin entry)
 
 On client:
 * Copy file ```ZomBerry.cfg``` from ```ZomBerry\Config``` to ```C:\Users\[Your Username]\Documents\DayZ``` dir and change menuKey (if you wish to)
