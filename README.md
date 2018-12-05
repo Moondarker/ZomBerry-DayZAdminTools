@@ -42,6 +42,7 @@ Your function will be called with four arguments:
 * int adminId - session id of admin who executed this function 
 * int targetId - session id of targeted player
 * vector cursor - position where admin's cursor intersects with ground
+
 Note: you may get PlayerBase of player's character using ```ZBGetPlayerById(int playerId)``` function
 
 ## Planned features and updates:
