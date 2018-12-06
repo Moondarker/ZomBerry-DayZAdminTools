@@ -1,15 +1,14 @@
 static string g_zbryVer = "0.3";
 
 class ZomberryBase {
-	ref ZomberryStockFunctions m_ZomberryStockFunctions;
-
 	protected bool isAdmin = false;
 	protected autoptr TStringArray adminList = new TStringArray;
 
 	void ZomberryBase() {
-		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
+		ref ZomberryStockFunctions m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
 
-		m_ZomberryStockFunctions.Init();
+		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) m_ZomberryStockFunctions.Init();
+
 		if (GetZomberryConfig().GetDebugLvl() >= 2) {
 			GetZomberryCmdAPI().Debug();
 		}
