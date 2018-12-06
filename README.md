@@ -46,7 +46,7 @@ Your function will be called with four arguments:
 
 Note: you may get PlayerBase of player's character using ```ZBGetPlayerById(int playerId)``` function
 
-Example of CmdAPI interaction can be found [here](https://github.com/Moondarker/ZomBerry-DayZAdminTools/blob/master/ZomBerry/Addons/scripts/5_Mission/ZomBerryStockFnc.c)
+Example of CmdAPI interaction can be found [here](https://github.com/Moondarker/ZomBerry-DayZAdminTools/blob/master/ZomBerry/Addons/scripts/5_Mission/ZomBerryStockFnc.c) and [here](https://github.com/Moondarker/ZomBerry-DayZAdminTools/blob/master/Examples/missionExample.chernarusplus/init.c)
 
 ## Planned features and updates:
 * Make commands list completely server-side, so it could be supplemented directly from mission/serverside-only addons
