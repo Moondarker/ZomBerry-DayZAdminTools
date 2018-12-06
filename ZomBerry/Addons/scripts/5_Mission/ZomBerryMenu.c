@@ -37,8 +37,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_TxtTitle = TextWidget.Cast( layoutRoot.FindAnyWidget("TitleText") );
 		m_PlayersList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("PlayerList") );
 		m_FunctionsList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("FunctionsList") );
-		m_ObjectsList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("ObjectsList"));
-		m_SpawnPage = layoutRoot.FindAnyWidget("SpawnWrapper");
+		m_ObjectsList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("ObjectsList") );
+		m_SpawnPage = layoutRoot.FindAnyWidget( "SpawnWrapper" );
 
 		m_FunctionsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("FunctionsButton") );
 		m_SpawnButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpawnButton") );
@@ -416,13 +416,5 @@ class ZomberryMenu extends UIScriptedMenu {
 				}
 			}
 		}
-	}
-
-	string GetPlyNameSafe(PlayerBase ply) {
-		if ( ply.GetIdentity() != NULL ) {
-			return ply.GetIdentity().GetName();
-		}
-
-		return "Player";
 	}
 }
