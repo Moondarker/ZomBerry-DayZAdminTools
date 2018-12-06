@@ -31,52 +31,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		//Print ("[ZomBerryUI] INFO: ZomberryMenu::~ZomberryMenu()");
 	}
 
-	void Message( string txt ) {
-		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
-	}
-
-	vector GetCursorPos() { //<3 Arkensor and CO
-    	if ( !GetGame().GetPlayer() ) { return "0 0 0"; }
-
-    	vector rayStart = GetGame().GetCurrentCameraPosition();
-    	vector rayEnd = rayStart + GetGame().GetCurrentCameraDirection() * 10000;
-    	vector hitPos; vector hitNormal; int hitComponentIndex;
-    	DayZPhysics.RaycastRV(rayStart, rayEnd, hitPos, hitNormal, hitComponentIndex, NULL, NULL, GetGame().GetPlayer());
-
-    	return hitPos;
-	}
-
-	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param1<ref ZBerryPlayerArray> playerListS;
-		ref ZBerryPlayerArray playerListC;
-
-		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
-			if ( !ctx.Read( playerListS ) ) return;
-
-			playerListC = playerListS.param1;
-		}
-
-		if (layoutRoot.IsVisible()) {
-			int playerId;
-			bool playerAdmin;
-			string playerName;
-
-			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
-
-			for ( int i = 0; i < playerListC.Count(); ++i ) {
-				playerId = playerListC.Get(i).m_PlayerID;
-				playerName = playerListC.Get(i).m_PlayerName;
-				playerAdmin = playerListC.Get(i).m_IsAdmin;
-
-				m_PlayersList.AddItem(" " + i.ToString() + ": " + playerName, new Param2<int, bool>(playerId, playerAdmin), 0);
-
-				if (playerAdmin) m_PlayersList.SetItemColor( i, 0, 0xFF47EB00 );
-			}
-
-			if ( m_lastSelPlayer != -1 ) m_PlayersList.SetItemColor( m_lastSelPlayer, 0, 0xFFFF751A );
-		}
-	}
-
 	override Widget Init() {
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "ZomBerry\\AT\\scripts\\5_Mission\\layouts\\AdminDialog.layout" );
 
@@ -112,10 +66,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		GetGame().GetInput().ChangeGameFocus( 1 );
 
 		UpdateObjList("All");
-		UpdateFuncList();
 
-		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v0.1 Alpha by Vaker" );
+		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
 		GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
+		GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctionsRequest", new Param1< int >( 0 ), true, NULL );
 
 		if ( m_objTarget != "Ground" ) m_SpawnTargetButton.SetText( m_objTarget );
 	}
@@ -125,6 +79,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		GetGame().GetInput().ResetGameFocus();
 
 		m_PlayersList.ClearItems();
+		m_FunctionsList.ClearItems();
 	}
 
 	override bool OnChange( Widget w, int x, int y, bool finished ) {
@@ -308,53 +263,86 @@ class ZomberryMenu extends UIScriptedMenu {
 		return true;
 	}
 
-	void UpdateFuncList() {
-		m_FunctionsList.ClearItems();
+	void Message( string txt ) {
+		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
+	}
 
-		autoptr map< string, ref TIntArray > m_oCategoryIndex = new map< string, ref TIntArray >;
-		ZBerryCategories catList = GetZomberryCmdAPI().GetCategories();
-		ZBerryFunctions funcList = GetZomberryCmdAPI().GetFunctions();
+	vector GetCursorPos() { //<3 Arkensor and CO
+		if ( !GetGame().GetPlayer() ) { return "0 0 0"; }
 
-		int entryId;
-		string entryName = "";
-		ref ZBerryFuncWrapper entryParams;
-		TIntArray catParams, tcatParams; //{CategoryPlace, NewEntryPlace}
+		vector rayStart = GetGame().GetCurrentCameraPosition();
+		vector rayEnd = rayStart + GetGame().GetCurrentCameraDirection() * 10000;
+		vector hitPos; vector hitNormal; int hitComponentIndex;
+		DayZPhysics.RaycastRV(rayStart, rayEnd, hitPos, hitNormal, hitComponentIndex, NULL, NULL, GetGame().GetPlayer());
 
-		for (int i = 0; i < catList.Count(); ++i) {
-			entryName = catList.GetKey(i);
-			entryId = catList.Get(entryName).Get(0);
+		return hitPos;
+	}
 
-			//Print ("[ZomBerryUIDbg] UpdateFuncList: Category " + entryName + " at " + entryId.ToString());
+	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param1<ref ZBerryPlayerArray> playerListS;
+		ref ZBerryPlayerArray playerListC;
 
-			m_FunctionsList.AddItem( "==== "+entryName+" ====", new Param1<string>("Category"), 0, entryId );
-			//m_FunctionsList.SetItemColor(entryId, 0, 0xFFBCCDE8); //TOFIX: This line crashed the game... for some reason
+		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
+			if ( !ctx.Read( playerListS ) ) return;
 
-			m_oCategoryIndex.Insert( entryName, {entryId, entryId+1,} );
+			playerListC = playerListS.param1;
 		}
 
-		for (i = 0; i < funcList.Count(); ++i) {
-			entryParams = funcList.Get(i);
-			entryName = entryParams.GetName();
+		if (layoutRoot.IsVisible()) {
+			int playerId;
+			bool playerAdmin;
+			string playerName;
 
-			//Print ("[ZomBerryUIDbg] UpdateFuncList: Function " + entryName + " at " + i.ToString());
+			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
 
-			catParams = m_oCategoryIndex.Get( entryParams.GetCategory() );
+			for ( int i = 0; i < playerListC.Count(); ++i ) {
+				playerId = playerListC.Get(i).m_PlayerID;
+				playerName = playerListC.Get(i).m_PlayerName;
+				playerAdmin = playerListC.Get(i).m_IsAdmin;
 
-			for (int m = 0; m < m_oCategoryIndex.Count(); ++m) {
-				tcatParams = m_oCategoryIndex.GetElement(m);
-				if (tcatParams[0] >= catParams[1]) {
-					m_oCategoryIndex.Set(m_oCategoryIndex.GetKey(m), {tcatParams[0]+1, tcatParams[1]+1,});
-					//Print( "[ZomBerryUIDbg] UpdateFuncList: 'Moved' category " + m_oCategoryIndex.GetKey(m) + " to " + (tcatParams[0]+1).ToString());
-				}
+				m_PlayersList.AddItem(" " + i.ToString() + ": " + playerName, new Param2<int, bool>(playerId, playerAdmin), 0);
+
+				if (playerAdmin) m_PlayersList.SetItemColor( i, 0, 0xFF47EB00 );
 			}
 
-			m_FunctionsList.AddItem( entryParams.GetDisplayName(), new Param1<string>(entryName), 0, catParams[1] );
-			m_FunctionsList.SetItemColor(catParams[1], 0, entryParams.GetColor());
-			//Print( "[ZomBerryUIDbg] UpdateFuncList: Placed " + entryParams.GetDisplayName() + " to " + catParams[1].ToString());
+			if ( m_lastSelPlayer != -1 ) m_PlayersList.SetItemColor( m_lastSelPlayer, 0, 0xFFFF751A );
+		}
+	}
 
-			catParams[1] = catParams[1]+1;
-			//Print( "[ZomBerryUIDbg] UpdateFuncList: Updated " + entryParams.GetCategory() + ": " + catParams);
-			m_oCategoryIndex.Set( entryParams.GetCategory(), catParams );
+	void SyncFunctions( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param1<ref ZBerryCategoryArray> catListS;
+		ref ZBerryCategoryArray catList;
+
+		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
+			if ( !ctx.Read( catListS ) ) return;
+
+			catList = catListS.param1;
+		}
+
+		int lastId = 0;
+		string entryName = "";
+
+		for (int i = 0; i < catList.Count(); ++i) {
+			ref ZBerryCategory singleCat = catList.Get(i);
+
+			entryName = singleCat.GetName();
+			m_FunctionsList.AddItem( "==== "+entryName+" ====", new Param1<string>("Category"), 0, lastId );
+
+			++lastId;
+
+			ref ZBerryFunctionArray funcArray;
+			funcArray = catList.Get(i).GetAll();
+
+			for (int j = 0; j < funcArray.Count(); ++j) {
+				ref ZBerryFunction funcParams;
+				funcParams = funcArray.Get(j);
+				entryName = funcParams.GetName();
+
+				m_FunctionsList.AddItem( funcParams.GetDisplayName(), new Param1<string>(entryName), 0, lastId );
+				m_FunctionsList.SetItemColor(lastId, 0, funcParams.GetColor());
+
+				++lastId;
+			}
 		}
 	}
 

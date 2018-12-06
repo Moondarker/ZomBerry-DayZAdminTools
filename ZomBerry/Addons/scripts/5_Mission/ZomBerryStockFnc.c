@@ -21,7 +21,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "=="); // 2 4
 		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "=="); // 3 3
 
-		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFFFF7C75);
+		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
 		m_ZomberryCmdAPI.AddCommand("Skip 3 hours", "SkipTime", this, "OnServer");
 		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer");
 		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer");
@@ -114,7 +114,7 @@ class ZomberryStockFunctions {
 				for (int m = 0; m < attachments.Count(); ++m) {
 					EntityAI attachment = EntityAI.Cast( GetGame().CreateObject(attachments[m], vector.Zero, false, false, false) );
 
-					Print("[ZomberryFncDbg] RefuelAndRepair: trying " + attachments[m]);
+					GetZomberryLogger().Log( "ZomberryFncDbg", "RefuelAndRepair: trying " + attachments[m]);
 					while (toBeFixed.GetInventory().CanAddAttachment(attachment)) { //TOBEFIXED: Known possible 'NULL pointer to instance'
 						//Print("[ZomberryFnc] RefuelAndRepair: attached " + attachments[m]);
 						toBeFixed.GetInventory().CreateAttachment(attachments[m]);

@@ -1,6 +1,8 @@
 static ref ZomberryBase g_ZomberryBase;
 static ref ZomberryCmdAPI g_ZomberryCmdAPI;
 static ref ZomberryMenu g_ZomberryMenu;
+static ref ZomberryLogger g_ZomberryLogger;
+static ref ZomberryConfig g_ZomberryConfig;
 
 /**
 \brief Get shared ZomberryCmdAPI instance
@@ -59,6 +61,7 @@ static ref ZomberryMenu GetZomberryMenu() {
 		g_ZomberryMenu = new ref ZomberryMenu;
 		g_ZomberryMenu.Init();
 		GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayers", g_ZomberryMenu, SingeplayerExecutionType.Client ); //TODO: Move this outta here
+		GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctions", g_ZomberryMenu, SingeplayerExecutionType.Client );
 	}
 
 	return g_ZomberryMenu;
@@ -71,4 +74,20 @@ static ref ZomberryBase GetZomberryBase() {
 	}
 
 	return g_ZomberryBase;
+}
+
+static ref ZomberryLogger GetZomberryLogger() {
+	if ( !g_ZomberryLogger ) {
+		g_ZomberryLogger = new ref ZomberryLogger;
+	}
+
+	return g_ZomberryLogger;
+}
+
+static ref ZomberryConfig GetZomberryConfig() {
+	if ( !g_ZomberryConfig ) {
+		g_ZomberryConfig = new ref ZomberryConfig;
+	}
+
+	return g_ZomberryConfig;
 }
