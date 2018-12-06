@@ -200,7 +200,7 @@ class ZomberryBase {
 			if (adminList.Find(sender.GetId()) != -1) {
 				if (tgtParam.param4) {
 					item = ItemBase.Cast(ZBGetPlayerById(tgtParam.param2).GetInventory().CreateInInventory(tgtParam.param1));
-					item.SetQuantity(1);
+					item.SetQuantity(item.GetQuantityMax());
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") added " + tgtParam.param1 + " to theirs inventory");
 				} else {
 					GetGame().CreateObject(tgtParam.param1, tgtParam.param3, false, true );
@@ -213,7 +213,7 @@ class ZomberryBase {
 			if (!GetGame().IsMultiplayer()) {
 				if (tgtParam.param4) {
 					item = ItemBase.Cast(ZBGetPlayerById(tgtParam.param2).GetInventory().CreateInInventory(tgtParam.param1));
-					item.SetQuantity(1);
+					item.SetQuantity(item.GetQuantityMax());
 					Log( "ZomBerryAdmin", "Added " + tgtParam.param1 + " to inventory (singleplayer)");
 				} else {
 					GetGame().CreateObject(tgtParam.param1, tgtParam.param3, false, true );
