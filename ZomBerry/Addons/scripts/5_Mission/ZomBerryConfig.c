@@ -42,7 +42,7 @@ class ZomberryConfig {
 					case "debug":
 					if (sParams[1].ToInt() > 0 && sParams[1].ToInt() < 3) {
 						zbryDebug = sParams[1].ToInt();
-						GetZomberryLogger().Log( "ZomBerryConfig", "INFO: Debug enabled." );
+						GetZomberryLogger().Log( "ZomBerryConfig", "INFO: Debug level: " + sParams[1] );
 					}
 					break;
 

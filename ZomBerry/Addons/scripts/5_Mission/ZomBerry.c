@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.2";
+static string g_zbryVer = "0.3";
 
 class ZomberryBase {
 	ref ZomberryStockFunctions m_ZomberryStockFunctions;
@@ -10,6 +10,9 @@ class ZomberryBase {
 		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
 
 		m_ZomberryStockFunctions.Init();
+		if (GetZomberryConfig().GetDebugLvl() >= 2) {
+			GetZomberryCmdAPI().Debug();
+		}
 
 		GetRPCManager().AddRPC( "ZomBerryAT", "AdminAuth", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayersRequest", this, SingeplayerExecutionType.Client );
@@ -21,7 +24,7 @@ class ZomberryBase {
 	void OnClientReady() {
 		GetZomberryLogger().Log( "ZomBerryDbg", "Auth Request sent" );
 
-		GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param1< bool >( true ), true, NULL );
+		GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( true, g_zbryVer ), true, NULL );
 	}
 
 	void OnServerReady() {
@@ -33,20 +36,30 @@ class ZomberryBase {
 	}
 
 	void AdminAuth( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param1< bool > toServer;
-		if ( !ctx.Read( toServer ) ) return;
+		Param2< bool, string > authInfo; //direction (true = to server), version (only in client dir)
+		if ( !ctx.Read( authInfo ) ) {
+			GetZomberryLogger().Log( "ZomBerryAT", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") - Auth error, please update client to latest version (v" + g_zbryVer + "+)!");
+			return;
+		}
 
 		if ( type == CallType.Server ) {
 			if (adminList.Find(sender.GetId()) != -1) {
-				GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param1< bool >( false ), true, sender );
+				GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer ), true, sender );
 				GetZomberryLogger().Log( "ZomBerryDbg", "Auth respond to admin " + sender.GetName() + " (" + sender.GetId() + ")");
+				if (authInfo.param2 != g_zbryVer) {
+					GetZomberryLogger().Log( "ZomBerryAT", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! S: " + g_zbryVer + ", C: " + authInfo.param2 + ", clientside won't start!");
+				}
 			} else {
 				GetZomberryLogger().Log( "ZomBerryDbg", "Auth Request ignored (not an admin) " + sender.GetName() + " (" + sender.GetId() + ")" );
 			}
 		} else {
-			if (!toServer.param1 || GetGame().IsMultiplayer()) {
+			if (!authInfo.param1 || GetGame().IsMultiplayer()) {
 				GetZomberryLogger().Log( "ZomBerryDbg", "Auth Respond received" );
-				isAdmin = true;
+				if (authInfo.param2 != g_zbryVer) {
+					GetZomberryLogger().Log( "ZomBerryAT", "ERROR: " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! C: " + g_zbryVer + ", S: " + authInfo.param2 + ", clientside won't start!");
+				} else {
+					isAdmin = true;
+				}
 			} else {
 				GetZomberryLogger().Log( "ZomBerryDbg", "Auth ignored, singleplayer" );
 				isAdmin = true;
@@ -104,11 +117,6 @@ class ZomberryBase {
 		if ( type == CallType.Server && GetGame().IsServer() ) {
 			if (adminList.Find(sender.GetId()) != -1) {
 				catList = GetZomberryCmdAPI().GetList();
-
-				/*for (int i = 0; i < catList.Count(); ++i) { //Full list breakdown
-					ref ZBerryCategory s1 = catList.Get(i);
-					s1.Debug();
-				}*/
 
 				GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, sender );
 				GetZomberryLogger().Log( "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - function list sync");

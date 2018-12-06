@@ -2,7 +2,17 @@ typedef array<ref ZBerryPlayer> ZBerryPlayerArray;
 
 typedef array<ref ZBerryFunction> ZBerryFunctionArray;
 
-//typedef array<ref ZBerryCategory> ZBerryCategoryArray;
+class ZBerryPlayer {
+	int m_PlayerID;
+	string m_PlayerName;
+	bool m_IsAdmin;
+
+	void ZBerryPlayer( int uid, string plyName, bool isAdmin ) {
+		m_PlayerID = uid;
+		m_PlayerName = plyName;
+		m_IsAdmin = isAdmin;
+	}
+}
 
 class ZBerryCategoryArray: array<ref ZBerryCategory> {
 	bool Contains(string catName) {
@@ -20,17 +30,24 @@ class ZBerryCategoryArray: array<ref ZBerryCategory> {
 	}
 }
 
-class ZBerryPlayer {
-	int m_PlayerID;
-	string m_PlayerName;
-	bool m_IsAdmin;
+class ZBerryFuncParamArray: array<ref ZBerryFuncParam> {
+	protected bool m_IsAvailable;
 
-	void ZBerryPlayer( int uid, string plyName, bool isAdmin ) {
-		m_PlayerID = uid;
-		m_PlayerName = plyName;
-		m_IsAdmin = isAdmin;
+	void ZBerryFuncParamArray( bool ext ) {
+		m_IsAvailable = ext;
 	}
-}
+
+	bool IsAvailable() {
+		return m_IsAvailable;
+	}
+
+	void Debug() {
+		PrintString( "[m_Parameters] => array (" + Count() + ")" );
+		for (int idx = 0; idx < Count(); ++idx) {
+			PrintString( "   [" + idx.ToString() + "]: " + Get(idx).Debug());
+		}
+	}
+};
 
 class ZBerryCategory {
 	protected string m_CategoryName;
@@ -85,7 +102,6 @@ class ZBerryCategory {
 		PrintString( "[m_CategoryName] => " + m_CategoryName );
 		PrintString( "[m_CategoryColor] => " + m_CategoryColor.ToString() );
 		PrintString( "[m_FunctionArray] => array (" + m_FunctionArray.Count() + ")" );
-		Print( " " );
 		for (int idx = 0; idx < m_FunctionArray.Count(); ++idx) {
 			m_FunctionArray.Get(idx).Debug();
 		}
@@ -98,13 +114,15 @@ class ZBerryFunction {
 	protected string m_CategoryName;
 	protected Class m_Instance;
     protected int m_DisplayColor;
+	protected ref ZBerryFuncParamArray m_Parameters;
 
-	void ZBerryFunction( string dName, string aName, string cName, Class instance, int dColor ) {
+	void ZBerryFunction( string dName, string aName, string cName, Class instance, int dColor, ref ZBerryFuncParamArray fParam ) {
 		m_DisplayName = dName;
 		m_ActualName = aName;
 		m_CategoryName = cName;
         m_Instance = instance;
         m_DisplayColor = dColor;
+		m_Parameters = fParam;
     }
 
 	string GetDisplayName() {
@@ -127,16 +145,42 @@ class ZBerryFunction {
         return m_DisplayColor;
     }
 
+	ref ZBerryFuncParamArray GetParams() {
+		return m_Parameters;
+	}
+
 	void SetColor(int funcColor) {
 		m_DisplayColor = funcColor;
 	}
 
 	void Debug() {
+		Print( " " );
 		PrintString( "------m_FunctionArray internals------" );
 		PrintString( "[m_DisplayName] => " + m_DisplayName );
 		PrintString( "[m_ActualName] => " + m_ActualName );
 		PrintString( "[m_CategoryName] => " + m_CategoryName );
 		PrintString( "[m_Instance] => " + string.ToString(m_Instance) );
 		PrintString( "[m_DisplayColor] => " + m_DisplayColor.ToString() );
+		PrintString( "[m_Parameters.IsAvailable()] => " + m_Parameters.IsAvailable() );
+
+		if (m_Parameters.IsAvailable()) m_Parameters.Debug();
+	}
+}
+
+class ZBerryFuncParam {
+	protected string m_paramName;
+	protected int m_minValue;
+	protected int m_maxValue;
+	protected bool m_allowPlain;
+
+	void ZBerryFuncParam( string pName, int minV, int maxV, bool aPlain ) {
+		m_paramName = pName;
+		m_minValue = minV;
+		m_maxValue = maxV;
+		m_allowPlain = aPlain;
+	}
+
+	string Debug() {
+		return "\"" + m_paramName + "\" - min: " + m_minValue.ToString() + ", max: " + m_maxValue.ToString() + ", plain edit allowed: " + m_allowPlain.ToString();
 	}
 }
