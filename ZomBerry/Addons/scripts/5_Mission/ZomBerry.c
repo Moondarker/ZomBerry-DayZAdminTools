@@ -3,9 +3,10 @@ static string g_zbryVer = "0.3";
 class ZomberryBase {
 	protected bool isAdmin = false;
 	protected autoptr TStringArray adminList = new TStringArray;
+	ref ZomberryStockFunctions m_ZomberryStockFunctions;
 
 	void ZomberryBase() {
-		ref ZomberryStockFunctions m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
+		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
 
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) m_ZomberryStockFunctions.Init();
 
