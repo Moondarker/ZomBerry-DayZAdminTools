@@ -227,7 +227,7 @@ class ZomberryBase {
 modded class MissionServer {
 
 	void MissionServer() {
-		ZomberryBase.Log( "ZomBerryDbg", "Loaded Server Mission" );
+		ZomberryBase.Log( "ZomBerry", "Loaded Server side v" + g_zbryVer );
 	}
 
 	override void OnInit() {
@@ -242,7 +242,7 @@ modded class MissionGameplay {
 
 	void MissionGameplay() {
 
-		ZomberryBase.Log( "ZomBerryDbg", "Loaded Client Mission" );
+		ZomberryBase.Log( "ZomBerry", "Loaded Client side v" + g_zbryVer );
 	}
 
 	ref ZomberryMenu GetZomberryMenu() {
