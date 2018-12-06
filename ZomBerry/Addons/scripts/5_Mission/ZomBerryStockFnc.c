@@ -114,7 +114,7 @@ class ZomberryStockFunctions {
 				for (int m = 0; m < attachments.Count(); ++m) {
 					EntityAI attachment = EntityAI.Cast( GetGame().CreateObject(attachments[m], vector.Zero, false, false, false) );
 
-					GetZomberryLogger().Log( "ZomberryFncDbg", "RefuelAndRepair: trying " + attachments[m]);
+					ZomberryBase.Log( "ZomberryFncDbg", "RefuelAndRepair: trying " + attachments[m]);
 					while (toBeFixed.GetInventory().CanAddAttachment(attachment)) { //TOBEFIXED: Known possible 'NULL pointer to instance'
 						//Print("[ZomberryFnc] RefuelAndRepair: attached " + attachments[m]);
 						toBeFixed.GetInventory().CreateAttachment(attachments[m]);
