@@ -10,8 +10,8 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget"); // 2
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget"); // 4
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget"); // 3
-		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget"); // 1
-		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget"); // 5
+		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false); // 1
+		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false); // 5
 
 		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
 		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "=="); // 1 1
@@ -22,9 +22,9 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "=="); // 3 3
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
-		m_ZomberryCmdAPI.AddCommand("Skip 3 hours", "SkipTime", this, "OnServer");
-		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer");
-		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer");
+		m_ZomberryCmdAPI.AddCommand("Skip 3 hours", "SkipTime", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
 	}
 
 	void MessagePlayer(PlayerBase player, string msg) {

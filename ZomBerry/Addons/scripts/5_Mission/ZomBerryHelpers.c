@@ -114,14 +114,16 @@ class ZBerryFunction {
 	protected string m_CategoryName;
 	protected Class m_Instance;
     protected int m_DisplayColor;
+	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
 
-	void ZBerryFunction( string dName, string aName, string cName, Class instance, int dColor, ref ZBerryFuncParamArray fParam ) {
+	void ZBerryFunction( string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ref ZBerryFuncParamArray fParam ) {
 		m_DisplayName = dName;
 		m_ActualName = aName;
 		m_CategoryName = cName;
         m_Instance = instance;
         m_DisplayColor = dColor;
+		m_OnTarget = tNeeded;
 		m_Parameters = fParam;
     }
 
@@ -145,6 +147,10 @@ class ZBerryFunction {
         return m_DisplayColor;
     }
 
+	bool IsTargetRequired() {
+		return m_OnTarget;
+	}
+
 	ref ZBerryFuncParamArray GetParams() {
 		return m_Parameters;
 	}
@@ -161,6 +167,7 @@ class ZBerryFunction {
 		PrintString( "[m_CategoryName] => " + m_CategoryName );
 		PrintString( "[m_Instance] => " + string.ToString(m_Instance) );
 		PrintString( "[m_DisplayColor] => " + m_DisplayColor.ToString() );
+		PrintString( "[m_OnTarget] => " + m_OnTarget.ToString() );
 		PrintString( "[m_Parameters.IsAvailable()] => " + m_Parameters.IsAvailable() );
 
 		if (m_Parameters.IsAvailable()) m_Parameters.Debug();

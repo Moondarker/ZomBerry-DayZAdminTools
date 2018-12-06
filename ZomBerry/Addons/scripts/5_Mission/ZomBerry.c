@@ -159,15 +159,25 @@ class ZomberryBase {
 	}
 
 	void ExecuteCommand( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param4< string, int, int, vector > funcParam; //Function name, Admin Id, Target Id, Admin cursor
+		Param5< string, int, int, vector, ref TIntArray > funcParam; //Function name, Admin Id, Target Id, Admin cursor, Function params
+		Param4< string, int, int, vector > altFuncParam; //Backwards compatibility
 		if ( !ctx.Read( funcParam ) ) return;
 
 		int targetId = funcParam.param3;
 		if ( type == CallType.Server && GetGame().IsServer() ) {
 			PlayerIdentity targetIdent = ZBGetPlayerById(targetId).GetIdentity();
 			if (adminList.Find(sender.GetId()) != -1) {
-				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), funcParam.param1, NULL, funcParam );
-				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + funcParam.param1 + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
+				/*if (funcParam.param5.Count() != 0) {
+					GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), funcParam.param1, NULL, funcParam );
+				} else {*/
+					altFuncParam = new Param4< string, int, int, vector >(funcParam.param1, funcParam.param2, targetId, funcParam.param4);
+					GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), funcParam.param1, NULL, altFuncParam );
+				//}
+				if (targetId != funcParam.param2) {
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + funcParam.param1 + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
+				} else {
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + funcParam.param1);
+				}
 			} else {
 				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute " + funcParam.param1 + " but IS NOT ADMIN");
 			}

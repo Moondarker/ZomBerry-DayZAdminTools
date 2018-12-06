@@ -176,7 +176,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	override bool OnDoubleClick( Widget w, int x, int y, int button ) {
-		string param;
+		Param2<int, bool> plyData;
 		Man adminPly = GetGame().GetPlayer();
 		int adminId;
 		if (GetGame().IsMultiplayer()) {
@@ -186,7 +186,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_PlayersList ) {
-			Param2<int, bool> plyData;
 
 			if ( m_lastSelPlayer != -1 ) {
 				m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyData );
@@ -205,27 +204,31 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_FunctionsList ) {
-			Param2<int, bool> plyParam;
-			Param1<string> funcParam;
+			Param2<string, bool> funcData;
 
 			int targetId;
 			string funcName;
+			TIntArray funcParams;
 
 			int selectedFuncRow = m_FunctionsList.GetSelectedRow();
-
-			if ( m_lastSelPlayer == -1 ) {Message("No player selected"); return true;}
 			if ( selectedFuncRow == -1 ) return true;
 
-			m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyParam );
-			m_FunctionsList.GetItemData( selectedFuncRow, 0, funcParam );
-
-			targetId = plyParam.param1;
-			funcName = funcParam.param1;
+			m_FunctionsList.GetItemData( selectedFuncRow, 0, funcData );
+			funcName = funcData.param1;
+			funcParams = {1, 2, 3};
 
 			if (funcName == "Category") return true;
 
-			//Message("Target: " + targetId + ", function: " + funcName);
-			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param4< string, int, int, vector >( funcName, adminId, targetId, GetCursorPos() ), true );
+			if ( funcData.param2 ) {
+				if ( m_lastSelPlayer == -1 ) { Message("No player selected"); return true; }
+
+				m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyData );
+				targetId = plyData.param1;
+			} else {
+				targetId = adminId;
+			}
+
+			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< string, int, int, vector, ref TIntArray >( funcName, adminId, targetId, GetCursorPos(), funcParams ), true );
 		}
 
 		if ( w == m_ObjectsList ) {
@@ -263,7 +266,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		return true;
 	}
 
-	void Message( string txt ) {
+	static void Message( string txt ) {
 		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
 	}
 
@@ -326,7 +329,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			ref ZBerryCategory singleCat = catList.Get(i);
 
 			entryName = singleCat.GetName();
-			m_FunctionsList.AddItem( "==== "+entryName+" ====", new Param1<string>("Category"), 0, lastId );
+			m_FunctionsList.AddItem( "==== "+entryName+" ====", new Param2<string, bool>("Category", false), 0, lastId );
 
 			++lastId;
 
@@ -334,12 +337,12 @@ class ZomberryMenu extends UIScriptedMenu {
 			funcArray = catList.Get(i).GetAll();
 
 			for (int j = 0; j < funcArray.Count(); ++j) {
-				ref ZBerryFunction funcParams;
-				funcParams = funcArray.Get(j);
-				entryName = funcParams.GetName();
+				ref ZBerryFunction funcData;
+				funcData = funcArray.Get(j);
+				entryName = funcData.GetName();
 
-				m_FunctionsList.AddItem( funcParams.GetDisplayName(), new Param1<string>(entryName), 0, lastId );
-				m_FunctionsList.SetItemColor(lastId, 0, funcParams.GetColor());
+				m_FunctionsList.AddItem( funcData.GetDisplayName(), new Param2<string, bool>(entryName, funcData.IsTargetRequired()), 0, lastId );
+				m_FunctionsList.SetItemColor(lastId, 0, funcData.GetColor());
 
 				++lastId;
 			}
