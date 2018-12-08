@@ -7,24 +7,42 @@ class ZomberryStockFunctions {
 
 	void Init() {
 		m_ZomberryCmdAPI.AddCategory("OnTarget", 0xFF42AAFF);
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget"); // 2
-		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget"); // 4
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget"); // 3
-		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false); // 1
-		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false); // 5
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget");
+		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
+		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
 		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
-		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "=="); // 1 1
-		m_ZomberryCmdAPI.AddCommand("Bite", "BiteTarget", this, "=="); // 5 6
-		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, "=="); // ? 2
-		m_ZomberryCmdAPI.AddCommand("Induce vomiting", "RejectBellyTarget", this, "=="); // 4 5
-		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "=="); // 2 4
-		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "=="); // 3 3
+		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "==");
+		m_ZomberryCmdAPI.AddCommand("Bite", "BiteTarget", this, "==", true, {
+			new ZBerryFuncParam("Bites", {1, 25, 1,}),
+		});
+		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, "==");
+		m_ZomberryCmdAPI.AddCommand("Induce vomiting", "RejectBellyTarget", this, "==", true, {
+			new ZBerryFuncParam("Seconds", {5, 30, 5,}),
+		});
+		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "==");
+		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "==");
+		m_ZomberryCmdAPI.AddCommand("Set health", "SetHealthTarget", this, "==", true, {
+			new ZBerryFuncParam("Health", {1, 100, 100,}),
+		});
+		m_ZomberryCmdAPI.AddCommand("Set blood", "SetBloodTarget", this, "==", true, {
+			new ZBerryFuncParam("Blood", {1, 5000, 5000,}),
+		});
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
-		m_ZomberryCmdAPI.AddCommand("Skip 3 hours", "SkipTime", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, "OnServer", false, {
+			new ZBerryFuncParam("Hour", {0, 23, 12,}),
+			new ZBerryFuncParam("Minute", {0, 59, 0,}),
+		});
+		m_ZomberryCmdAPI.AddCommand("Set date", "SetDate", this, "OnServer", false, {
+			new ZBerryFuncParam("Day", {1, 30, 1,}),
+			new ZBerryFuncParam("Month", {1, 12, 1,}),
+			new ZBerryFuncParam("Year", {1970, 2119, 2019,}),
+		});
 	}
 
 	void MessagePlayer(PlayerBase player, string msg) {
@@ -144,13 +162,15 @@ class ZomberryStockFunctions {
 		MessagePlayer(ZBGetPlayerById(adminId), "Killed target");
 	}
 
-	void BiteTarget( string funcName, int adminId, int targetId, vector cursor ) {
+	void BiteTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		BleedingSourcesManagerServer BSMgr = ZBGetPlayerById(targetId).GetBleedingManagerServer();
 
-		for (int i = 0; i < 15; ++i) {
-			if (BSMgr.AttemptAddBleedingSource(Math.RandomInt(0, 100))) break;
+		for (int i = 0; i < fValues[0]; ++i) {
+			for (int j = 0; j < 15; ++j) {
+				if (BSMgr.AttemptAddBleedingSource(Math.RandomInt(0, 100))) break;
+			}
 		}
-		MessagePlayer(ZBGetPlayerById(adminId), "Target was bitten and now losing blood");
+		MessagePlayer(ZBGetPlayerById(adminId), "Target was bitten " + fValues[0] + " times and now losing blood");
 	}
 
 	void StripTarget( string funcName, int adminId, int targetId, vector cursor ) {
@@ -158,11 +178,11 @@ class ZomberryStockFunctions {
 		MessagePlayer(ZBGetPlayerById(adminId), "Target was stripped");
 	}
 
-	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor ) {
+	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		if (!ZBGetPlayerById(targetId).GetCommand_Vehicle()) {
 			SymptomBase symptom = ZBGetPlayerById(targetId).GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
-			symptom.SetDuration(5);
-			MessagePlayer(ZBGetPlayerById(adminId), "Target is gonna be sick");
+			symptom.SetDuration(fValues[0]);
+			MessagePlayer(ZBGetPlayerById(adminId), "Target is gonna be sick for " + fValues[0] + " seconds");
 		} else {
 			MessagePlayer(ZBGetPlayerById(adminId), "Target in vehicle, this action might cause game crash");
 		}
@@ -186,16 +206,34 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	void SkipTime( string funcName, int adminId, int targetId, vector cursor ) {
+	void SetHealthTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+		PlayerBase target = ZBGetPlayerById(targetId);
+
+		target.SetHealth(fValues[0]);
+
+		MessagePlayer(ZBGetPlayerById(adminId), "Target health level was set to " + fValues[0]);
+	}
+
+	void SetBloodTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+		PlayerBase target = ZBGetPlayerById(targetId);
+
+		target.SetHealth("", "Blood", fValues[0]);
+
+		MessagePlayer(ZBGetPlayerById(adminId), "Target blood level was set to " + fValues[0]);
+	}
+
+	void SetTime( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		int year, month, day, hour, minute;
 		GetGame().GetWorld().GetDate(year, month, day, hour, minute);
-		if (hour+3 < 24) {
-			GetGame().GetWorld().SetDate(year, month, day, hour+3, minute);
-			MessagePlayer(ZBGetPlayerById(adminId), "Time set to: " + (hour+3).ToString() + ":" + minute.ToString() + " (it may take some time to effect!)");
-		} else {
-			GetGame().GetWorld().SetDate(year, month, day, 0, minute); //hour-21 is "broken expression", huh
-			MessagePlayer(ZBGetPlayerById(adminId), "Time set to: 0:" + minute.ToString() + " (it may take some time to effect!)");
-		}
+		GetGame().GetWorld().SetDate(year, month, day, fValues[0], fValues[1]);
+		MessagePlayer(ZBGetPlayerById(adminId), "Time set to: " + fValues[0].ToString() + ":" + fValues[1].ToString() + " (it may take some time to effect!)");
+	}
+
+	void SetDate( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+		int year, month, day, hour, minute;
+		GetGame().GetWorld().GetDate(year, month, day, hour, minute);
+		GetGame().GetWorld().SetDate(fValues[2], fValues[1], fValues[0], hour, minute);
+		MessagePlayer(ZBGetPlayerById(adminId), "Date set to: " + fValues[0].ToString() + "." + fValues[1].ToString() + "." + fValues[2].ToString() + " (it may take some time to effect!)");
 	}
 
 	void TimeDay( string funcName, int adminId, int targetId, vector cursor ) {

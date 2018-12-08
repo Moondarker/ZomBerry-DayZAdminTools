@@ -100,18 +100,6 @@ PanelWidgetClass AdminMenu {
          text "Spawn Menu"
          font "gui/fonts/Metron16"
         }
-        TextListboxWidgetClass FunctionsList {
-         color 0 0 0 0.7843
-         position 0 56
-         size 600 0.94
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 0
-         style Editor
-         lines 50
-         font "gui/fonts/Metron14"
-        }
         PanelWidgetClass SpawnWrapper {
          visible 0
          position 0 56
@@ -179,8 +167,8 @@ PanelWidgetClass AdminMenu {
              vexactpos 1
              hexactsize 0
              vexactsize 0
-             lines 500
              style Editor
+             lines 500
              font "gui/fonts/Metron14"
             }
             TextWidgetClass SearchText {
@@ -192,8 +180,8 @@ PanelWidgetClass AdminMenu {
              vexactpos 1
              hexactsize 1
              vexactsize 1
-			 font "gui/fonts/Metron14"
              text "Search"
+             font "gui/fonts/Metron14"
             }
             EditBoxWidgetClass SearchInput {
              color 0.3255 0.3255 0.3255 0.7843
@@ -220,6 +208,214 @@ PanelWidgetClass AdminMenu {
              style Colorable
              text "Ground"
              font "gui/fonts/Metron16"
+            }
+           }
+          }
+         }
+        }
+        PanelWidgetClass FunctionsWrapper {
+         position 0 56
+         size 600 0.94
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 0
+         {
+          TextListboxWidgetClass FunctionsList {
+           color 0 0 0 0.7843
+           position 0 0
+           size 600 0.8
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 0
+           style Editor
+           lines 50
+           font "gui/fonts/Metron14"
+          }
+          PanelWidgetClass FuncParamsWrapper {
+           position 0 0
+           size 600 0.19
+           valign bottom_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 0
+           {
+            PanelWidgetClass FuncParam0 {
+             position 9.44093 0.75398
+             size 581.46503 36
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 0
+             hexactsize 1
+             vexactsize 1
+             {
+              TextWidgetClass TextFuncParam0 {
+               position 0 0
+               size 120 24
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               text "Param 1"
+               "exact text" 0
+               "size to text h" 0
+               "size to text v" 0
+               "text halign" right
+               "text valign" center
+              }
+              SliderWidgetClass SliderFuncParam0 {
+               color 0.6667 0.6667 0.6667 0.8431
+               position 130 0
+               size 350 32
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style GUI_Black_simple
+              }
+              EditBoxWidgetClass EditBoxFuncParam0 {
+               position 0 0
+               size 90 30
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style ServerBrowser
+              }
+             }
+            }
+            PanelWidgetClass FuncParam1 {
+             position 9.44533 0.51768
+             size 581.47003 36
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 0
+             hexactsize 1
+             vexactsize 1
+             {
+              TextWidgetClass TextFuncParam1 {
+               position 0 0
+               size 120 24
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               text "Param 2"
+               "exact text" 0
+               "size to text h" 0
+               "size to text v" 0
+               "text halign" right
+               "text valign" center
+              }
+              SliderWidgetClass SliderFuncParam1 {
+               color 0.6667 0.6667 0.6667 0.8431
+               position 130 0
+               size 350 32
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style GUI_Black_simple
+              }
+              EditBoxWidgetClass EditBoxFuncParam1 {
+               position 0 0
+               size 90 30
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style ServerBrowser
+              }
+             }
+            }
+            PanelWidgetClass FuncParam2 {
+             position 9.29193 0.28138
+             size 581.47003 36
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 0
+             hexactsize 1
+             vexactsize 1
+             {
+              TextWidgetClass TextFuncParam2 {
+               position 0 0
+               size 120 24
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               text "Param 3"
+               "exact text" 0
+               "size to text h" 0
+               "size to text v" 0
+               "text halign" right
+               "text valign" center
+              }
+              SliderWidgetClass SliderFuncParam2 {
+               color 0.6667 0.6667 0.6667 0.8431
+               position 130 0
+               size 350 32
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style GUI_Black_simple
+               vertical 0
+              }
+              EditBoxWidgetClass EditBoxFuncParam2 {
+               position 0 0
+               size 90 30
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 0
+               hexactsize 1
+               vexactsize 1
+               style ServerBrowser
+              }
+             }
+            }
+            ButtonWidgetClass SecondaryExecButton {
+             color 0.3255 0.3255 0.3255 0.7843
+             position 10 0.0357
+             size 175 36
+             halign right_ref
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 0
+             hexactsize 1
+             vexactsize 1
+             style Colorable
+             text "Execute"
+             font "gui/fonts/Metron16"
+            }
+            TextWidgetClass FuncName {
+             position 198.90799 0.059
+             size 340 28
+             halign right_ref
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 0
+             hexactsize 1
+             vexactsize 1
+             text "FunctionNamePHolder"
+             "exact text" 0
+             "size to text h" 0
+             "size to text v" 0
+             "text halign" right
+             "text valign" center
             }
            }
           }

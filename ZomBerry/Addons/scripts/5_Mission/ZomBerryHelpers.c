@@ -31,18 +31,8 @@ class ZBerryCategoryArray: array<ref ZBerryCategory> {
 }
 
 class ZBerryFuncParamArray: array<ref ZBerryFuncParam> {
-	protected bool m_IsAvailable;
-
-	void ZBerryFuncParamArray( bool ext ) {
-		m_IsAvailable = ext;
-	}
-
-	bool IsAvailable() {
-		return m_IsAvailable;
-	}
 
 	void Debug() {
-		PrintString( "[m_Parameters] => array (" + Count() + ")" );
 		for (int idx = 0; idx < Count(); ++idx) {
 			PrintString( "   [" + idx.ToString() + "]: " + Get(idx).Debug());
 		}
@@ -168,26 +158,23 @@ class ZBerryFunction {
 		PrintString( "[m_Instance] => " + string.ToString(m_Instance) );
 		PrintString( "[m_DisplayColor] => " + m_DisplayColor.ToString() );
 		PrintString( "[m_OnTarget] => " + m_OnTarget.ToString() );
-		PrintString( "[m_Parameters.IsAvailable()] => " + m_Parameters.IsAvailable() );
+		PrintString( "[m_Parameters] => array (" + m_Parameters.Count() + ")" );
 
-		if (m_Parameters.IsAvailable()) m_Parameters.Debug();
+		if (m_Parameters.Count() > 0) m_Parameters.Debug();
 	}
 }
 
 class ZBerryFuncParam {
-	protected string m_paramName;
-	protected int m_minValue;
-	protected int m_maxValue;
-	protected bool m_allowPlain;
+	string name;
+	ref TIntArray values;
 
-	void ZBerryFuncParam( string pName, int minV, int maxV, bool aPlain ) {
-		m_paramName = pName;
-		m_minValue = minV;
-		m_maxValue = maxV;
-		m_allowPlain = aPlain;
+	void ZBerryFuncParam( string pName, ref TIntArray pValues ) {
+		name = pName;
+		values = new TIntArray;
+		values.InsertAll(pValues);
 	}
 
 	string Debug() {
-		return "\"" + m_paramName + "\" - min: " + m_minValue.ToString() + ", max: " + m_maxValue.ToString() + ", plain edit allowed: " + m_allowPlain.ToString();
+		return "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString();
 	}
 }

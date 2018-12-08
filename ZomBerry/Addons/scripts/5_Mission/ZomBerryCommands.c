@@ -17,7 +17,7 @@ class ZomberryCmdAPI {
 		ZomberryBase.Log( "ZomBerryCmdAPI", "INFO: Added category " + catName);
 	}
 
-	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true) {
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, autoptr ZBerryFuncParamArray funcParams = NULL) {
 		if (m_oCategoryList.Contains(catName)) {
 			if (GetFunc(funcName) != NULL) {
 				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Cannot add function " + funcName + ", function with same name already exists.");
@@ -25,10 +25,10 @@ class ZomberryCmdAPI {
 			}
 
 			int funcColor = m_oCategoryList.GetByName(catName).GetColor();
-			ref ZBerryFuncParamArray funcParamArray = new ZBerryFuncParamArray(true);
-			funcParamArray.Insert(new ZBerryFuncParam("Not Really A Param", Math.RandomInt(0, 50), Math.RandomInt(51, 100), false));
 
-			ref ZBerryFunction funcData = new ZBerryFunction(dispName, funcName, catName, instance, funcColor, onTarget, funcParamArray);
+			if (!funcParams) funcParams = new ZBerryFuncParamArray;
+
+			ref ZBerryFunction funcData = new ZBerryFunction(dispName, funcName, catName, instance, funcColor, onTarget, funcParams	);
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);
 
