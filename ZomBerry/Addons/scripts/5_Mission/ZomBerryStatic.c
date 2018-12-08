@@ -1,4 +1,3 @@
-static ref ZomberryBase g_ZomberryBase;
 static ref ZomberryCmdAPI g_ZomberryCmdAPI;
 
 /**
@@ -48,14 +47,4 @@ static PlayerBase ZBGetPlayerById (int plyId) {
 	}
 
 	return result;
-}
-
-
-//For internal purposes. Do not use unless REALLY needed!
-static ref ZomberryBase GetZomberryBase() {
-	if ( !g_ZomberryBase ) {
-		g_ZomberryBase = new ref ZomberryBase;
-	}
-
-	return g_ZomberryBase;
 }
