@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.3";
+static string g_zbryVer = "0.3.1";
 
 class ZomberryBase {
 	protected bool isAdmin = false;
@@ -73,7 +73,7 @@ class ZomberryBase {
 				GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer ), true, sender );
 				Log( "ZomBerryDbg", "Auth respond to admin " + sender.GetName() + " (" + sender.GetId() + ")");
 				if (authInfo.param2 != g_zbryVer) {
-					Log( "ZomBerryAT", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! S: " + g_zbryVer + ", C: " + authInfo.param2 + ", clientside won't start!");
+					Log( "ZomBerryAT", "WARN: Admin " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! S: v" + g_zbryVer + ", C: v" + authInfo.param2 + ", clientside may not start!");
 				}
 			} else {
 				Log( "ZomBerryDbg", "Auth Request ignored (not an admin) " + sender.GetName() + " (" + sender.GetId() + ")" );
@@ -81,9 +81,10 @@ class ZomberryBase {
 		} else {
 			if (!authInfo.param1 || GetGame().IsMultiplayer()) {
 				Log( "ZomBerryDbg", "Auth Respond received" );
-				if (authInfo.param2 != g_zbryVer) {
-					Log( "ZomBerryAT", "ERROR: " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! C: " + g_zbryVer + ", S: " + authInfo.param2 + ", clientside won't start!");
+				if (authInfo.param2.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
+					Log( "ZomBerryAT", "ERROR: ZomBerry version mismatch! C: v" + g_zbryVer + ", S: v" + authInfo.param2 + ", clientside won't start!");
 				} else {
+					if (authInfo.param2 != g_zbryVer) Log( "ZomBerryAT", "WARN: ZomBerry version mismatch! C: v" + g_zbryVer + ", S: v" + authInfo.param2);
 					isAdmin = true;
 				}
 			} else {
