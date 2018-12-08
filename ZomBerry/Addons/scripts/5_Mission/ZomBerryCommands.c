@@ -1,41 +1,40 @@
 class ZomberryCmdAPI {
 	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
-	//protected ref ZBerryFunctionArray m_oFunctionsList = new ZBerryFunctionArray;
-
-	protected int lastId = 0; //last Category id
 
 	void ZomberryCmdAPI() {
 
 	}
 
 	void AddCategory(string catName, int funcColor) {
+		if (m_oCategoryList.Contains(catName)) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Cannot add category " + catName + ", category with same name already exists.");
+			return;
+		}
+
 		ref ZBerryCategory catParam = new ZBerryCategory(catName, funcColor);
 
-		GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "catParam: " + catParam);
-		GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "catParam Name: " + catParam.GetName());
-		GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "catParam Color: " + catParam.GetColor());
-
 		m_oCategoryList.Insert(catParam);
-
-		GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "catParam Contains: " + m_oCategoryList.Contains(catName));
-		++lastId;
-
-		GetZomberryLogger().Log( "ZomBerryCmdAPI", "INFO: Added category " + catName);
+		ZomberryBase.Log( "ZomBerryCmdAPI", "INFO: Added category " + catName);
 	}
 
-	void AddCommand(string dispName, string funcName, Class instance, string catName) {
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, autoptr ZBerryFuncParamArray funcParams = NULL) {
 		if (m_oCategoryList.Contains(catName)) {
-			ref ZBerryFunction funcParam = new ZBerryFunction(dispName, funcName, catName, instance, m_oCategoryList.GetByName(catName).GetColor());
+			if (GetFunc(funcName) != NULL) {
+				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Cannot add function " + funcName + ", function with same name already exists.");
+				return;
+			}
 
-			GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "funcParam: " + funcParam);
+			int funcColor = m_oCategoryList.GetByName(catName).GetColor();
 
-			m_oCategoryList.GetByName(catName).Insert(funcParam);
+			if (!funcParams) funcParams = new ZBerryFuncParamArray;
 
-			GetZomberryLogger().Log( "ZomBerryCmdAPIDbg", "funcParamInCat: " + m_oCategoryList.GetByName(catName).Get(funcName));
+			ref ZBerryFunction funcData = new ZBerryFunction(dispName, funcName, catName, instance, funcColor, onTarget, funcParams	);
 
-			GetZomberryLogger().Log( "ZomBerryCmdAPI", "INFO: Added function " + funcName + " to category " + catName);
+			m_oCategoryList.GetByName(catName).Insert(funcData);
+
+			ZomberryBase.Log( "ZomBerryCmdAPI", "INFO: Added function " + funcName + " to category " + catName);
 		} else {
-			GetZomberryLogger().Log( "ZomBerryCmdAPI", "WARN: Unknown category " + catName + ", cannot add function " + funcName);
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Unknown category " + catName + ", cannot add function " + funcName);
 		}
 	}
 
@@ -49,18 +48,15 @@ class ZomberryCmdAPI {
 		return NULL;
 	}
 
-	/*ref ZBerryCategory GetByName(ZBerryCategory string catName) { //Не дописано
-		for (int i = 0; i < Count(); ++i) {
-			if (Get(i).GetName() == catName) return Get(i);
-		}
-		return NULL;
-	}*/
-	/*
-	ref ZBerryFunctionArray GetFunctions() {
-		return m_oFunctionsList;
-	}*/
-
 	ref ZBerryCategoryArray GetList() {
 		return m_oCategoryList;
+	}
+
+	void Debug() {
+		ZomberryBase.Log( "ZomBerryCmdAPIDbg", "Logging entire commands list:");
+		for (int i = 0; i < m_oCategoryList.Count(); ++i) { //Full list breakdown
+			ref ZBerryCategory catEntry = m_oCategoryList.Get(i);
+			catEntry.Debug();
+		}
 	}
 };

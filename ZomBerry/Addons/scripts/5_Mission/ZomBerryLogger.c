@@ -23,7 +23,7 @@ class ZomberryLogger {
 	}
 
 	void DebugLog(int lvl, string module, string txt) {
-		if (GetZomberryConfig().GetDebugLvl() >= lvl) {
+		if (ZomberryBase.GetConfig().GetDebugLvl() >= lvl) {
 			Log(module, txt);
 		}
 	}
