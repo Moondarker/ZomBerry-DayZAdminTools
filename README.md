@@ -31,20 +31,30 @@ ZomBerry was created to be as simple and lightweight for users and developers as
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand** requires four arguments and have one optional argument: 
+**AddCommand** requires four arguments and have two optional arguments: 
 * string displayName - name shown in functions list
 * string functionName - name of function which will be called
 * Class instance - instance of the Class which the function resides
 * string categoryName - name of category for function to be placed
 * (optional) bool targetRequired - is target required to execute command? Default: true
+* (optional) ZBerryFuncParamArray functionParams - array of custom parameters, check examples below. Default: {}
 ```java
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);
 ```
-Your function will be called with four arguments:
+Example with custom parameters:
+```java
+GetZomberryCmdAPI().AddCommand("Set time", "SetTime", this, "MyMod", false, {
+  new ZBerryFuncParam("Hour", {0, 23, 12,}), //Params are: string paramName, TIntArray {minValue, maxValue, defaultValue}
+  new ZBerryFuncParam("Minute", {0, 59, 0,}), //You may use up to 3 custom parameters, this example contains only 2
+});
+```
+
+Your function will be called with five arguments:
 * string functionName (explains itself)
 * int adminId - session id of admin who executed this function 
 * int targetId - session id of targeted player (=adminId if no target was selected)
 * vector cursor - position where admin's cursor intersects with ground
+* (optional) TIntArray cmdParams - array with 3 int values, each represents one of custom parameters (check examples below)  
 
 Note: you may get PlayerBase of player's character using ```ZBGetPlayerById(int playerId)``` function
 
