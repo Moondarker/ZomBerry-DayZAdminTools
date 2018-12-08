@@ -101,6 +101,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_PlayersList.ClearItems();
 		m_FunctionsList.ClearItems();
+		m_lastSelFunc = -1;
 	}
 
 	override bool OnMouseLeave( Widget w, Widget enterW, int x, int y ) {
