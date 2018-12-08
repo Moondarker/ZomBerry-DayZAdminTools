@@ -222,9 +222,18 @@ class ZomberryBase {
 };
 
 modded class MissionServer {
+	ref ZomberryBase m_ZomberryBase;
 
 	void MissionServer() {
 		ZomberryBase.Log( "ZomBerry", "Loaded Server side v" + g_zbryVer );
+	}
+
+	private ref ZomberryBase GetZomberryBase() {
+		if ( !m_ZomberryBase ) {
+			m_ZomberryBase = new ref ZomberryBase;
+		}
+
+		return m_ZomberryBase;
 	}
 
 	override void OnInit() {
@@ -235,6 +244,7 @@ modded class MissionServer {
 };
 
 modded class MissionGameplay {
+	ref ZomberryBase m_ZomberryBase;
 	ref ZomberryMenu m_ZomberryMenu;
 
 	void MissionGameplay() {
@@ -242,7 +252,15 @@ modded class MissionGameplay {
 		ZomberryBase.Log( "ZomBerry", "Loaded Client side v" + g_zbryVer );
 	}
 
-	ref ZomberryMenu GetZomberryMenu() {
+	private ref ZomberryBase GetZomberryBase() {
+		if ( !m_ZomberryBase ) {
+			m_ZomberryBase = new ref ZomberryBase;
+		}
+
+		return m_ZomberryBase;
+	}
+
+	private ref ZomberryMenu GetZomberryMenu() {
 		if ( !m_ZomberryMenu ) {
 			m_ZomberryMenu = new ref ZomberryMenu;
 			m_ZomberryMenu.Init();
