@@ -225,7 +225,12 @@ class ZomberryMenu extends UIScriptedMenu {
 				m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyData );
 				targetId = plyData.param1;
 			} else {
-				targetId = adminId;
+				if ( m_lastSelPlayer == -1 ) {
+					targetId = adminId;
+				} else {
+					m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyData );
+					targetId = plyData.param1;
+				}
 			}
 
 			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< string, int, int, vector, ref TIntArray >( funcName, adminId, targetId, GetCursorPos(), funcParams ), true );
