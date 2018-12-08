@@ -31,18 +31,19 @@ ZomBerry was created to be as simple and lightweight for users and developers as
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand** requires four arguments: 
+**AddCommand** requires four arguments and have one optional argument: 
 * string displayName - name shown in functions list
 * string functionName - name of function which will be called
 * Class instance - instance of the Class which the function resides
 * string categoryName - name of category for function to be placed
+* (optional) bool targetRequired - is target required to execute command? Default: true
 ```java
-GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod");
+GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);
 ```
 Your function will be called with four arguments:
 * string functionName (explains itself)
 * int adminId - session id of admin who executed this function 
-* int targetId - session id of targeted player
+* int targetId - session id of targeted player (=adminId if no target was selected)
 * vector cursor - position where admin's cursor intersects with ground
 
 Note: you may get PlayerBase of player's character using ```ZBGetPlayerById(int playerId)``` function
