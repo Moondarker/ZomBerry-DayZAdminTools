@@ -142,9 +142,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 		if ( w == m_FuncPEBox0 || w == m_FuncPEBox1 || w == m_FuncPEBox2 ) {
 			m_lastFuncParams = NormalizeFuncValues ({
-				Math.Round(m_FuncPEBox0.GetText().ToInt()),
-				Math.Round(m_FuncPEBox1.GetText().ToInt()),
-				Math.Round(m_FuncPEBox2.GetText().ToInt()),
+				Math.Round(CalcValueOfName(m_lastSelFunc, 0, m_FuncPEBox0.GetText())),
+				Math.Round(CalcValueOfName(m_lastSelFunc, 1, m_FuncPEBox1.GetText())),
+				Math.Round(CalcValueOfName(m_lastSelFunc, 2, m_FuncPEBox2.GetText())),
 			});
 			UpdateFuncSliders(m_lastFuncParams[0], m_lastFuncParams[1], m_lastFuncParams[2]);
 			return true;
@@ -173,7 +173,9 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	private void UpdateFuncValues(TIntArray newValues) {
+		Print("UpdateFuncValues::Before UpdateFuncSliders");
 		UpdateFuncSliders(newValues[0], newValues[1], newValues[2]);
+		Print("UpdateFuncValues::Before UpdateFuncBoxes");
 		UpdateFuncBoxes(newValues[0], newValues[1], newValues[2]);
 	}
 
@@ -199,9 +201,9 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	private void UpdateFuncBoxes(int p1, int p2, int p3) {
-		m_FuncPEBox0.SetText(p1.ToString());
-		m_FuncPEBox1.SetText(p2.ToString());
-		m_FuncPEBox2.SetText(p3.ToString());
+		m_FuncPEBox0.SetText(CalcNameOfValue(m_lastSelFunc, 0, p1));
+		m_FuncPEBox1.SetText(CalcNameOfValue(m_lastSelFunc, 1, p2));
+		m_FuncPEBox2.SetText(CalcNameOfValue(m_lastSelFunc, 2, p3));
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {
@@ -242,8 +244,11 @@ class ZomberryMenu extends UIScriptedMenu {
 				}
 			}
 
+			Print("OnClick::Before NormalizeFuncValues");
 			m_lastFuncParams = NormalizeFuncValues(defValues);
+			Print("OnClick::Before UpdateFuncValues");
 			UpdateFuncValues(m_lastFuncParams);
+			Print("OnClick::Before SetParams");
 			SetParams(m_funcParams[fParamId].Count(), fParamId);
 		}
 
@@ -312,6 +317,39 @@ class ZomberryMenu extends UIScriptedMenu {
 		return false;
 	}
 
+	private string CalcNameOfValue(int fParamId, int subFParamId, int pValue) {
+		Print("CalcNameOfValue::Before strEnumCount set. fParamId = " + fParamId + ", subFParamId = " + subFParamId);
+		int strEnumCount = 0;// m_funcParams[fParamId].Get(subFParamId).strEnum.Count();
+		Print("CalcNameOfValue::Before return pValue.ToString()");
+		if (strEnumCount < 1) return pValue.ToString();
+
+		Print("CalcNameOfValue::Before minV set");
+		int minV = m_funcParams[fParamId].Get(subFParamId).values[0];
+		Print("CalcNameOfValue::Before maxVRel set");
+		int maxVRel = m_funcParams[fParamId].Get(subFParamId).values[1] - minV;
+		Print("CalcNameOfValue::Before resultId set");
+		int resultId = Math.Floor((((pValue - minV)/maxVRel)*strEnumCount));
+		Print("CalcNameOfValue resultId is " + resultId + ", strEnumCount is " + strEnumCount);
+
+		if (resultId < strEnumCount) return m_funcParams[fParamId].Get(subFParamId).strEnum.Get(resultId);
+
+		Print("CalcNameOfValue::Before return pValue.ToString()");
+		return pValue.ToString();
+	}
+
+	private int CalcValueOfName(int fParamId, int subFParamId, string pName) {
+		int strEnumCount = 0;//m_funcParams[fParamId].Get(subFParamId).strEnum.Count();
+		if (strEnumCount < 1) return pName.ToInt();
+
+		int minV = m_funcParams[fParamId].Get(subFParamId).values[0];
+		int maxVRel = m_funcParams[fParamId].Get(subFParamId).values[1] - minV;
+		int nameId = m_funcParams[fParamId].Get(subFParamId).strEnum.Find(pName);
+
+		if (nameId == -1) return m_funcParams[fParamId].Get(subFParamId).values[2];
+
+		return Math.Floor(((nameId/strEnumCount)*maxVRel)+minV);
+	}
+
 	private void SetParams(int pCount, int fParamId) {
 		if (pCount >= 1) {
 			m_FuncPName0.SetText(m_funcParams[fParamId].Get(0).name);
@@ -346,6 +384,13 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_PlayersList ) {
+			Print("OnDoubleClick::Debugging m_funcParams");
+			for (int ipx = 0; ipx < m_funcParams.Count(); ++ipx) {
+				m_funcParams[ipx].Debug();
+				//ref TStringArray sumShi = m_funcParams[ipx].Get(0).strEnum;
+				//Print(sumShi);
+			}
+			//Print(m_funcParams[0].Get(0).GetStrEnum());
 
 			if ( m_lastSelPlayer != -1 ) {
 				m_PlayersList.GetItemData( m_lastSelPlayer, 0, plyData );

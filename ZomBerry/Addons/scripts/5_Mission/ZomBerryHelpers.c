@@ -166,15 +166,18 @@ class ZBerryFunction {
 
 class ZBerryFuncParam {
 	string name;
-	ref TIntArray values;
+	autoptr TIntArray values; //ref
+	autoptr TStringArray strEnum;
 
-	void ZBerryFuncParam( string pName, ref TIntArray pValues ) {
+	void ZBerryFuncParam( string pName, ref TIntArray pValues, ref TStringArray sValues = NULL ) {
 		name = pName;
 		values = new TIntArray;
+		strEnum = new TStringArray;
 		values.InsertAll(pValues);
+		if (sValues) strEnum.InsertAll(sValues);
 	}
 
 	string Debug() {
-		return "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString();
+		return "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString() + ", strEnum: " + strEnum;
 	}
 }

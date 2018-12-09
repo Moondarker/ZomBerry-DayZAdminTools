@@ -28,7 +28,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Health", {1, 100, 100,}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Set blood", "SetBloodTarget", this, "==", true, {
-			new ZBerryFuncParam("Blood", {1, 5000, 5000,}),
+			new ZBerryFuncParam("Blood", {1, 5000, 5000,}, {"Dead", "Bad", "Fine", "Good",}),
 		});
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
