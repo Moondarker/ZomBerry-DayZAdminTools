@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.3.1";
+static string g_zbryVer = "0.4";
 
 class ZomberryBase {
 	protected bool isAdmin = false;
@@ -21,6 +21,7 @@ class ZomberryBase {
 		GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctionsRequest", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "ExecuteCommand", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "SpawnObject", this, SingeplayerExecutionType.Client );
+		GetRPCManager().AddRPC( "ZomBerryAT", "MapTeleport", this, SingeplayerExecutionType.Client );
 	}
 
 	static ref ZomberryConfig GetConfig() {
@@ -116,7 +117,7 @@ class ZomberryBase {
 
 					if (player.GetItemInHands()) {plyName += (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 
-					plyData = new ZBerryPlayer(plyId, plyName, plyAdmin);
+					plyData = new ZBerryPlayer(plyId, plyName, plyAdmin, player.GetPosition());
 					playerListS.Insert(plyData);
 				}
 
@@ -130,7 +131,7 @@ class ZomberryBase {
 			player = PlayerBase.Cast(GetGame().GetPlayer());
 			if (player.GetItemInHands()) {plyName = (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 
-			plyData = new ZBerryPlayer(0, "Player" + plyName, true);
+			plyData = new ZBerryPlayer(0, "Player" + plyName, true, player.GetPosition());
 
 			playerListS.Insert(plyData);
 			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param1<ref ZBerryPlayerArray> (playerListS), true, NULL );
@@ -188,7 +189,7 @@ class ZomberryBase {
 	}
 
 	void SpawnObject( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		//string objName, int adminId, vector targetPlace
+		//string objName, int adminId, vector targetPlace, bool insideInventory
 		Param4< string, int, vector, bool > tgtParam;
 		ItemBase item;
 
@@ -216,6 +217,40 @@ class ZomberryBase {
 				} else {
 					GetGame().CreateObject(tgtParam.param1, tgtParam.param3, false, true );
 					Log( "ZomBerryAdmin", "Spawned " + tgtParam.param1 + " at " + tgtParam.param3 + " (singleplayer)");
+				}
+			}
+		}
+	}
+
+	void MapTeleport( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param1< vector > teleParam;
+
+		if ( !ctx.Read( teleParam ) ) return;
+
+		float atlZ = GetGame().SurfaceY(teleParam.param1[0], teleParam.param1[2]);
+		vector reqpos = Vector(teleParam.param1[0], atlZ, teleParam.param1[2]);
+		int adminId = 0;
+		if (GetGame().IsMultiplayer()) adminId = sender.GetPlayerId();
+		PlayerBase adminPly = ZBGetPlayerById(adminId);
+
+		if ( type == CallType.Server && GetGame().IsServer() ) {
+			if (adminList.Find(sender.GetId()) != -1) {
+				if (!adminPly.GetCommand_Vehicle()) {
+					adminPly.SetPosition(reqpos);
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") teleported to position " + reqpos.ToString());
+				} else {
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport, but was in vehicle");
+				}
+			} else {
+				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport (NOT AN ADMIN)");
+			}
+		} else {
+			if (!GetGame().IsMultiplayer()) {
+				if (!adminPly.GetCommand_Vehicle()) {
+					adminPly.SetPosition(reqpos);
+					Log( "ZomBerryAdmin", "Teleported to position " + reqpos.ToString());
+				} else {
+					Log( "ZomBerryAdmin", "Teleport failed, player in vehicle");
 				}
 			}
 		}

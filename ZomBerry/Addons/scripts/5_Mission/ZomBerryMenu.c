@@ -1,23 +1,27 @@
 class ZomberryMenu extends UIScriptedMenu {
-	protected TextWidget m_TxtTitle, m_FncName;
+	protected TextWidget m_TxtTitle, m_FncName, m_MapText;
 	protected TextListboxWidget m_PlayersList;
 	protected TextListboxWidget m_FunctionsList;
 	protected TextListboxWidget m_ObjectsList;
-	protected Widget m_SpawnPage, m_FunctionsPage;
+	protected Widget m_SpawnPage, m_FunctionsPage, m_MapPage;
 	protected EditBoxWidget m_SearchInput;
 
 	protected TextWidget m_FuncPName0, m_FuncPName1, m_FuncPName2;
 	protected SliderWidget m_FuncPSlider0, m_FuncPSlider1, m_FuncPSlider2;
 	protected EditBoxWidget m_FuncPEBox0, m_FuncPEBox1, m_FuncPEBox2;
 
-	protected ButtonWidget m_FunctionsButton, m_SpawnButton;
+	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton;
 	protected ButtonWidget m_FilterItemsButton, m_FilterObjectsButton, m_FilterAIButton;
 	protected ButtonWidget m_SpawnTargetButton, m_ExecFuncButton;
+
+	protected MapWidget m_MapWidget;
 
 	protected autoptr map< string, bool > m_oCategoryHiddenStatus = new map< string, bool >;
 
 	protected int m_lastSelPlayer = -1;
 	protected int m_lastSelFunc = -1;
+	protected bool m_mouseOnMap = false;
+	protected bool m_mapTPAllowed = true;
 	protected autoptr TIntArray m_lastFuncParams = {0,0,0};
 	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
 
@@ -42,9 +46,11 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_ObjectsList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("ObjectsList") );
 		m_SpawnPage = layoutRoot.FindAnyWidget( "SpawnWrapper" );
 		m_FunctionsPage = layoutRoot.FindAnyWidget( "FunctionsWrapper" );
+		m_MapPage = layoutRoot.FindAnyWidget( "MapWrapper" );
 
 		m_FunctionsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("FunctionsButton") );
 		m_SpawnButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpawnButton") );
+		m_MapButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("MapButton") );
 		m_FilterItemsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ItemsButton") );
 		m_FilterObjectsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ObjectsButton") );
 		m_FilterAIButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AIButton") );
@@ -64,14 +70,18 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FuncPEBox2 = EditBoxWidget.Cast( layoutRoot.FindAnyWidget("EditBoxFuncParam2") );
 
 		m_FncName = TextWidget.Cast( layoutRoot.FindAnyWidget("FuncName") );
+		m_MapText = TextWidget.Cast( layoutRoot.FindAnyWidget("MapText") );
 
 		m_SearchInput = EditBoxWidget.Cast(layoutRoot.FindAnyWidget("SearchInput"));
+
+		m_MapWidget = MapWidget.Cast( layoutRoot.FindAnyWidget("MapWidget") );
 
 		m_FncName.SetText("");
 		SetParams(0, 0);
 
 		m_FunctionsButton.SetTextColor(COLOR_GREEN);
 		m_objFilter = "All";
+		m_MapPage.Show(false);
 
 		for ( int i = 0; i < m_FunctionsList.GetNumItems(); ++i ) {
 			Param3<string, int, ref ZBerryFuncParamArray> params;
@@ -107,6 +117,18 @@ class ZomberryMenu extends UIScriptedMenu {
 	override bool OnMouseLeave( Widget w, Widget enterW, int x, int y ) {
 		if ( w == m_FuncPEBox0 || w == m_FuncPEBox1 || w == m_FuncPEBox2 ) {
 			UpdateFuncBoxes(m_lastFuncParams[0], m_lastFuncParams[1], m_lastFuncParams[2]);
+			return true;
+		}
+		if ( w == m_MapWidget ) {
+			m_mouseOnMap = false;
+			return true;
+		}
+		return false;
+	}
+
+	override bool OnMouseEnter( Widget w, int x, int y ) {
+		if ( w == m_MapWidget ) {
+			m_mouseOnMap = true;
 			return true;
 		}
 		return false;
@@ -152,56 +174,23 @@ class ZomberryMenu extends UIScriptedMenu {
 		return false;
 	}
 
-	private TIntArray NormalizeFuncValues(TIntArray abNormalValues) {
-		Param3<string, bool, int> funcData;
-		int minV, maxV;
-		TIntArray normalValues = {0, 0, 0,};
-		int fParamId = -1;
+	override void Update(float tDelta) {
+		if (m_MapPage.IsVisible() && m_mouseOnMap) {
+			int sX, sY;
+			vector mapXZY;
+			GetMousePos(sX, sY);
+			mapXZY = m_MapWidget.ScreenToMap(Vector(sX, sY, 0));
+			m_MapText.SetText("X: " + mapXZY[0] + "  Y: " + mapXZY[2]);
 
-		m_FunctionsList.GetItemData( m_lastSelFunc, 0, funcData );
-		fParamId = funcData.param3;
-
-		if (fParamId == -1) return normalValues;
-
-		for (int i = 0; i < m_funcParams[fParamId].Count(); i++) {
-			minV = m_funcParams[fParamId].Get(i).values.Get(0);
-			maxV = m_funcParams[fParamId].Get(i).values.Get(1);
-			normalValues[i] = Math.Min(maxV, Math.Max(minV, abNormalValues[i]));
+			if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
+				if (m_mapTPAllowed) {
+					m_mapTPAllowed = false;
+					GetRPCManager().SendRPC( "ZomBerryAT", "MapTeleport", new Param1< vector >( mapXZY ), true );
+				}
+			} else {
+				if (!m_mapTPAllowed) m_mapTPAllowed = true;
+			}
 		}
-
-		return normalValues;
-	}
-
-	private void UpdateFuncValues(TIntArray newValues) {
-		UpdateFuncSliders(newValues[0], newValues[1], newValues[2]);
-		UpdateFuncBoxes(newValues[0], newValues[1], newValues[2]);
-	}
-
-	private void UpdateFuncSliders(int p1, int p2, int p3) {
-		Param3<string, bool, int> funcData;
-		TIntArray minVs = {0, 0, 0,};
-		TIntArray maxVs = {1000, 1000, 1000,};
-		int fParamId = -1;
-
-		m_FunctionsList.GetItemData( m_lastSelFunc, 0, funcData );
-		fParamId = funcData.param3;
-
-		if (fParamId == -1) return;
-
-		for (int i = 0; i < m_funcParams[fParamId].Count(); i++) {
-			minVs[i] = m_funcParams[fParamId].Get(i).values.Get(0);
-			maxVs[i] = m_funcParams[fParamId].Get(i).values.Get(1);
-		}
-
-		m_FuncPSlider0.SetCurrent(((p1-minVs[0])/(maxVs[0]-minVs[0]))*100);
-		m_FuncPSlider1.SetCurrent(((p2-minVs[1])/(maxVs[1]-minVs[1]))*100);
-		m_FuncPSlider2.SetCurrent(((p3-minVs[2])/(maxVs[2]-minVs[2]))*100);
-	}
-
-	private void UpdateFuncBoxes(int p1, int p2, int p3) {
-		m_FuncPEBox0.SetText(p1.ToString());
-		m_FuncPEBox1.SetText(p2.ToString());
-		m_FuncPEBox2.SetText(p3.ToString());
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {
@@ -212,8 +201,28 @@ class ZomberryMenu extends UIScriptedMenu {
 		if ( w == m_FunctionsButton ) {
 			m_FunctionsButton.SetTextColor(COLOR_GREEN);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
+			m_MapButton.SetTextColor(0xFFFFFFFF);
 			m_FunctionsPage.Show( true );
 			m_SpawnPage.Show( false );
+			m_MapPage.Show( false );
+		}
+
+		if ( w == m_SpawnButton ) {
+			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
+			m_SpawnButton.SetTextColor(COLOR_GREEN);
+			m_MapButton.SetTextColor(0xFFFFFFFF);
+			m_FunctionsPage.Show( false );
+			m_SpawnPage.Show( true );
+			m_MapPage.Show( false );
+		}
+
+		if ( w == m_MapButton ) {
+			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
+			m_SpawnButton.SetTextColor(0xFFFFFFFF);
+			m_MapButton.SetTextColor(COLOR_GREEN);
+			m_FunctionsPage.Show( false );
+			m_SpawnPage.Show( false );
+			m_MapPage.Show( true );
 		}
 
 		if ( w == m_FunctionsList ) {
@@ -249,13 +258,6 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		if ( w == m_ExecFuncButton ) {
 			OnDoubleClick( m_FunctionsList, 0, 0, 0 );
-		}
-
-		if ( w == m_SpawnButton ) {
-			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
-			m_SpawnButton.SetTextColor(COLOR_GREEN);
-			m_FunctionsPage.Show( false );
-			m_SpawnPage.Show( true );
 		}
 
 		if ( w == m_FilterItemsButton ) {
@@ -310,29 +312,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		return false;
-	}
-
-	private void SetParams(int pCount, int fParamId) {
-		if (pCount >= 1) {
-			m_FuncPName0.SetText(m_funcParams[fParamId].Get(0).name);
-			m_FuncPName0.Show(true); m_FuncPSlider0.Show(true); m_FuncPEBox0.Show(true);
-		} else {
-			m_FuncPName0.Show(false); m_FuncPSlider0.Show(false); m_FuncPEBox0.Show(false);
-		}
-
-		if (pCount >= 2) {
-			m_FuncPName1.SetText(m_funcParams[fParamId].Get(1).name);
-			m_FuncPName1.Show(true); m_FuncPSlider1.Show(true); m_FuncPEBox1.Show(true);
-		} else {
-			m_FuncPName1.Show(false); m_FuncPSlider1.Show(false); m_FuncPEBox1.Show(false);
-		}
-
-		if (pCount >= 3) {
-			m_FuncPName2.SetText(m_funcParams[fParamId].Get(2).name);
-			m_FuncPName2.Show(true); m_FuncPSlider2.Show(true); m_FuncPEBox2.Show(true);
-		} else {
-			m_FuncPName2.Show(false); m_FuncPSlider2.Show(false); m_FuncPEBox2.Show(false);
-		}
 	}
 
 	override bool OnDoubleClick( Widget w, int x, int y, int button ) {
@@ -444,6 +423,81 @@ class ZomberryMenu extends UIScriptedMenu {
 		return hitPos;
 	}
 
+	private TIntArray NormalizeFuncValues(TIntArray abNormalValues) {
+		Param3<string, bool, int> funcData;
+		int minV, maxV;
+		TIntArray normalValues = {0, 0, 0,};
+		int fParamId = -1;
+
+		m_FunctionsList.GetItemData( m_lastSelFunc, 0, funcData );
+		fParamId = funcData.param3;
+
+		if (fParamId == -1) return normalValues;
+
+		for (int i = 0; i < m_funcParams[fParamId].Count(); i++) {
+			minV = m_funcParams[fParamId].Get(i).values.Get(0);
+			maxV = m_funcParams[fParamId].Get(i).values.Get(1);
+			normalValues[i] = Math.Min(maxV, Math.Max(minV, abNormalValues[i]));
+		}
+
+		return normalValues;
+	}
+
+	private void UpdateFuncValues(TIntArray newValues) {
+		UpdateFuncSliders(newValues[0], newValues[1], newValues[2]);
+		UpdateFuncBoxes(newValues[0], newValues[1], newValues[2]);
+	}
+
+	private void UpdateFuncSliders(int p1, int p2, int p3) {
+		Param3<string, bool, int> funcData;
+		TIntArray minVs = {0, 0, 0,};
+		TIntArray maxVs = {1000, 1000, 1000,};
+		int fParamId = -1;
+
+		m_FunctionsList.GetItemData( m_lastSelFunc, 0, funcData );
+		fParamId = funcData.param3;
+
+		if (fParamId == -1) return;
+
+		for (int i = 0; i < m_funcParams[fParamId].Count(); i++) {
+			minVs[i] = m_funcParams[fParamId].Get(i).values.Get(0);
+			maxVs[i] = m_funcParams[fParamId].Get(i).values.Get(1);
+		}
+
+		m_FuncPSlider0.SetCurrent(((p1-minVs[0])/(maxVs[0]-minVs[0]))*100);
+		m_FuncPSlider1.SetCurrent(((p2-minVs[1])/(maxVs[1]-minVs[1]))*100);
+		m_FuncPSlider2.SetCurrent(((p3-minVs[2])/(maxVs[2]-minVs[2]))*100);
+	}
+
+	private void UpdateFuncBoxes(int p1, int p2, int p3) {
+		m_FuncPEBox0.SetText(p1.ToString());
+		m_FuncPEBox1.SetText(p2.ToString());
+		m_FuncPEBox2.SetText(p3.ToString());
+	}
+
+	private void SetParams(int pCount, int fParamId) {
+		if (pCount >= 1) {
+			m_FuncPName0.SetText(m_funcParams[fParamId].Get(0).name);
+			m_FuncPName0.Show(true); m_FuncPSlider0.Show(true); m_FuncPEBox0.Show(true);
+		} else {
+			m_FuncPName0.Show(false); m_FuncPSlider0.Show(false); m_FuncPEBox0.Show(false);
+		}
+
+		if (pCount >= 2) {
+			m_FuncPName1.SetText(m_funcParams[fParamId].Get(1).name);
+			m_FuncPName1.Show(true); m_FuncPSlider1.Show(true); m_FuncPEBox1.Show(true);
+		} else {
+			m_FuncPName1.Show(false); m_FuncPSlider1.Show(false); m_FuncPEBox1.Show(false);
+		}
+
+		if (pCount >= 3) {
+			m_FuncPName2.SetText(m_funcParams[fParamId].Get(2).name);
+			m_FuncPName2.Show(true); m_FuncPSlider2.Show(true); m_FuncPEBox2.Show(true);
+		} else {
+			m_FuncPName2.Show(false); m_FuncPSlider2.Show(false); m_FuncPEBox2.Show(false);
+		}
+	}
+
 	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
 		Param1<ref ZBerryPlayerArray> playerListS;
 		ref ZBerryPlayerArray playerListC;
@@ -458,17 +512,25 @@ class ZomberryMenu extends UIScriptedMenu {
 			int playerId;
 			bool playerAdmin;
 			string playerName;
+			vector playerPos;
 
 			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
+			m_MapWidget.ClearUserMarks();
 
 			for ( int i = 0; i < playerListC.Count(); ++i ) {
 				playerId = playerListC.Get(i).m_PlayerID;
 				playerName = playerListC.Get(i).m_PlayerName;
 				playerAdmin = playerListC.Get(i).m_IsAdmin;
+				playerPos = playerListC.Get(i).m_PlayerPos;
 
 				m_PlayersList.AddItem(" " + i.ToString() + ": " + playerName, new Param2<int, bool>(playerId, playerAdmin), 0);
 
-				if (playerAdmin) m_PlayersList.SetItemColor( i, 0, 0xFF47EB00 );
+				if (playerAdmin) {
+					m_PlayersList.SetItemColor( i, 0, 0xFF47EB00 );
+					m_MapWidget.AddUserMark(playerPos, playerName, ARGB(255,71,235,0), "\\dz\\gear\\navigation\\data\\map_tree_ca.paa");
+				} else {
+					m_MapWidget.AddUserMark(playerPos, playerName, ARGB(255,85,170,255), "\\dz\\gear\\navigation\\data\\map_tree_ca.paa");
+				}
 			}
 
 			if ( m_lastSelPlayer != -1 && m_lastSelPlayer < playerListC.Count() ) m_PlayersList.SetItemColor( m_lastSelPlayer, 0, 0xFFFF751A );
