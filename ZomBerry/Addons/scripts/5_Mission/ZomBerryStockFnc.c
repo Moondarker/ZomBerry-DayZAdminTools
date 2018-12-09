@@ -54,7 +54,7 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	vector GetPosSafe(PlayerBase target) {
+	static vector GetPosSafe(PlayerBase target) {
 		if (!target.GetCommand_Vehicle()) {
 			return target.GetPosition();
 		} else {
@@ -62,7 +62,7 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	bool SetPosSafe(PlayerBase target, vector position) {
+	static bool SetPosSafe(PlayerBase target, vector position) {
 		if (!target.GetCommand_Vehicle()) {
 			target.SetPosition(position);
 			return true;
