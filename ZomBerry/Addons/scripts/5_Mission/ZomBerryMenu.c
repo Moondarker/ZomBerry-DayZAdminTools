@@ -471,7 +471,7 @@ class ZomberryMenu extends UIScriptedMenu {
 				if (playerAdmin) m_PlayersList.SetItemColor( i, 0, 0xFF47EB00 );
 			}
 
-			if ( m_lastSelPlayer != -1 ) m_PlayersList.SetItemColor( m_lastSelPlayer, 0, 0xFFFF751A );
+			if ( m_lastSelPlayer != -1 && m_lastSelPlayer < playerListC.Count() ) m_PlayersList.SetItemColor( m_lastSelPlayer, 0, 0xFFFF751A );
 		}
 	}
 
