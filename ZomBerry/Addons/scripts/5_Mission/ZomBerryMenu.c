@@ -504,7 +504,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		int sUpTime = 0;
 
 		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
-			if ( !ctx.Read( playerListS ) ) return;
+			if ( !ctx.Read( playerListS ) ) {
+				Message("Player sync data read error - possible version mismatch");
+				return;
+			}
 
 			playerListC = playerListS.param1;
 			sUpTime = Math.Round(playerListS.param2/1000);
