@@ -516,7 +516,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			string playerName;
 			vector playerPos;
 
-			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | " + Math.Floor(sUpTime / 60).ToString() + "h " + (sUpTime % 60).ToString() + "min | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
+			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
 			m_MapWidget.ClearUserMarks();
 
 			for ( int i = 0; i < playerListC.Count(); ++i ) {
