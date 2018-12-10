@@ -499,13 +499,18 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param1<ref ZBerryPlayerArray> playerListS;
+		Param2<ref ZBerryPlayerArray, int> playerListS;
 		ref ZBerryPlayerArray playerListC;
+		int sUpTime = 0;
 
 		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
-			if ( !ctx.Read( playerListS ) ) return;
+			if ( !ctx.Read( playerListS ) ) {
+				Message("Player sync data read error - possible version mismatch");
+				return;
+			}
 
 			playerListC = playerListS.param1;
+			sUpTime = Math.Round(playerListS.param2/1000);
 		}
 
 		if (layoutRoot.IsVisible()) {
@@ -514,7 +519,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			string playerName;
 			vector playerPos;
 
-			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
+			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
 			m_MapWidget.ClearUserMarks();
 
 			for ( int i = 0; i < playerListC.Count(); ++i ) {

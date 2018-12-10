@@ -43,6 +43,11 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Month", {1, 12, 1,}),
 			new ZBerryFuncParam("Year", {1970, 2119, 2019,}),
 		});
+		m_ZomberryCmdAPI.AddCommand("Set weather", "SetWeather", this, "OnServer", false, {
+			new ZBerryFuncParam("Fog", {0, 100, 0,}),
+			new ZBerryFuncParam("Overcast", {0, 100, 0,}),
+			new ZBerryFuncParam("Rain", {0, 100, 0,}),
+		});
 	}
 
 	void MessagePlayer(PlayerBase player, string msg) {
@@ -248,5 +253,58 @@ class ZomberryStockFunctions {
 		GetGame().GetWorld().GetDate(year, month, day, hour, minute);
 		GetGame().GetWorld().SetDate(year, month, day, 23, 0);
 		MessagePlayer(ZBGetPlayerById(adminId), "Time set to: 23:00 (it may take some time to effect!)");
+	}
+
+	void SetWeather( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+		int year, month, day, hour, minute;
+		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax; //Damn, a lot of variables...
+		Weather WMgr = GetGame().GetWeather();
+
+		WMgr.GetFog().GetForecastChangeLimits(fcMin, fcMax); //But why would I need to Ctrl+C - Ctrl+V so much code?
+		WMgr.GetFog().GetLimits(fnMin, fnMax);
+		WMgr.GetFog().GetForecastTimeLimits(ftMin, ftMax); //Because users are important, and they might have their own weather settings!
+
+		WMgr.GetFog().SetForecastChangeLimits(0, 1);
+		WMgr.GetFog().SetLimits(0, 1);
+		WMgr.GetFog().SetForecastTimeLimits(0, 3600);
+
+		WMgr.GetFog().Set((fValues[0]/100), 1, 360);
+		WMgr.GetFog().SetNextChange(0.01);
+		WMgr.GetFog().SetForecastChangeLimits(fcMin, fcMax);
+		WMgr.GetFog().SetLimits(fnMin, fnMax);
+		WMgr.GetFog().SetForecastTimeLimits(ftMin, ftMax);
+
+
+		WMgr.GetOvercast().GetForecastChangeLimits(fcMin, fcMax);
+		WMgr.GetOvercast().GetLimits(fnMin, fnMax);
+		WMgr.GetOvercast().GetForecastTimeLimits(ftMin, ftMax);
+
+		WMgr.GetOvercast().SetForecastChangeLimits(0, 1);
+		WMgr.GetOvercast().SetLimits(0, 1);
+		WMgr.GetOvercast().SetForecastTimeLimits(0, 3600);
+
+		WMgr.GetOvercast().Set((fValues[1]/100), 1, 360);
+		WMgr.GetOvercast().SetNextChange(0.01);
+		WMgr.GetOvercast().SetForecastChangeLimits(fcMin, fcMax);
+		WMgr.GetOvercast().SetLimits(fnMin, fnMax);
+		WMgr.GetOvercast().SetForecastTimeLimits(ftMin, ftMax);
+
+
+		WMgr.GetRain().GetForecastChangeLimits(fcMin, fcMax);
+		WMgr.GetRain().GetLimits(fnMin, fnMax);
+		WMgr.GetRain().GetForecastTimeLimits(ftMin, ftMax);
+
+		WMgr.GetRain().SetForecastChangeLimits(0, 1);
+		WMgr.GetRain().SetLimits(0, 1);
+		WMgr.GetRain().SetForecastTimeLimits(0, 3600);
+
+		WMgr.GetRain().Set((fValues[2]/100), 1, 360);
+		WMgr.GetRain().SetNextChange(0.01);
+		WMgr.SetStorm((fValues[1]*fValues[2])/10000, 0.7, 3600/((fValues[2]/2)+0.1));
+		WMgr.GetRain().SetForecastChangeLimits(fcMin, fcMax);
+		WMgr.GetRain().SetLimits(fnMin, fnMax);
+		WMgr.GetRain().SetForecastTimeLimits(ftMin, ftMax);
+
+		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
 	}
 };
