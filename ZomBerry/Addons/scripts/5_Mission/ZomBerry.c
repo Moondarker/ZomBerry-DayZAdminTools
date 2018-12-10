@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.4";
+static string g_zbryVer = "0.4.1";
 
 class ZomberryBase {
 	protected bool isAdmin = false;
@@ -121,7 +121,7 @@ class ZomberryBase {
 					playerListS.Insert(plyData);
 				}
 
-				GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param1<ref ZBerryPlayerArray> (playerListS), true, sender );
+				GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
 				Log( "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - player list sync");
 
 			} else {
@@ -134,7 +134,7 @@ class ZomberryBase {
 			plyData = new ZBerryPlayer(0, "Player" + plyName, true, player.GetPosition());
 
 			playerListS.Insert(plyData);
-			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param1<ref ZBerryPlayerArray> (playerListS), true, NULL );
+			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, NULL );
 			Log( "ZomBerryDbg", "Player list sync singleplayer");
 		}
 	}
