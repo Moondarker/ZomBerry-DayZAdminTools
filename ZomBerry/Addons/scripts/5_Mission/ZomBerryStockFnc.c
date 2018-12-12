@@ -244,6 +244,7 @@ class ZomberryStockFunctions {
 			m_spectatingList.Remove(listId);
 
 			GetGame().SelectPlayer(adminIdent, adminPly);
+			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
 		} else {
 			adminInput.OverrideMovementSpeed(true, 0);
 			adminInput.OverrideRaise(true, false);
@@ -253,6 +254,7 @@ class ZomberryStockFunctions {
 			m_spectatingList.Insert(adminId);
 
 			GetGame().SelectSpectator(adminIdent, "DayZSpectator", (adminPly.GetPosition() + Vector(0,1.75,0)));
+			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use Q/E to change camera speed");
 		}
 	}
 
