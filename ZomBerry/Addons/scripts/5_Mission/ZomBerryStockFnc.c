@@ -1,5 +1,6 @@
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
+	autoptr TIntArray m_spectatingList = new TIntArray;
 
 	void ZomberryStockFunctions() {
 		m_ZomberryCmdAPI = GetZomberryCmdAPI();
@@ -32,6 +33,7 @@ class ZomberryStockFunctions {
 		});
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
+		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, "OnServer", false, {
@@ -225,6 +227,33 @@ class ZomberryStockFunctions {
 		target.SetHealth("", "Blood", fValues[0]);
 
 		MessagePlayer(ZBGetPlayerById(adminId), "Target blood level was set to " + fValues[0]);
+	}
+
+	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
+		int listId = m_spectatingList.Find(adminId);
+		PlayerBase adminPly = ZBGetPlayerById(adminId);
+		PlayerIdentity adminIdent = adminPly.GetIdentity();
+		HumanInputController adminInput = adminPly.GetInputController();
+
+		if (listId != -1) {
+			adminInput.OverrideMovementSpeed(false, 0);
+			adminInput.OverrideRaise(false, false);
+			adminInput.OverrideAimChangeX(false, 0);
+			adminInput.OverrideAimChangeY(false, 0);
+
+			m_spectatingList.Remove(listId);
+
+			GetGame().SelectPlayer(adminIdent, adminPly);
+		} else {
+			adminInput.OverrideMovementSpeed(true, 0);
+			adminInput.OverrideRaise(true, false);
+			adminInput.OverrideAimChangeX(true, 0);
+			adminInput.OverrideAimChangeY(true, 0);
+
+			m_spectatingList.Insert(adminId);
+
+			GetGame().SelectSpectator(adminIdent, "DayZSpectator", (adminPly.GetPosition() + Vector(0,1.75,0)));
+		}
 	}
 
 	void SetTime( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
