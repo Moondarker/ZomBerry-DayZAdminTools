@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.4.1";
+static string g_zbryVer = "0.4.2";
 
 class ZomberryBase {
 	protected bool isAdmin = false;
