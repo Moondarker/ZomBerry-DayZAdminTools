@@ -53,8 +53,8 @@ class ZomberryLogger {
 
 		FileHandle logFile = OpenFile(tPath, FileMode.APPEND);
 		if (logFile != 0) {
-			Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
-			defaultIO = false;
+			//Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
+			//defaultIO = false; //Disabled until write to file will be fixed
 			file_path = tPath;
 			CloseFile(logFile);
 		} else {
