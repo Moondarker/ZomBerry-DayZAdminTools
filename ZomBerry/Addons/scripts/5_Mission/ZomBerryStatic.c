@@ -1,4 +1,3 @@
-static ref ZomberryBase g_ZomberryBase;
 static ref ZomberryCmdAPI g_ZomberryCmdAPI;
 
 /**
@@ -50,12 +49,36 @@ static PlayerBase ZBGetPlayerById (int plyId) {
 	return result;
 }
 
+/*
+static int CountHEXDigits(int n) {
+	int ret = -1;
+	int j = 0;
+	while(n != j) {
+		j = n;
+		n = n >> 4;
+		++ret;
+	}
+	Print ("HEX Digits: " + ret.ToString());
+	return ret;
+}
 
-//For internal purposes. Do not use unless REALLY needed!
-static ref ZomberryBase GetZomberryBase() {
-	if ( !g_ZomberryBase ) {
-		g_ZomberryBase = new ref ZomberryBase;
+static string IntToHex(int n) { //ToBeDebugged, doesn't work correctly
+	string hexAlphabet = "0123456789abcdef";
+	array<string> outArr = new array<string>;
+	string output = "";
+	int len = CountHEXDigits(n);
+	if (len & 1) {
+		outArr.Insert("0");
 	}
 
-	return g_ZomberryBase;
+	for (--len; len >= 0; --len) {
+		n = n >> 4;
+		outArr.InsertAt(hexAlphabet[(n & 0xf)], len);
+	}
+
+	for (int idx = 0; idx < outArr.Count(); ++idx) {
+		output = output + outArr[idx];
+	}
+	return output;
 }
+*/

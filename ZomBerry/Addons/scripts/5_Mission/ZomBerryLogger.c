@@ -44,7 +44,7 @@ class ZomberryLogger {
 			Log("ZomBerryLogger", "INFO: Will try to create log file ZB_log.txt in profile root: " + temp_path);
 			SetDir(temp_path);
 		}
-		Log("ZomBerryLogger", "WARN: All attempts to use custom log file failed, using script.log");
+		if (defaultIO) Log("ZomBerryLogger", "WARN: All attempts to use custom log file failed, using script.log");
 	}
 
 	private void SetDir(string fPath) {
@@ -56,6 +56,9 @@ class ZomberryLogger {
 			//Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
 			//defaultIO = false; //Disabled until write to file will be fixed
 			file_path = tPath;
+			FPrintln(logFile, "---------------------------------------------");
+			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
+			FPrintln(logFile, "");
 			CloseFile(logFile);
 		} else {
 			if (FileExist(tPath)) {

@@ -12,7 +12,7 @@ Don't forget to mention game version in issue description
 
 On server:
 * Copy file ```Vaker.bikey``` from ```ZomBerry\Keys``` into server ```keys``` folder
-* Copy file ```admins.cfg``` from ```ZomBerry\Config``` to server profile dir (alternatives: default dir, custom dir (passed through  
+* Copy file ```admins.cfg``` from ```ZomBerry\Config``` to ```[ServerProfilesFolder]\ZomBerry\``` subfolder. Default server profiles dir is ```%LocalAppData%\DayZ\``` (alternatives: default dir, custom dir (passed through  
 ```-zbryDir=path_to_dir``` launch option), mission dir (you might need to modify your mission ```init.c``` and add line   ```g_Game.SetMissionPath(path);``` in ```CreateCustomMission``` method)
 * Add your BIGUID into ```admins.cfg``` file (use new line for each admin entry, you can easily find BIGUID in server logs)
 

@@ -75,6 +75,13 @@ class ZomberryConfig {
 		ref TStringArray adminList = new TStringArray;
 		string temp_path;
 
+		if (GetCLIParam("zbryGiveAdminRightsToEveryone", temp_path)) {
+			if (temp_path == "true") {
+				ZomberryBase.Log( "ZomBerryConfig", "WARN: WARNING! EVERY PLAYER JOINED TO THIS SERVER WILL HAVE FULL ADMIN RIGHTS DUE TO '-zbryGiveAdminRightsToEveryone=true' LAUNCH PARAMETER!" );
+				return {};
+			}
+		}
+
 		if (!GetCLIParam("zbryDir", temp_path)) {
 			temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
 			temp_path.Replace("mission.c", "");

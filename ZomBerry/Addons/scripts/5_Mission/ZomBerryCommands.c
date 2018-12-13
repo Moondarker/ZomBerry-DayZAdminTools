@@ -53,7 +53,7 @@ class ZomberryCmdAPI {
 	}
 
 	void Debug() {
-		ZomberryBase.Log( "ZomBerryCmdAPIDbg", "Logging entire commands list:");
+		ZomberryBase.Log( "ZomBerryCmdAPIDbg", "Logging entire commands list to script.log");
 		for (int i = 0; i < m_oCategoryList.Count(); ++i) { //Full list breakdown
 			ref ZBerryCategory catEntry = m_oCategoryList.Get(i);
 			catEntry.Debug();
