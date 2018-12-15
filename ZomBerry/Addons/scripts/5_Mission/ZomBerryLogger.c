@@ -59,6 +59,7 @@ class ZomberryLogger {
 			FPrintln(logFile, "---------------------------------------------");
 			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
 			FPrintln(logFile, "");
+			FPrintln(logFile, "Will use script.log");
 			CloseFile(logFile);
 		} else {
 			if (FileExist(tPath)) {
