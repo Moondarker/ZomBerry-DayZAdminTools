@@ -1,7 +1,7 @@
 static string g_zbryVer = "0.5.0";
 
 class ZomberryBase {
-	string remoteZbryVer = "";
+	string remoteZbryVer = g_zbryVer;
 	protected bool isAdmin = false;
 	protected int instStage = 1;
 	protected autoptr TStringArray adminList = new TStringArray;
@@ -430,7 +430,7 @@ modded class MissionGameplay {
 			case ZomberryBase.GetConfig().GetMenuKey(): {
 				if (GetZomberryMenu().GetLayoutRoot().IsVisible()) { //TODO Fix: Might become NULL
 					UIMgr.HideScriptedMenu( GetZomberryMenu() );
-				} else if (!UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_INVENTORY) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && GetZomberryBase().IsAdmin()) {
+				} else if (!UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_INVENTORY) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && !UIMgr.IsMenuOpen(MENU_MAP) && GetZomberryBase().IsAdmin()) {
 					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
 				} else if (GetZomberryBase().remoteZbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
 					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + GetZomberryBase().remoteZbryVer, ""));
