@@ -109,8 +109,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		super.OnHide();
 		GetGame().GetInput().ResetGameFocus();
 
-		m_PlayersList.ClearItems();
-		m_FunctionsList.ClearItems();
 		m_lastSelFunc = -1;
 	}
 
@@ -140,7 +138,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			return true;
 		}
 		if ( w == m_FuncPSlider0 || w == m_FuncPSlider1 || w == m_FuncPSlider2 ) {
-			Param3<string, bool, int> funcData;
+			Param3<int, bool, int> funcData;
 			int fParamId = -1;
 			TIntArray minVs = {0, 0, 0,};
 			TIntArray maxVs = {1000, 1000, 1000,};
@@ -226,7 +224,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_FunctionsList ) {
-			Param3<string, bool, int> funcData;
+			Param3<int, bool, int> funcData;
 			string fncName;
 			int fParamId = -1;
 
@@ -343,18 +341,18 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_FunctionsList ) {
-			Param2<string, bool> funcData;
+			Param2<int, bool> funcData;
 
 			int targetId;
-			string funcName;
+			int funcId;
 
 			int selectedFuncRow = m_FunctionsList.GetSelectedRow();
 			if ( selectedFuncRow == -1 ) return true;
 
 			m_FunctionsList.GetItemData( selectedFuncRow, 0, funcData );
-			funcName = funcData.param1;
+			funcId = funcData.param1;
 
-			if (funcName == "Category") return true;
+			if (funcId == -1) return true;
 
 			if ( funcData.param2 ) {
 				if ( m_lastSelPlayer == -1 ) { Message("No player selected"); return true; }
@@ -370,7 +368,7 @@ class ZomberryMenu extends UIScriptedMenu {
 				}
 			}
 
-			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< string, int, int, vector, autoptr TIntArray >( funcName, adminId, targetId, GetCursorPos(), m_lastFuncParams ), true );
+			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, targetId, GetCursorPos(), m_lastFuncParams ), true );
 		}
 
 		if ( w == m_ObjectsList ) {
@@ -424,7 +422,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	private TIntArray NormalizeFuncValues(TIntArray abNormalValues) {
-		Param3<string, bool, int> funcData;
+		Param3<int, bool, int> funcData;
 		int minV, maxV;
 		TIntArray normalValues = {0, 0, 0,};
 		int fParamId = -1;
@@ -449,7 +447,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	private void UpdateFuncSliders(int p1, int p2, int p3) {
-		Param3<string, bool, int> funcData;
+		Param3<int, bool, int> funcData;
 		TIntArray minVs = {0, 0, 0,};
 		TIntArray maxVs = {1000, 1000, 1000,};
 		int fParamId = -1;
@@ -509,6 +507,7 @@ class ZomberryMenu extends UIScriptedMenu {
 				return;
 			}
 
+			m_PlayersList.ClearItems();
 			playerListC = playerListS.param1;
 			sUpTime = Math.Round(playerListS.param2/1000);
 		}
@@ -549,18 +548,18 @@ class ZomberryMenu extends UIScriptedMenu {
 		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
 			if ( !ctx.Read( catListS ) ) return;
 
+			m_FunctionsList.ClearItems();
 			catList = catListS.param1;
 			m_funcParams.Clear();
 		}
 
 		int lastId = 0;
-		string entryName = "";
+		int entryId;
 
 		for (int i = 0; i < catList.Count(); ++i) {
 			ref ZBerryCategory singleCat = catList.Get(i);
 
-			entryName = singleCat.GetName();
-			m_FunctionsList.AddItem( "==== "+entryName+" ====", new Param3<string, bool, int>("Category", false, -1), 0, lastId );
+			m_FunctionsList.AddItem( "==== "+singleCat.GetName()+" ====", new Param3<int, bool, int>(-1, false, -1), 0, lastId );
 
 			++lastId;
 
@@ -570,11 +569,11 @@ class ZomberryMenu extends UIScriptedMenu {
 			for (int j = 0; j < funcArray.Count(); ++j) {
 				ref ZBerryFunction funcData;
 				funcData = funcArray.Get(j);
-				entryName = funcData.GetName();
+				entryId = funcData.GetId();
 
 				int fParamId = m_funcParams.Insert(funcData.GetParams());
 
-				m_FunctionsList.AddItem( funcData.GetDisplayName(), new Param3<string, bool, int>(entryName, funcData.IsTargetRequired(), fParamId), 0, lastId );
+				m_FunctionsList.AddItem( funcData.GetDisplayName(), new Param3<int, bool, int>(entryId, funcData.IsTargetRequired(), fParamId), 0, lastId );
 				m_FunctionsList.SetItemColor(lastId, 0, funcData.GetColor());
 
 				++lastId;

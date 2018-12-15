@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.4.3";
+static string g_zbryVer = "0.5.0";
 
 class ZomberryBase {
 	protected bool isAdmin = false;
@@ -169,29 +169,29 @@ class ZomberryBase {
 	}
 
 	void ExecuteCommand( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param5< string, int, int, vector, autoptr TIntArray > funcParam; //Function name, Admin Id, Target Id, Admin cursor, Function params
-		Param4< string, int, int, vector > altFuncParam; //Backwards compatibility
+		Param5< int, int, int, vector, autoptr TIntArray > funcParam; //Function id, Admin Id, Target Id, Admin cursor, Function params
+		Param5< string, int, int, vector, autoptr TIntArray > oldFuncParam; //Backwards compatibility
 		if ( !ctx.Read( funcParam ) ) return;
 
-		Log( "ZomBerryDebug", "Params: " + funcParam.param5);
+		oldFuncParam = new Param5< string, int, int, vector, autoptr TIntArray >(GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), funcParam.param2, funcParam.param3, funcParam.param4, funcParam.param5 );
 
 		int targetId = funcParam.param3;
 		if ( type == CallType.Server && GetGame().IsServer() ) {
 			PlayerIdentity targetIdent = ZBGetPlayerById(targetId).GetIdentity();
 			if (IsAdmin(sender.GetId())) {
-				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), funcParam.param1, NULL, funcParam );
+				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, oldFuncParam );
 				if (targetId != funcParam.param2) {
-					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + funcParam.param1 + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
 				} else {
-					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + funcParam.param1);
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName());
 				}
 			} else {
-				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute " + funcParam.param1 + " but IS NOT ADMIN");
+				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " but IS NOT ADMIN");
 			}
 		} else {
 			if (!GetGame().IsMultiplayer()) {
 				Log( "ZomBerryAdmin", "Executed " + funcParam.param1 + " (singleplayer)");
-				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), funcParam.param1, NULL, funcParam );
+				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, funcParam );
 			}
 		}
 	}

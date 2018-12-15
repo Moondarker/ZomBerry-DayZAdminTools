@@ -1,5 +1,6 @@
 class ZomberryCmdAPI {
 	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
+	protected int m_lastFuncId = 0;
 
 	void ZomberryCmdAPI() {
 
@@ -19,16 +20,16 @@ class ZomberryCmdAPI {
 
 	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, autoptr ZBerryFuncParamArray funcParams = NULL) {
 		if (m_oCategoryList.Contains(catName)) {
-			if (GetFunc(funcName) != NULL) {
-				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Cannot add function " + funcName + ", function with same name already exists.");
-				return;
+			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
+				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Adding " + funcName + ", but function with same name already exists.");
 			}
 
 			int funcColor = m_oCategoryList.GetByName(catName).GetColor();
 
 			if (!funcParams) funcParams = new ZBerryFuncParamArray;
 
-			ref ZBerryFunction funcData = new ZBerryFunction(dispName, funcName, catName, instance, funcColor, onTarget, funcParams	);
+			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, funcParams);
+			++m_lastFuncId;
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);
 
@@ -38,10 +39,10 @@ class ZomberryCmdAPI {
 		}
 	}
 
-	ZBerryFunction GetFunc(string funcName) {
+	ZBerryFunction GetFunc(int funcId) {
 		for (int i = 0; i < m_oCategoryList.Count(); ++i) {
-			if (m_oCategoryList.Get(i).IsAvailable(funcName)) {
-				return m_oCategoryList.Get(i).Get(funcName);
+			if (m_oCategoryList.Get(i).IsAvailable(funcId)) {
+				return m_oCategoryList.Get(i).Get(funcId);
 			}
 		}
 
