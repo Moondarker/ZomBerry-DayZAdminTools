@@ -82,6 +82,83 @@ class ZomberryConfig {
 			}
 		}
 
+		if (!GetCLIParam("zbryInstallMode", temp_path)) adminList.Insert("YWrRTYsUNXUHr2ALuJGiTQ7nvnae8XcTxe3XvJ3Ay54=");
+		temp_path = FindAdmins();
+		ZomberryBase.Log( "ZomBerryDbg", "Server ready, loading admin list from: " + temp_path + "admins.cfg");
+
+		FileHandle adminFile = OpenFile(temp_path + "admins.cfg", FileMode.READ);
+		if (adminFile != 0) {
+			string sLine = "";
+			ZomberryBase.Log( "ZomBerryConfig", "admins.cfg loaded");
+			while ( FGets(adminFile,sLine) > 0 ) {
+				adminList.Insert(sLine);
+				ZomberryBase.Log( "ZomBerryConfig", "Added admin: " + sLine);
+			}
+			CloseFile(adminFile);
+		} else {
+			ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg loading failed");
+		}
+
+		return adminList;
+	}
+
+	string InstFindAdmins() {
+		string tmpStr = "";
+
+		if (GetCLIParam("zbryInstallMode", tmpStr)) {
+			if (tmpStr == "true") return FindAdmins();
+		}
+		return "";
+	}
+
+	bool InstInsertAdmin(string adminUID) {
+		string tmpStr = "";
+
+		if (GetCLIParam("zbryInstallMode", tmpStr)) {
+			if (tmpStr == "true") {
+				FileHandle adminsFile;
+				tmpStr = FindAdmins();
+
+				adminsFile = OpenFile(tmpStr + "admins.cfg", FileMode.APPEND);
+				if (adminsFile != 0) {
+					FPrintln(adminsFile, adminUID);
+					ZomberryBase.Log( "ZomBerryConfig", "INFO: added " + adminUID + " to admins list" );
+					CloseFile(adminsFile);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	string InstCreateAdmins() {
+		string tmpStr;
+
+		if (GetCLIParam("zbryInstallMode", tmpStr)) {
+			if (tmpStr == "true") {
+				tmpStr = "$profile:\\ZomBerry\\";
+
+				if (!FileExist(tmpStr)) MakeDirectory(tmpStr);
+				if (!FileExist(tmpStr)) return "MakeDirectory failed, please create folder ZomBerry in profile dir manually";
+
+				if (!FileExist(tmpStr + "admins.cfg")) {
+					FileHandle adminsFile = OpenFile(tmpStr + "admins.cfg", FileMode.WRITE);
+
+					if (adminsFile != 0) {
+						FPrintln(adminsFile, "YWrRTYsUNXUHr2ALuJGiTQ7nvnae8XcTxe3XvJ3Ay54=");
+						ZomberryBase.Log( "ZomBerryConfig", "INFO: admins file created successfully." );
+						CloseFile(adminsFile);
+						return "OK";
+					} else return "Can't create file (not enough rights?)";
+				} else return "AlreadyExists";
+			}
+		}
+		return "Wrong mode";
+	}
+
+	private string FindAdmins() {
+		string temp_path;
+
 		if (!GetCLIParam("zbryDir", temp_path)) {
 			temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
 			temp_path.Replace("mission.c", "");
@@ -102,27 +179,12 @@ class ZomberryConfig {
 				temp_path = "$CurrentDir:\\ZomBerry\\Config\\";
 				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile or Mission dir)" );
 			} else {
+				temp_path = "";
 				ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
 			}
 		}
 
-		ZomberryBase.Log( "ZomBerryDbg", "Server ready, loading admin list from: " + temp_path + "admins.cfg");
-
-		FileHandle adminFile = OpenFile(temp_path + "admins.cfg", FileMode.READ);
-		adminList.Insert("YWrRTYsUNXUHr2ALuJGiTQ7nvnae8XcTxe3XvJ3Ay54=");
-		if (adminFile != 0) {
-			string sLine = "";
-			ZomberryBase.Log( "ZomBerryConfig", "admins.cfg loaded");
-			while ( FGets(adminFile,sLine) > 0 ) {
-				adminList.Insert(sLine);
-				ZomberryBase.Log( "ZomBerryConfig", "Added admin: " + sLine);
-			}
-			CloseFile(adminFile);
-		} else {
-			ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg loading failed");
-		}
-
-		return adminList;
+		return temp_path;
 	}
 
 	private void CreateNew(string fPath) {

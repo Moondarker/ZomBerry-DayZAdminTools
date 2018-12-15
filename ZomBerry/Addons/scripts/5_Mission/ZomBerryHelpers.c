@@ -7,12 +7,16 @@ class ZBerryPlayer {
 	string m_PlayerName;
 	bool m_IsAdmin;
 	vector m_PlayerPos;
+	int m_PlayerHealth;
+	int m_PlayerBlood;
 
-	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos ) {
+	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld ) {
 		m_PlayerID = uid;
 		m_PlayerName = plyName;
 		m_IsAdmin = isAdmin;
 		m_PlayerPos = plyPos;
+		m_PlayerHealth = plyHP;
+		m_PlayerBlood = plyBld;
 	}
 }
 

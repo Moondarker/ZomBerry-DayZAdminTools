@@ -57,7 +57,7 @@ PanelWidgetClass AdminMenu {
       TextListboxWidgetClass PlayerList {
        color 0 0 0 0.7843
        position 0 10
-       size 350 0.99
+       size 350 0.9
        hexactpos 1
        vexactpos 1
        hexactsize 1
@@ -100,7 +100,7 @@ PanelWidgetClass AdminMenu {
          text "Spawn Menu"
          font "gui/fonts/Metron16"
         }
-		ButtonWidgetClass MapButton {
+        ButtonWidgetClass MapButton {
          color 0.3255 0.3255 0.3255 0.7843
          position 330 10
          size 150 36
@@ -449,7 +449,7 @@ PanelWidgetClass AdminMenu {
            hexactsize 0
            vexactsize 0
           }
-		  TextWidgetClass MapHint {
+          TextWidgetClass MapHint {
            position 0 0.0118
            size 480 24
            halign center_ref
@@ -484,6 +484,39 @@ PanelWidgetClass AdminMenu {
          }
         }
        }
+      }
+      TextWidgetClass PlayerHealth {
+       position 0 0.045
+       size 260 0.045
+       valign bottom_ref
+       hexactpos 1
+       vexactpos 0
+       hexactsize 1
+       vexactsize 0
+       "text valign" center
+      }
+      TextWidgetClass PlayerBlood {
+       position 0 0
+       size 260 0.045
+       valign bottom_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 0
+       "text valign" center
+      }
+      ButtonWidgetClass PlayersRefresh {
+       color 0.3255 0.3255 0.3255 0.7843
+       position 260 0
+       size 90 0.09
+       valign bottom_ref
+       hexactpos 1
+       vexactpos 0
+       hexactsize 1
+       vexactsize 0
+       style Colorable
+       text "Update"
+	   font "gui/fonts/Metron16"
       }
      }
     }
