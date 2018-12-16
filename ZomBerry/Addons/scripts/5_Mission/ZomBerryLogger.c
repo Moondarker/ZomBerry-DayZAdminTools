@@ -53,12 +53,13 @@ class ZomberryLogger {
 
 		FileHandle logFile = OpenFile(tPath, FileMode.APPEND);
 		if (logFile != 0) {
-			Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
-			defaultIO = false;
+			//Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
+			//defaultIO = false; //Disabled until write to file will be fixed
 			file_path = tPath;
 			FPrintln(logFile, "---------------------------------------------");
 			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
 			FPrintln(logFile, "");
+			FPrintln(logFile, "Will use script.log");
 			CloseFile(logFile);
 		} else {
 			if (FileExist(tPath)) {

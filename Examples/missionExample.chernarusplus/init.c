@@ -6,10 +6,10 @@ class DayZSurvival: MissionServer
 	* Please note that in customised missions this part might be placed in different file using "include" macros. Be careful!
 	*/
 	void DayZSurvival() {
-		GetZomberryCmdAPI().AddCategory("MyCustomCategory", 0xFFFFF44F); //Category name, color #FFF44F
-		GetZomberryCmdAPI().AddCommand("Bloodbath", "BloodBathFnc", this, "MyCustomCategory", false); //Command name, function name, class instance, category name, target required
-		GetZomberryCmdAPI().AddCommand("Set blood (all players)", "SetBloodAll", this, "MyCustomCategory", false, {
-			new ZBerryFuncParam("Blood", {1, 5000, 5000,}),
+		GetZomberryCmdAPI().AddCategory("ServerCustomCategory", 0xFFFFF44F); //Category name, color #FFF44F
+		GetZomberryCmdAPI().AddCommand("Cast bloodbath", "BloodBathFnc", this, "ServerCustomCategory", false); //Command name, function name, class instance, category name, target required
+		GetZomberryCmdAPI().AddCommand("Heal (all players)", "HealAll", this, "ServerCustomCategory", false, {
+			new ZBerryFuncParam("D-Size", {1, 5000, 1337,}),
 		});
 	}
 
@@ -17,26 +17,36 @@ class DayZSurvival: MissionServer
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 		Man temp_player;
+		int rndRoll = Math.RandomInt(0, 5001);
 
-		for (int i = 0; i < players.Count(); ++i) {
-			temp_player = players.Get(i);
-			temp_player.SetHealth(0);
-		}
-
-		SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Everybody is dead.");
+		if (rndRoll == 1337) {
+			for (int i = 0; i < players.Count(); ++i) {
+				temp_player = players.Get(i);
+				temp_player.SetHealth(0);
+			}
+			SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] You've successfully killed everyone and sacrificed yourself.");
+		} else SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Not enough mana!");
 	}
 
-	void SetBloodAll( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) { //Function name, admin and target session id, admin cursor pos, param values
+	void HealAll( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
-		Man temp_player;
+		BleedingSourcesManagerServer BSMgr;
+		PlayerBase target;
 
 		for (int i = 0; i < players.Count(); ++i) {
-			temp_player = players.Get(i);
-			temp_player.SetHealth("", "Blood", fValues[0]);
+			target = ZBGetPlayerById(targetId);
+			BSMgr = target.GetBleedingManagerServer();
+
+			target.SetHealth(target.GetMaxHealth());
+			target.SetHealth("", "Blood", target.GetMaxHealth("", "Blood"));
+			target.GetStatStamina().Set(1000);
+			target.GetStatEnergy().Set(1000);
+			target.GetStatWater().Set(1000);
+			BSMgr.RemoveAllSources();
 		}
 
-		SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Everybody's blood level was set to " + fValues[0]);
+		SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Healed everyone. D-Size = " + fValues[0].ToString());
 	}
 
 	void SendMsg(PlayerBase player, string msg) {
@@ -47,8 +57,11 @@ class DayZSurvival: MissionServer
 
 	void SetRandomHealth(EntityAI itemEnt)
 	{
-		int rndHlt = Math.RandomInt(40,100);
-		itemEnt.SetHealth("","",rndHlt);
+		if ( itemEnt )
+		{
+			int rndHlt = Math.RandomInt(55,100);
+			itemEnt.SetHealth("","",rndHlt);
+		}
 	}
 
 	override PlayerBase CreateCharacter(PlayerIdentity identity, vector pos, ParamsReadContext ctx, string characterName)
@@ -64,20 +77,53 @@ class DayZSurvival: MissionServer
 
 	override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
 	{
-		TStringArray tops = {"Hoodie_Blue","Hoodie_Black","Hoodie_Brown","Hoodie_Green","Hoodie_Grey","Hoodie_Red"};
-		TStringArray pants = {"Jeans_Black","Jeans_BlueDark","Jeans_Blue","Jeans_Brown","Jeans_Green","Jeans_Grey","CanvasPants_Beige","CanvasPants_Blue","CanvasPants_Grey"};
-		TStringArray shoes = {"AthleticShoes_Black","AthleticShoes_Blue","AthleticShoes_Brown","AthleticShoes_Green","AthleticShoes_Grey"};
+/*
+		player.RemoveAllItems();
 
+		EntityAI item = player.GetInventory().CreateInInventory(topsMissionArray.GetRandomElement());
+		EntityAI item2 = player.GetInventory().CreateInInventory(pantsArray.GetRandomElement());
+		EntityAI item3 = player.GetInventory().CreateInInventory(shoesArray.GetRandomElement());
+*/
+		EntityAI itemTop;
 		EntityAI itemEnt;
 		ItemBase itemBs;
+		float rand;
 
-		player.GetInventory().CreateInInventory(tops.GetRandomElement());
-		player.GetInventory().CreateInInventory(pants.GetRandomElement());
-		player.GetInventory().CreateInInventory(shoes.GetRandomElement());
+		itemTop = player.FindAttachmentBySlotName("Body");
 
-		itemEnt = player.GetInventory().CreateInInventory("Rag");
-		itemBs = ItemBase.Cast(itemEnt);
+		if ( itemTop )
+		{
+			itemEnt = itemTop.GetInventory().CreateInInventory("Rag");
+			if ( Class.CastTo(itemBs, itemEnt ) )
 		itemBs.SetQuantity(4);
+
+			SetRandomHealth(itemEnt);
+
+			itemEnt = itemTop.GetInventory().CreateInInventory("RoadFlare");
+			SetRandomHealth(itemEnt);
+
+			itemEnt = itemTop.GetInventory().CreateInInventory("StoneKnife");
+			SetRandomHealth(itemEnt);
+		}
+
+		rand = Math.RandomFloatInclusive(0.0, 1.0);
+		if ( rand < 0.25 )
+			itemEnt = player.GetInventory().CreateInInventory("SodaCan_Cola");
+		else if ( rand > 0.75 )
+			itemEnt = player.GetInventory().CreateInInventory("SodaCan_Spite");
+		else
+			itemEnt = player.GetInventory().CreateInInventory("SodaCan_Pipsi");
+
+		SetRandomHealth(itemEnt);
+
+		rand = Math.RandomFloatInclusive(0.0, 1.0);
+		if ( rand < 0.35 )
+			itemEnt = player.GetInventory().CreateInInventory("Apple");
+		else if ( rand > 0.65 )
+			itemEnt = player.GetInventory().CreateInInventory("Pear");
+		else
+			itemEnt = player.GetInventory().CreateInInventory("Plum");
+
 		SetRandomHealth(itemEnt);
 	}
 };
@@ -94,28 +140,34 @@ Mission CreateCustomMission(string path)
 
 void main()
 {
+	//INIT WEATHER BEFORE ECONOMY INIT------------------------
+	Weather weather = g_Game.GetWeather();
+
+    weather.MissionWeather(false);    // false = use weather controller from Weather.c
+
+    weather.GetOvercast().Set( Math.RandomFloatInclusive(0.4, 0.6), 1, 0);
+    weather.GetRain().Set( 0, 0, 1);
+    weather.GetFog().Set( Math.RandomFloatInclusive(0.05, 0.1), 1, 0);
+
+	//INIT ECONOMY--------------------------------------
 	Hive ce = CreateHive();
 	if ( ce )
 		ce.InitOffline();
 
-	Weather weather = g_Game.GetWeather();
+	//DATE RESET AFTER ECONOMY INIT-------------------------
+	int year;
+	int month;
+	int day;
+	int hour;
+	int minute;
 
-	weather.GetOvercast().SetLimits( 0.0 , 1.0 );
-	weather.GetRain().SetLimits( 0.0 , 1.0 );
-	weather.GetFog().SetLimits( 0.0 , 0.25 );
+	GetGame().GetWorld().GetDate(year, month, day, hour, minute);
 
-	weather.GetOvercast().SetForecastChangeLimits( 0.0, 0.2 );
-	weather.GetRain().SetForecastChangeLimits( 0.0, 0.1 );
-	weather.GetFog().SetForecastChangeLimits( 0.15, 0.45 );
+    if (((month <= 9) && (day < 20)) || ((month >= 10) && (day > 20)))
+    {
+        month = 9;
+        day = 20;
 
-	weather.GetOvercast().SetForecastTimeLimits( 1800 , 1800 );
-	weather.GetRain().SetForecastTimeLimits( 600 , 600 );
-	weather.GetFog().SetForecastTimeLimits( 1800 , 1800 );
-
-	weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
-	weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
-	weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
-
-	weather.SetWindMaximumSpeed(30);
-	weather.SetWindFunctionParams(0.1, 1.0, 50);
+		GetGame().GetWorld().SetDate(year, month, day, hour, minute);
+	}
 }

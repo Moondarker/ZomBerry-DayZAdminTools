@@ -7,12 +7,16 @@ class ZBerryPlayer {
 	string m_PlayerName;
 	bool m_IsAdmin;
 	vector m_PlayerPos;
+	int m_PlayerHealth;
+	int m_PlayerBlood;
 
-	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos ) {
+	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld ) {
 		m_PlayerID = uid;
 		m_PlayerName = plyName;
 		m_IsAdmin = isAdmin;
 		m_PlayerPos = plyPos;
+		m_PlayerHealth = plyHP;
+		m_PlayerBlood = plyBld;
 	}
 }
 
@@ -64,9 +68,9 @@ class ZBerryCategory {
 		m_FunctionArray.Insert(newFunc);
 	}
 
-	bool IsAvailable(string funcName) {
+	bool IsAvailable(int funcId) {
 		for (int i = 0; i < m_FunctionArray.Count(); ++i) {
-			if (m_FunctionArray.Get(i).GetName() == funcName) {
+			if (m_FunctionArray.Get(i).GetId() == funcId) {
 				return true;
 			}
 		}
@@ -74,7 +78,17 @@ class ZBerryCategory {
 		return false;
 	}
 
-	ref ZBerryFunction Get(string funcName) {
+	ref ZBerryFunction Get(int funcId) {
+		for (int i = 0; i < m_FunctionArray.Count(); ++i) {
+			if (m_FunctionArray.Get(i).GetId() == funcId) {
+				return m_FunctionArray.Get(i);
+			}
+		}
+
+		return NULL;
+	}
+
+	ref ZBerryFunction GetByName(string funcName) {
 		for (int i = 0; i < m_FunctionArray.Count(); ++i) {
 			if (m_FunctionArray.Get(i).GetName() == funcName) {
 				return m_FunctionArray.Get(i);
@@ -101,6 +115,7 @@ class ZBerryCategory {
 };
 
 class ZBerryFunction {
+	protected int m_FunctionId;
 	protected string m_DisplayName;
 	protected string m_ActualName;
 	protected string m_CategoryName;
@@ -109,7 +124,8 @@ class ZBerryFunction {
 	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
 
-	void ZBerryFunction( string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ref ZBerryFuncParamArray fParam ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ref ZBerryFuncParamArray fParam ) {
+		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
 		m_CategoryName = cName;
@@ -117,6 +133,10 @@ class ZBerryFunction {
         m_DisplayColor = dColor;
 		m_OnTarget = tNeeded;
 		m_Parameters = fParam;
+    }
+
+	int GetId() {
+        return m_FunctionId;
     }
 
 	string GetDisplayName() {
