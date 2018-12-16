@@ -168,10 +168,6 @@ class ZomberryConfig {
 		}
 
 		if (!FileExist(temp_path + "admins.cfg")) {
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: admins.cfg was not found in mission dir OR you're missing some strings in mission init.c" );
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: Please add following line in 'Mission CreateCustomMission' section (between { and }, but before whole 'return' line)" );
-			ZomberryBase.Log( "ZomBerryConfig", "g_Game.SetMissionPath(path); //ZomBerry set path line, DO NOT COPY ANYTHING EXCEPT 'g_Game.SetMissionPath(path);'" );
-
 			if (FileExist("$profile:\\ZomBerry\\admins.cfg")) {
 				temp_path = "$profile:\\ZomBerry\\";
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
@@ -180,6 +176,11 @@ class ZomberryConfig {
 				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile or Mission dir)" );
 			} else {
 				temp_path = "";
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: In case you wanted to use admins.cfg from mission directory:" );
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: admins.cfg was not found in mission dir OR you're missing some strings in mission init.c" );
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Please add following line in 'Mission CreateCustomMission' section (between { and }, but before whole 'return' line)" );
+				ZomberryBase.Log( "ZomBerryConfig", "g_Game.SetMissionPath(path); //ZomBerry set path line, DO NOT COPY ANYTHING EXCEPT 'g_Game.SetMissionPath(path);'" );
+				ZomberryBase.Log( "ZomBerryConfig", "" );
 				ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
 			}
 		}
