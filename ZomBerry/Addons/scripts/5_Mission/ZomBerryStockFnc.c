@@ -12,6 +12,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
+		//m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false); //Not ready yet
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
 		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
@@ -113,6 +114,43 @@ class ZomberryStockFunctions {
 		BSMgr.RemoveAllSources();
 
 		MessagePlayer(ZBGetPlayerById(adminId), "Healed target");
+	}
+
+	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase target = ZBGetPlayerById(targetId);
+		InventoryItem targetItem = target.GetItemInHands();
+
+		if (!targetItem) {
+			MessagePlayer(ZBGetPlayerById(adminId), "No item in target's hands");
+			return;
+		}
+
+		MessagePlayer(ZBGetPlayerById(adminId), "Item: " + targetItem.GetDisplayName() + ", start health: " + targetItem.GetHealth().ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
+		targetItem.AddHealth("", "", (targetItem.GetMaxHealth() - targetItem.GetHealth())); //SetHealth doesn't update HealthLevel
+		targetItem.ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), targetItem.GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
+		ItemBase.Cast(targetItem).SetQuantityMax();
+		MessagePlayer(ZBGetPlayerById(adminId), "New health: " + targetItem.GetHealth().ToString() + " out of " + targetItem.GetMaxHealth("", "").ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
+
+		for (int i = 0; i < targetItem.GetInventory().AttachmentCount(); ++i) {
+			EntityAI attachment = targetItem.GetInventory().GetAttachmentFromIndex(i);
+			attachment.AddHealth("", "", (attachment.GetMaxHealth() - attachment.GetHealth()));
+			attachment.ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), attachment.GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
+			if (attachment.IsMagazine()) Magazine.Cast(attachment).ServerSetAmmoMax();
+		}
+
+		array<EntityAI> subItems = new array<EntityAI>;
+		if (targetItem.GetInventory().EnumerateInventory(InventoryTraversalType.LEVELORDER, subItems)) {
+			for(int j = 0; j < subItems.Count(); ++j) {
+				if (!subItems.Get(j)) continue;
+				subItems.Get(j).AddHealth("", "", (subItems.Get(j).GetMaxHealth() - subItems.Get(j).GetHealth()));
+				subItems.Get(j).ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), subItems.Get(j).GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
+				ItemBase.Cast(subItems.Get(j)).SetQuantityMax();
+			}
+		}
+
+		targetItem.SetSynchDirty();
+
+		MessagePlayer(ZBGetPlayerById(adminId), "Repaired item to the best condition it can achieve");
 	}
 
 	void RefuelAndRepair( string funcName, int adminId, int targetId, vector cursor ) {
