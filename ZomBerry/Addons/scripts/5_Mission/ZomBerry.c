@@ -394,6 +394,7 @@ modded class MissionServer {
 };
 
 modded class MissionGameplay {
+	bool m_plyWarned = false;
 	ref ZomberryBase m_ZomberryBase;
 	ref ZomberryMenu m_ZomberryMenu;
 
@@ -442,6 +443,10 @@ modded class MissionGameplay {
 					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer, ""));
 				} else if (r_zbryVer.Contains("CFGFailed")) {
 					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script.log and FAQ", ""));
+				}
+				if (g_zbryVer.Substring(0, 3).ToFloat() > r_zbryVer.Substring(0, 3).ToFloat() && !m_plyWarned) {
+					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+", ""));
+					m_plyWarned = true;
 				}
 				break;
 			}
