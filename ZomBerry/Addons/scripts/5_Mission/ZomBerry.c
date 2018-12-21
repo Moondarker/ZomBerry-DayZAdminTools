@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.5.1";
+static string g_zbryVer = "0.5.2";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
