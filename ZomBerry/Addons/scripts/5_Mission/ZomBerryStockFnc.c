@@ -1,6 +1,7 @@
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
+	autoptr TIntStringMap m_deleteList = new TIntStringMap;
 
 	void ZomberryStockFunctions() {
 		m_ZomberryCmdAPI = GetZomberryCmdAPI();
@@ -51,6 +52,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Overcast", {0, 100, 0,}),
 			new ZBerryFuncParam("Rain", {0, 100, 0,}),
 		});
+		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
 	}
 
 	void MessagePlayer(PlayerBase player, string msg) {
@@ -178,6 +180,8 @@ class ZomberryStockFunctions {
 					EntityAI attachment = EntityAI.Cast( GetGame().CreateObject(attachments[m], vector.Zero, false, false, false) );
 
 					ZomberryBase.Log( "ZomberryFncDbg", "RefuelAndRepair: trying " + attachments[m]);
+
+					if (!attachment) continue;
 					while (toBeFixed.GetInventory().CanAddAttachment(attachment)) { //TOBEFIXED: Known possible 'NULL pointer to instance'
 						//Print("[ZomberryFnc] RefuelAndRepair: attached " + attachments[m]);
 						toBeFixed.GetInventory().CreateAttachment(attachments[m]);
@@ -375,5 +379,38 @@ class ZomberryStockFunctions {
 		WMgr.GetRain().SetForecastTimeLimits(ftMin, ftMax);
 
 		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+	}
+
+	void DeleteObj( string funcName, int adminId, int targetId, vector cursor ) {
+		ref array<Object> nearest_objects = new array<Object>;
+		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
+		Object toBeDeleted;
+
+		GetGame().GetObjectsAtPosition3D(cursor, 1.5, nearest_objects, proxy_cargos);
+		if (nearest_objects.Count() < 1) return;
+		toBeDeleted = NULL;
+
+		for (int i = 0; i < nearest_objects.Count(); ++i) {
+			string tempObjId = nearest_objects.Get(i).ToString(); tempObjId.ToLower();
+			if (nearest_objects.Get(i).IsKindOf("SurvivorBase") || tempObjId.Contains("static")) continue;
+			if (nearest_objects.Get(i).IsWell() || nearest_objects.Get(i).IsBush()) continue;
+			if (nearest_objects.Get(i).IsRock() || nearest_objects.Get(i).IsTree()) continue;
+
+			toBeDeleted = nearest_objects.Get(i);
+			break;
+		}
+		if (!toBeDeleted) return;
+
+		if (!m_deleteList.Contains(adminId)) {
+			m_deleteList.Insert(adminId, toBeDeleted.ToString());
+			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
+		} else if (m_deleteList.Get(adminId) != toBeDeleted.ToString()) {
+			m_deleteList.Set(adminId, toBeDeleted.ToString());
+			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
+		} else if (m_deleteList.Get(adminId) == toBeDeleted.ToString()) {
+			MessagePlayer(ZBGetPlayerById(adminId), toBeDeleted.ToString() + " annihilated.");
+			GetGame().ObjectDelete(toBeDeleted);
+			m_deleteList.Remove(adminId);
+		}
 	}
 };
