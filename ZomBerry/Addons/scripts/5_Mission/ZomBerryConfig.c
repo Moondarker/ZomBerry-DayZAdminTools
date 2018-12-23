@@ -218,7 +218,7 @@ class ZomberryConfig {
 
 			ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file not found, trying to create new one in " + dPath + "ZomBerryKeybinds.bin" );
 
-			keyBindList.Insert("TPCur", 19);
+			keyBindList.Insert("DeleteObj", KeyCode.KC_DELETE);
 
 			if (kBindsFile.Open(dPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file created successfully." );
