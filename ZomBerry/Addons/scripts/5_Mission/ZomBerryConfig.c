@@ -1,9 +1,10 @@
 class ZomberryConfig {
-	private string cfgPath = "$saves:ZomBerry.cfg";
-	const private string cfgPathServer = "$profile:ZomBerry.cfg";
+	private string cfgPath = "$saves:";
+	const private string cfgPathServer = "$profile:";
 
 	protected int menuKey = KeyCode.KC_M;
 	protected int zbryDebug = 0;
+	protected autoptr TStringIntMap m_keyBindList = new TStringIntMap;
 
 	void ZomberryConfig() {
 		if (GetGame().IsMultiplayer() && GetGame().IsServer()) cfgPath = cfgPathServer;
@@ -18,15 +19,51 @@ class ZomberryConfig {
 		return zbryDebug;
 	}
 
+	int GetKeyByFunc(string fName) {
+		if (m_keyBindList.Contains(fName)) return m_keyBindList.Get(fName);
+
+		return -1;
+	}
+
+	string GetFuncByKey(int key) {
+		string fName = m_keyBindList.GetKeyByValue(key);
+		if (fName) return fName;
+
+		return "";
+	}
+
+	void UpdateKeyBind(string fName, int key) {
+		FileSerializer kBindsFile = new FileSerializer();
+
+		string toBeDeleted = m_keyBindList.GetKeyByValue(key);
+		if (toBeDeleted) m_keyBindList.Remove(toBeDeleted);
+		if (m_keyBindList.Contains(fName)) m_keyBindList.Remove(fName);
+
+		if (fName != "REMOVE") m_keyBindList.Insert(fName, key);
+		if (fName == "ALL" && key == -2) m_keyBindList.Clear();
+
+		if (kBindsFile.Open(cfgPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
+			kBindsFile.Write(m_keyBindList);
+			kBindsFile.Close();
+
+			if (fName != "REMOVE" && fName != "ALL") {
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Updated KeyBinds file: " + fName + " bind to " + key );
+			} else {
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Updated KeyBinds file: unbind functions on " + key + " key(s) " );
+			}
+		}
+	}
+
 	private void Configure() { //TODO: JSONize this
 		FileHandle configFile;
+		FileSerializer kBindsFile = new FileSerializer();
+		int idx = 0;
 
-		if (!FileExist(cfgPath)) CreateNew(cfgPath);
+		if (!FileExist(cfgPath + "ZomBerry.cfg") || !FileExist(cfgPath + "ZomBerryKeybinds.bin")) CreateNew(cfgPath);
 
-		configFile = OpenFile(cfgPath, FileMode.READ);
+		configFile = OpenFile(cfgPath + "ZomBerry.cfg", FileMode.READ);
 		if (configFile != 0) {
 			string sLine = "";
-			int idx = 0;
 			TStringArray sParams = new TStringArray;
 			while ( FGets(configFile,sLine) > 0 ) {
 				++idx;
@@ -57,11 +94,37 @@ class ZomberryConfig {
 						}
 					}
 					break;
+
+					/*case "keyBinds":
+					TStringArray tKeyArray = new TStringArray;
+
+					sParams[1].Split("||", tKeyArray);
+
+					for (int j = 0; j < tKeyArray.Count(); ++j) {
+						int sidx = tKeyArray[j].IndexOfFrom(1, "|");
+						if (sidx == -1) continue;
+
+						m_keyBindList.Insert(tKeyArray[j].Substring(0,sidx).ToInt(), tKeyArray[j].Substring(sidx+1, (tKeyArray[j].Length()-sidx)));
+						Print("Total: " + tKeyArray[j] + ", Key: " + tKeyArray[j].Substring(0,sidx).ToInt().ToString() + ", Func: " + tKeyArray[j].Substring(sidx+1, (tKeyArray[j].Length()-sidx)));
+					}
+					break;*/
 				}
 				sParams = {};
 			}
 			CloseFile(configFile);
-		};
+		}
+
+		if (kBindsFile.Open(cfgPath + "ZomBerryKeybinds.bin", FileMode.READ)) {
+			kBindsFile.Read(m_keyBindList);
+			kBindsFile.Close();
+
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: Loaded KeyBinds file with " + m_keyBindList.Count().ToString() + " entries" );
+
+			for (idx = 0; idx < m_keyBindList.Count(); idx++) {
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Key " + typename.EnumToString(KeyCode, m_keyBindList.GetElement(idx)) + " - " + m_keyBindList.GetKey(idx));
+			}
+		}
+
 		/*UAInput zbryMenu = GetUApi().GetInputByName( "UAZomberryOpenMenu" );  //UApi is not ready yet
 		if (zbryMenu.BindingCount() == 0) {
 		GetUApi().DeRegisterInput( "UAZomberryOpenMenu" );
@@ -100,6 +163,69 @@ class ZomberryConfig {
 		}
 
 		return adminList;
+	}
+
+	private string FindAdmins() {
+		string temp_path;
+
+		if (!GetCLIParam("zbryDir", temp_path)) {
+			temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
+			temp_path.Replace("mission.c", "");
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: Mission directory is: " + temp_path);
+		} else {
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: Will search for admins.cfg in custom directory: " + temp_path);
+		}
+
+		if (!FileExist(temp_path + "admins.cfg")) {
+			if (FileExist("$profile:\\ZomBerry\\admins.cfg")) {
+				temp_path = "$profile:\\ZomBerry\\";
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
+			} else if (FileExist("$CurrentDir:\\ZomBerry\\Config\\admins.cfg")) {
+				temp_path = "$CurrentDir:\\ZomBerry\\Config\\";
+				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile or Mission dir)" );
+			} else {
+				temp_path = "";
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: In case you wanted to use admins.cfg from mission directory:" );
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: admins.cfg was not found in mission dir OR you're missing some strings in mission init.c" );
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: Please add following line in 'Mission CreateCustomMission' section (between { and }, but before whole 'return' line)" );
+				ZomberryBase.Log( "ZomBerryConfig", "g_Game.SetMissionPath(path); //ZomBerry set path line, DO NOT COPY ANYTHING EXCEPT 'g_Game.SetMissionPath(path);'" );
+				ZomberryBase.Log( "ZomBerryConfig", "" );
+				ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
+			}
+		}
+
+		return temp_path;
+	}
+
+	private void CreateNew(string dPath) {
+		if (!FileExist(dPath + "ZomBerry.cfg")) {
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: config file not found, trying to create new one in " + dPath + "ZomBerry.cfg" );
+			FileHandle configFile = OpenFile(dPath + "ZomBerry.cfg", FileMode.WRITE);
+
+			if (configFile != 0) {
+				FPrintln(configFile, "debug = 0;");
+				FPrintln(configFile, "menuKey = \"KC_M\";");
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: config file created successfully." );
+				CloseFile(configFile);
+			} else {
+				ZomberryBase.Log( "ZomBerryConfig", "WARN: unable to create a config file, please make one manually." );
+			}
+		}
+
+		if (!FileExist(dPath + "ZomBerryKeybinds.bin") && GetGame().IsClient()) {
+			FileSerializer kBindsFile = new FileSerializer();
+			autoptr TStringIntMap keyBindList = new TStringIntMap;
+
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file not found, trying to create new one in " + dPath + "ZomBerryKeybinds.bin" );
+
+			keyBindList.Insert("TPCur", 19);
+
+			if (kBindsFile.Open(dPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file created successfully." );
+				kBindsFile.Write(keyBindList);
+				kBindsFile.Close();
+			}
+		}
 	}
 
 	string InstFindAdmins() {
@@ -154,51 +280,5 @@ class ZomberryConfig {
 			}
 		}
 		return "Wrong mode";
-	}
-
-	private string FindAdmins() {
-		string temp_path;
-
-		if (!GetCLIParam("zbryDir", temp_path)) {
-			temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
-			temp_path.Replace("mission.c", "");
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: Mission directory is: " + temp_path);
-		} else {
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: Will search for admins.cfg in custom directory: " + temp_path);
-		}
-
-		if (!FileExist(temp_path + "admins.cfg")) {
-			if (FileExist("$profile:\\ZomBerry\\admins.cfg")) {
-				temp_path = "$profile:\\ZomBerry\\";
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
-			} else if (FileExist("$CurrentDir:\\ZomBerry\\Config\\admins.cfg")) {
-				temp_path = "$CurrentDir:\\ZomBerry\\Config\\";
-				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile or Mission dir)" );
-			} else {
-				temp_path = "";
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: In case you wanted to use admins.cfg from mission directory:" );
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: admins.cfg was not found in mission dir OR you're missing some strings in mission init.c" );
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: Please add following line in 'Mission CreateCustomMission' section (between { and }, but before whole 'return' line)" );
-				ZomberryBase.Log( "ZomBerryConfig", "g_Game.SetMissionPath(path); //ZomBerry set path line, DO NOT COPY ANYTHING EXCEPT 'g_Game.SetMissionPath(path);'" );
-				ZomberryBase.Log( "ZomBerryConfig", "" );
-				ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
-			}
-		}
-
-		return temp_path;
-	}
-
-	private void CreateNew(string fPath) {
-		ZomberryBase.Log( "ZomBerryConfig", "INFO: config file not found, trying to create new one in " + fPath );
-		FileHandle configFile = OpenFile(fPath, FileMode.WRITE);
-
-		if (configFile != 0) {
-			FPrintln(configFile, "debug = 0;");
-			FPrintln(configFile, "menuKey = \"KC_M\";");
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: config file created successfully." );
-			CloseFile(configFile);
-		} else {
-			ZomberryBase.Log( "ZomBerryConfig", "WARN: unable to create a config file, please make one manually." );
-		}
 	}
 };

@@ -10,7 +10,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected SliderWidget m_FuncPSlider0, m_FuncPSlider1, m_FuncPSlider2;
 	protected EditBoxWidget m_FuncPEBox0, m_FuncPEBox1, m_FuncPEBox2;
 
-	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton;
+	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton, m_BindButton;
 	protected ButtonWidget m_FilterItemsButton, m_FilterObjectsButton, m_FilterAIButton;
 	protected ButtonWidget m_SpawnTargetButton, m_ExecFuncButton, m_PlayersRefresh;
 
@@ -20,7 +20,9 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	protected int m_lastSelPlayer = -1;
 	protected int m_lastSelFunc = -1;
+	protected int m_setBindMode = 0;
 	protected bool m_mouseOnMap = false;
+	protected bool m_mouseOnSearch = false;
 	protected bool m_mapTPAllowed = true;
 	protected autoptr TIntArray m_lastFuncParams = {0,0,0};
 	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
@@ -51,6 +53,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FunctionsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("FunctionsButton") );
 		m_SpawnButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpawnButton") );
 		m_MapButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("MapButton") );
+		m_BindButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("BindButton") );
 		m_FilterItemsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ItemsButton") );
 		m_FilterObjectsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ObjectsButton") );
 		m_FilterAIButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AIButton") );
@@ -115,6 +118,18 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_lastSelFunc = -1;
 	}
 
+	override bool OnMouseEnter( Widget w, int x, int y ) {
+		if ( w == m_MapWidget ) {
+			m_mouseOnMap = true;
+			return true;
+		}
+		if ( w == m_SearchInput ) {
+			m_mouseOnSearch = true;
+			return true;
+		}
+		return false;
+	}
+
 	override bool OnMouseLeave( Widget w, Widget enterW, int x, int y ) {
 		if ( w == m_FuncPEBox0 || w == m_FuncPEBox1 || w == m_FuncPEBox2 ) {
 			UpdateFuncBoxes(m_lastFuncParams[0], m_lastFuncParams[1], m_lastFuncParams[2]);
@@ -124,12 +139,8 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_mouseOnMap = false;
 			return true;
 		}
-		return false;
-	}
-
-	override bool OnMouseEnter( Widget w, int x, int y ) {
-		if ( w == m_MapWidget ) {
-			m_mouseOnMap = true;
+		if ( w == m_SearchInput ) {
+			m_mouseOnSearch = false;
 			return true;
 		}
 		return false;
@@ -198,11 +209,13 @@ class ZomberryMenu extends UIScriptedMenu {
 		string ItemsFilter = "Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base";
 		string ObjectsFilter = "Transport,House";
 		string AIFilter = "DZ_LightAI";
+		Param3<int, bool, int> funcData;
 
 		if ( w == m_FunctionsButton ) {
 			m_FunctionsButton.SetTextColor(COLOR_GREEN);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
 			m_MapButton.SetTextColor(0xFFFFFFFF);
+			m_BindButton.Show( true );
 			m_FunctionsPage.Show( true );
 			m_SpawnPage.Show( false );
 			m_MapPage.Show( false );
@@ -212,6 +225,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
 			m_SpawnButton.SetTextColor(COLOR_GREEN);
 			m_MapButton.SetTextColor(0xFFFFFFFF);
+			m_BindButton.Show( false );
 			m_FunctionsPage.Show( false );
 			m_SpawnPage.Show( true );
 			m_MapPage.Show( false );
@@ -221,15 +235,16 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
 			m_MapButton.SetTextColor(COLOR_GREEN);
+			m_BindButton.Show( false );
 			m_FunctionsPage.Show( false );
 			m_SpawnPage.Show( false );
 			m_MapPage.Show( true );
 		}
 
 		if ( w == m_FunctionsList ) {
-			Param3<int, bool, int> funcData;
 			string fncName;
 			int fParamId = -1;
+			int fKeyBind;
 
 			TIntArray defValues = {250, 500, 750};
 
@@ -240,8 +255,20 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			m_FunctionsList.GetItemData( selectedFuncRow, 0, funcData );
 			m_FunctionsList.GetItemText( selectedFuncRow, 0, fncName );
-			fParamId = funcData.param3;
 
+			if (funcData.param3 == -1) return true;
+			fKeyBind = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
+
+			if (fKeyBind) {
+				string fButtonName = typename.EnumToString(KeyCode, fKeyBind);
+				m_BindButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
+			} else {
+				m_BindButton.SetText("Bind");
+			}
+
+			if (m_setBindMode == 1) m_BindButton.SetText("[...]");
+
+			fParamId = funcData.param3;
 			if (fParamId == -1) return true;
 
 			m_FncName.SetText(fncName);
@@ -255,6 +282,32 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_lastFuncParams = NormalizeFuncValues(defValues);
 			UpdateFuncValues(m_lastFuncParams);
 			SetParams(m_funcParams[fParamId].Count(), fParamId);
+		}
+
+		if ( w == m_BindButton ) {
+			int selFunc = m_FunctionsList.GetSelectedRow();
+			if (selFunc == -1) { Message("No function selected. [Dbl click] to delete bind, [A] + [Dbl click] to remove ALL binds."); return true; }
+
+			m_FunctionsList.GetItemData( selFunc, 0, funcData );
+			if (funcData.param3 == -1) return true;
+			if (m_funcParams[funcData.param3].Count() > 0) { Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return true; }
+			int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
+
+			if (m_setBindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
+				m_BindButton.SetText("CLRALL?");
+				m_setBindMode = -1;
+			} else if (m_setBindMode == 0) {
+				m_BindButton.SetText("[...]");
+				m_setBindMode = 1;
+			} else if (m_setBindMode == -1) {
+				m_BindButton.SetText("Bind");
+				if (KeyState(KeyCode.KC_A) & 0x00000001) ZomberryBase.GetKeyBindsMgr().SetFuncKey(-2, -1);
+				m_setBindMode = 0;
+			} else {
+				m_BindButton.SetText("Bind");
+				ZomberryBase.GetKeyBindsMgr().SetFuncKey(-1, oldKey);
+				m_setBindMode = 0;
+			}
 		}
 
 		if ( w == m_ExecFuncButton ) {
@@ -416,6 +469,31 @@ class ZomberryMenu extends UIScriptedMenu {
 			//}
 		}
 		return true;
+	}
+
+	void OnKeyPress( int key ) {
+		UIManager UIMgr = GetGame().GetUIManager();
+		Param3<int, bool, int> funcData;
+		int fKeyBind;
+
+		if (key == ZomberryBase.GetConfig().GetMenuKey()) {
+			if (!m_mouseOnSearch && !UIMgr.IsMenuOpen(MENU_INGAME)) UIMgr.CloseAll();
+			return;
+		}
+
+		if (m_setBindMode == 1) {
+			if ( m_lastSelFunc == -1 ) return;
+
+			m_FunctionsList.GetItemData( m_lastSelFunc, 0, funcData );
+			ZomberryBase.GetKeyBindsMgr().SetFuncKey(funcData.param1, key);
+
+			fKeyBind = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
+
+			string fButtonName = typename.EnumToString(KeyCode, key);
+			m_BindButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
+
+			m_setBindMode = 0;
+		}
 	}
 
 	static void Message( string txt ) {
@@ -584,6 +662,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_FunctionsList.ClearItems();
 			catList = catListS.param1;
 			m_funcParams.Clear();
+			ZomberryBase.GetKeyBindsMgr().ClearFuncList();
 		}
 
 		int lastId = 0;
@@ -605,6 +684,8 @@ class ZomberryMenu extends UIScriptedMenu {
 				entryId = funcData.GetId();
 
 				int fParamId = m_funcParams.Insert(funcData.GetParams());
+
+				ZomberryBase.GetKeyBindsMgr().AddFunc(entryId, funcData.GetName());
 
 				m_FunctionsList.AddItem( funcData.GetDisplayName(), new Param3<int, bool, int>(entryId, funcData.IsTargetRequired(), fParamId), 0, lastId );
 				m_FunctionsList.SetItemColor(lastId, 0, funcData.GetColor());

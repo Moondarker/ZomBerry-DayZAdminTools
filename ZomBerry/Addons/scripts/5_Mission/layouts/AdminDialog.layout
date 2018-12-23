@@ -1,7 +1,6 @@
 PanelWidgetClass AdminMenu {
  visible 0
  color 0 0 0 0
- position 0 0
  size 970 0.95
  halign center_ref
  valign center_ref
@@ -483,6 +482,19 @@ PanelWidgetClass AdminMenu {
           }
          }
         }
+        ButtonWidgetClass BindButton {
+         color 0.3255 0.3255 0.3255 0.7843
+         position 10 10
+         size 110 36
+         halign right_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Colorable
+         text "Bind"
+         font "gui/fonts/Metron16"
+        }
        }
       }
       TextWidgetClass PlayerHealth {
@@ -516,7 +528,7 @@ PanelWidgetClass AdminMenu {
        vexactsize 0
        style Colorable
        text "Update"
-	   font "gui/fonts/Metron16"
+       font "gui/fonts/Metron16"
       }
      }
     }
