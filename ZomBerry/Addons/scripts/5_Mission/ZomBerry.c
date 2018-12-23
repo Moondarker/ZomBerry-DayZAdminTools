@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.5.2";
+static string g_zbryVer = "0.5.3";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
@@ -8,6 +8,7 @@ class ZomberryBase {
 	ref ZomberryStockFunctions m_ZomberryStockFunctions;
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
+	static ref ZomberryKeybinds m_ZomberryKeybinds;
 
 	void ZomberryBase() {
 		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
@@ -53,6 +54,14 @@ class ZomberryBase {
 		}
 
 		return m_ZomberryLogger;
+	}
+
+	static ref ZomberryKeybinds GetKeyBindsMgr() {
+		if ( !m_ZomberryKeybinds ) {
+			m_ZomberryKeybinds = new ref ZomberryKeybinds;
+		}
+
+		return m_ZomberryKeybinds;
 	}
 
 	static void Log( string module, string toLog ) {
@@ -430,14 +439,20 @@ modded class MissionGameplay {
 
 	override void OnKeyPress( int key ) {
 		super.OnKeyPress( key );
+
 		UIManager UIMgr = GetGame().GetUIManager();
+
+		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
+			GetZomberryMenu().OnKeyPress( key );
+		} else if (GetZomberryBase().IsAdmin()) {
+			ZomberryBase.GetKeyBindsMgr().OnKeyPress( key );
+		}
 
 		switch ( key ) {
 			case ZomberryBase.GetConfig().GetMenuKey(): {
 				string r_zbryVer = GetZomberryBase().GetRemoteVersion();
-				if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-					UIMgr.HideScriptedMenu( GetZomberryMenu() );
-				} else if (!UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_INVENTORY) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && !UIMgr.IsMenuOpen(MENU_MAP) && GetZomberryBase().IsAdmin()) {
+				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && GetZomberryBase().IsAdmin()) {
+					UIMgr.HideDialog(); UIMgr.CloseAll();
 					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
 				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
 					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer, ""));
