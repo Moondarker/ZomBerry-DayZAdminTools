@@ -93,6 +93,7 @@ class ZomberryConfig {
 							break;
 						}
 					}
+					ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
 					break;
 
 					/*case "keyBinds":
@@ -204,7 +205,7 @@ class ZomberryConfig {
 
 			if (configFile != 0) {
 				FPrintln(configFile, "debug = 0;");
-				FPrintln(configFile, "menuKey = \"KC_M\";");
+				FPrintln(configFile, "menuKey = KC_M;");
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: config file created successfully." );
 				CloseFile(configFile);
 			} else {
