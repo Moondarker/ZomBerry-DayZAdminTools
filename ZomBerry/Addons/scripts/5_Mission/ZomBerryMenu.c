@@ -29,7 +29,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	protected string m_lastSelObj;
 	protected string m_objFilter;
-	protected string m_objTarget = "Ground";
+	protected string m_objTarget = "Cursor";
 
 	void ZomberryMenu() {
 		//Print ("[ZomBerryUI] INFO: ZomberryMenu::ZomberryMenu()");
