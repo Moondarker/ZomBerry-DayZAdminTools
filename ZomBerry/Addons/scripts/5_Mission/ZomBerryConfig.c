@@ -93,6 +93,7 @@ class ZomberryConfig {
 							break;
 						}
 					}
+					ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
 					break;
 
 					/*case "keyBinds":
@@ -204,7 +205,7 @@ class ZomberryConfig {
 
 			if (configFile != 0) {
 				FPrintln(configFile, "debug = 0;");
-				FPrintln(configFile, "menuKey = \"KC_M\";");
+				FPrintln(configFile, "menuKey = KC_M;");
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: config file created successfully." );
 				CloseFile(configFile);
 			} else {
@@ -218,7 +219,7 @@ class ZomberryConfig {
 
 			ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file not found, trying to create new one in " + dPath + "ZomBerryKeybinds.bin" );
 
-			keyBindList.Insert("TPCur", 19);
+			keyBindList.Insert("DeleteObj", KeyCode.KC_DELETE);
 
 			if (kBindsFile.Open(dPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: keybinds file created successfully." );

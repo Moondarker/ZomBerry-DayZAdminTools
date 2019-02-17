@@ -217,7 +217,7 @@ PanelWidgetClass AdminMenu {
              hexactsize 1
              vexactsize 1
              style Colorable
-             text "Ground"
+             text "Cursor"
              font "gui/fonts/Metron16"
             }
            }

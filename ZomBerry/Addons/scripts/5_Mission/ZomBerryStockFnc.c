@@ -81,31 +81,62 @@ class ZomberryStockFunctions {
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
-		if (SetPosSafe(ZBGetPlayerById(targetId), cursor)) {
-			MessagePlayer(ZBGetPlayerById(adminId), "Target teleported");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (SetPosSafe(target, cursor)) {
+			MessagePlayer(admin, "Target teleported");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Unable to teleport: target in vehicle");
+			MessagePlayer(admin, "Unable to teleport: target in vehicle");
 		}
 	}
 
 	void TPToTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		if (SetPosSafe(ZBGetPlayerById(adminId), GetPosSafe(ZBGetPlayerById(targetId)))) {
-			MessagePlayer(ZBGetPlayerById(adminId), "Teleported to target");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (SetPosSafe(admin, GetPosSafe(target))) {
+			MessagePlayer(admin, "Teleported to target");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Unable to teleport: get out of vehicle!");
+			MessagePlayer(admin, "Unable to teleport: get out of vehicle!");
 		}
 	}
 
 	void TPToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
-		if (SetPosSafe(ZBGetPlayerById(targetId), GetPosSafe(ZBGetPlayerById(adminId)))) {
-			MessagePlayer(ZBGetPlayerById(adminId), "Target teleported");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (SetPosSafe(target, GetPosSafe(admin))) {
+			MessagePlayer(admin, "Target teleported");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Unable to teleport: target in vehicle");
+			MessagePlayer(admin, "Unable to teleport: target in vehicle");
 		}
 	}
 
 	void HealTarget( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
 		BleedingSourcesManagerServer BSMgr = target.GetBleedingManagerServer();
 
 		target.SetHealth(target.GetMaxHealth());
@@ -115,19 +146,26 @@ class ZomberryStockFunctions {
 		target.GetStatWater().Set(1000);
 		BSMgr.RemoveAllSources();
 
-		MessagePlayer(ZBGetPlayerById(adminId), "Healed target");
+		MessagePlayer(admin, "Healed target");
 	}
 
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
-		InventoryItem targetItem = target.GetItemInHands();
+		PlayerBase admin = ZBGetPlayerById(adminId);
 
-		if (!targetItem) {
-			MessagePlayer(ZBGetPlayerById(adminId), "No item in target's hands");
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
 			return;
 		}
 
-		MessagePlayer(ZBGetPlayerById(adminId), "Item: " + targetItem.GetDisplayName() + ", start health: " + targetItem.GetHealth().ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
+		InventoryItem targetItem = target.GetItemInHands();
+
+		if (!targetItem) {
+			MessagePlayer(admin, "No item in target's hands");
+			return;
+		}
+
+		MessagePlayer(admin, "Item: " + targetItem.GetDisplayName() + ", start health: " + targetItem.GetHealth().ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
 		targetItem.AddHealth("", "", (targetItem.GetMaxHealth() - targetItem.GetHealth())); //SetHealth doesn't update HealthLevel
 		targetItem.ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), targetItem.GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
 		ItemBase.Cast(targetItem).SetQuantityMax();
@@ -152,10 +190,18 @@ class ZomberryStockFunctions {
 
 		targetItem.SetSynchDirty();
 
-		MessagePlayer(ZBGetPlayerById(adminId), "Repaired item to the best condition it can achieve");
+		MessagePlayer(admin, "Repaired item to the best condition it can achieve");
 	}
 
 	void RefuelAndRepair( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
 		autoptr TStringArray attachments = {
 			"SparkPlug", "CarRadiator", "CarBattery", "GlowPlug", "TruckExhaust", "TruckBattery", "EngineBelt",
 			"HatchbackHood", "CivSedanHood", "CivSedanTrunk", "V3SHood", "BusHood", "HeadlightH7", "HatchbackTrunk",
@@ -166,7 +212,7 @@ class ZomberryStockFunctions {
 		ref array<Object> nearest_objects = new array<Object>;
 		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
 		Car toBeFixed;
-		vector position = ZBGetPlayerById(targetId).GetPosition();
+		vector position = GetPosSafe(target);
 		GetGame().GetObjectsAtPosition ( position, 15, nearest_objects, proxy_cargos );
 
 		for (int i = 0; i < nearest_objects.Count(); ++i) {
@@ -207,68 +253,128 @@ class ZomberryStockFunctions {
 	}
 
 	void KillTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		ZBGetPlayerById(targetId).SetHealth(0);
-		MessagePlayer(ZBGetPlayerById(adminId), "Killed target");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		target.SetHealth(0);
+		MessagePlayer(admin, "Killed target");
 	}
 
 	void BiteTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
-		BleedingSourcesManagerServer BSMgr = ZBGetPlayerById(targetId).GetBleedingManagerServer();
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		BleedingSourcesManagerServer BSMgr = target.GetBleedingManagerServer();
 
 		for (int i = 0; i < fValues[0]; ++i) {
 			for (int j = 0; j < 15; ++j) {
 				if (BSMgr.AttemptAddBleedingSource(Math.RandomInt(0, 100))) break;
 			}
 		}
-		MessagePlayer(ZBGetPlayerById(adminId), "Target was bitten " + fValues[0] + " times and now losing blood");
+		MessagePlayer(admin, "Target was bitten " + fValues[0] + " times and now losing blood");
 	}
 
 	void StripTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		ZBGetPlayerById(targetId).RemoveAllItems();
-		MessagePlayer(ZBGetPlayerById(adminId), "Target was stripped");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		target.RemoveAllItems();
+		MessagePlayer(admin, "Target was stripped");
 	}
 
 	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
-		if (!ZBGetPlayerById(targetId).GetCommand_Vehicle()) {
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (!target.GetCommand_Vehicle()) {
 			SymptomBase symptom = ZBGetPlayerById(targetId).GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
 			symptom.SetDuration(fValues[0]);
-			MessagePlayer(ZBGetPlayerById(adminId), "Target is gonna be sick for " + fValues[0] + " seconds");
+			MessagePlayer(admin, "Target is gonna be sick for " + fValues[0] + " seconds");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Target in vehicle, this action might cause game crash");
+			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
 	void PsycoTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		if (!ZBGetPlayerById(targetId).GetCommand_Vehicle()) {
-			ZBGetPlayerById(targetId).GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_LAUGHTER);
-			MessagePlayer(ZBGetPlayerById(adminId), "Target is laughing...");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (!target.GetCommand_Vehicle()) {
+			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_LAUGHTER);
+			MessagePlayer(admin, "Target is laughing...");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Target in vehicle, this action might cause game crash");
+			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
 	void SneezeTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		if (!ZBGetPlayerById(targetId).GetCommand_Vehicle()) {
-			ZBGetPlayerById(targetId).GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_SNEEZE);
-			MessagePlayer(ZBGetPlayerById(adminId), "Target sneezed");
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (!target.GetCommand_Vehicle()) {
+			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_SNEEZE);
+			MessagePlayer(admin, "Target sneezed");
 		} else {
-			MessagePlayer(ZBGetPlayerById(adminId), "Target in vehicle, this action might cause game crash");
+			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
 	void SetHealthTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
 
 		target.SetHealth(fValues[0]);
 
-		MessagePlayer(ZBGetPlayerById(adminId), "Target health level was set to " + fValues[0]);
+		MessagePlayer(admin, "Target health level was set to " + fValues[0]);
 	}
 
 	void SetBloodTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
 
 		target.SetHealth("", "Blood", fValues[0]);
 
-		MessagePlayer(ZBGetPlayerById(adminId), "Target blood level was set to " + fValues[0]);
+		MessagePlayer(admin, "Target blood level was set to " + fValues[0]);
 	}
 
 	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
