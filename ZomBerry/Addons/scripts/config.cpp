@@ -45,24 +45,24 @@ class CfgMods
 
 class RscMapControl
 {
-	scaleMin=0.12;
-	scaleMax=0.7;
-	ptsPerSquareSea=8;
-	ptsPerSquareTxt=10;
-	ptsPerSquareCLn=10;
-	ptsPerSquareExp=10;
-	ptsPerSquareCost=10;
-	ptsPerSquareFor=9;
-	ptsPerSquareForEdge=15;
-	ptsPerSquareRoad=4;
-	ptsPerSquareObj=15;
-	maxSatelliteAlpha=1;
+	scaleMin=0.012;
+	scaleMax=0.95;
+	ptsPerSquareSea=6;
+	ptsPerSquareTxt=8;
+	ptsPerSquareCLn=8;
+	ptsPerSquareExp=8;
+	ptsPerSquareCost=8;
+	ptsPerSquareFor=4;
+	ptsPerSquareForEdge=10;
+	ptsPerSquareRoad=2;
+	ptsPerSquareObj=10;
+	maxSatelliteAlpha=0;
 	alphaFadeStartScale=1;
 	alphaFadeEndScale=1;
 	userMapPath="dz\gear\navigation\data\usermap";
-	maxUserMapAlpha=0;
-	alphaUserMapFadeStartScale=0.34;
-	alphaUserMapFadeEndScale=0.34;
+	maxUserMapAlpha=1;
+	alphaUserMapFadeStartScale=0.32;
+	alphaUserMapFadeEndScale=0.32;
 	showCountourInterval=1;
 	colorLevels[]={0.65,0.6,0.45,0.95};
 	colorSea[]={0.651,0.827,0.92,0.8};
@@ -88,8 +88,8 @@ class RscMapControl
 	fontNames="gui/fonts/Metron-Italic48";
 	sizeExNames=0.07;
 	colorNames[]={255,255,255,1};
-	fontGrid="gui/fonts/MetronLight-Italic28";
-	sizeExGrid=0.01;
+	fontGrid="gui/fonts/Metron-Italic28";
+	sizeExGrid=0.022;
 	fontLevel="gui/fonts/MetronLight-Italic28";
 	sizeExLevel=0.01;
 	colorMountPoint[]={0.45,0.4,0.25,1};
