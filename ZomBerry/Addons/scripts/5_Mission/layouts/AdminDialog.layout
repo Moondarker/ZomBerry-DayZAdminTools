@@ -38,7 +38,7 @@ PanelWidgetClass AdminMenu {
        hexactsize 0
        vexactsize 0
        text "ZomBerry Admin Tools"
-       font "gui/fonts/Metron"
+       font "gui/fonts/Metron22"
        "exact text" 1
        "text valign" center
       }
@@ -204,7 +204,7 @@ PanelWidgetClass AdminMenu {
              vexactpos 1
              hexactsize 1
              vexactsize 1
-             style ServerBrowser
+             style Editor
              font "gui/fonts/Metron14"
             }
             ButtonWidgetClass TargetButton {

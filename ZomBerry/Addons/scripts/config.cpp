@@ -26,7 +26,7 @@ class CfgMods
 		credits = "Vaker";
 		author = "Vaker";
 		authorID = "0";
-		version = "0.5"; 
+		version = "0.5";
 		extra = 0;
 		type = "mod";
 
@@ -45,7 +45,7 @@ class CfgMods
 
 class RscMapControl
 {
-	scaleMin=0.012;
+	scaleMin=0.001;
 	scaleMax=0.95;
 	ptsPerSquareSea=6;
 	ptsPerSquareTxt=8;
@@ -86,7 +86,7 @@ class RscMapControl
 	colorGrid[]={0.15,0.15,0.05,0.9};
 	colorGridMap[]={0.25,0.25,0.1,0.75};
 	fontNames="gui/fonts/Metron-Italic48";
-	sizeExNames=0.07;
+	sizeExNames=0.06;
 	colorNames[]={255,255,255,1};
 	fontGrid="gui/fonts/Metron-Italic28";
 	sizeExGrid=0.022;
