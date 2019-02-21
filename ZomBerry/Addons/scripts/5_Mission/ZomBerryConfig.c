@@ -93,22 +93,9 @@ class ZomberryConfig {
 							break;
 						}
 					}
-					ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
+					if (sParams[1] != tempKeyCode)
+						ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
 					break;
-
-					/*case "keyBinds":
-					TStringArray tKeyArray = new TStringArray;
-
-					sParams[1].Split("||", tKeyArray);
-
-					for (int j = 0; j < tKeyArray.Count(); ++j) {
-						int sidx = tKeyArray[j].IndexOfFrom(1, "|");
-						if (sidx == -1) continue;
-
-						m_keyBindList.Insert(tKeyArray[j].Substring(0,sidx).ToInt(), tKeyArray[j].Substring(sidx+1, (tKeyArray[j].Length()-sidx)));
-						Print("Total: " + tKeyArray[j] + ", Key: " + tKeyArray[j].Substring(0,sidx).ToInt().ToString() + ", Func: " + tKeyArray[j].Substring(sidx+1, (tKeyArray[j].Length()-sidx)));
-					}
-					break;*/
 				}
 				sParams = {};
 			}
