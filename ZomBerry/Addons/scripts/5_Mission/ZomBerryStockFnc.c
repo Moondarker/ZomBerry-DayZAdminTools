@@ -1,6 +1,7 @@
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
+	autoptr TIntArray m_godList = new TIntArray;
 	autoptr TIntStringMap m_deleteList = new TIntStringMap;
 
 	void ZomberryStockFunctions() {
@@ -13,6 +14,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
 		//m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false); //Not ready yet
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
@@ -147,6 +149,31 @@ class ZomberryStockFunctions {
 		BSMgr.RemoveAllSources();
 
 		MessagePlayer(admin, "Healed target");
+	}
+
+	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		int listId = m_godList.Find(targetId);
+		PlayerBase target = ZBGetPlayerById(targetId);
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		if (!target) {
+			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			return;
+		}
+
+		if (listId != -1) {
+			target.SetAllowDamage(true);
+			MessagePlayer(target, "God mode deactivated");
+			if (adminId != targetId) MessagePlayer(admin, "Target - god mode deactivated");
+
+			m_godList.Remove(listId);
+		} else {
+			target.SetAllowDamage(false);
+			MessagePlayer(target, "God mode activated");
+			if (adminId != targetId) MessagePlayer(admin, "Target - god mode activated");
+
+			m_godList.Insert(targetId);
+		}
 	}
 
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
