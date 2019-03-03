@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.5.6";
+static string g_zbryVer = "0.5.7";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
@@ -457,10 +457,11 @@ modded class MissionGameplay {
 				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
 					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer, ""));
 				} else if (r_zbryVer.Contains("CFGFailed")) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script.log and FAQ", ""));
+					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script_date_time.log(s) and FAQ", ""));
 				}
-				if (g_zbryVer.Substring(0, 3).ToFloat() > r_zbryVer.Substring(0, 3).ToFloat() && !m_plyWarned) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+", ""));
+				if (g_zbryVer.Substring(2, 3).ToFloat() > r_zbryVer.Substring(2, 3).ToFloat() && !m_plyWarned) {
+					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+ to get latest features!", ""));
+					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Server is currently running on: v" + r_zbryVer, ""));
 					m_plyWarned = true;
 				}
 				break;
