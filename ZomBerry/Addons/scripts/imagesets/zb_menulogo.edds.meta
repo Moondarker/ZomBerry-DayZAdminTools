@@ -1,0 +1,18 @@
+MetaFileClass {
+ Name "{544691EB4781971C}ZomBerry/AT/scripts/imagesets/zb_menulogo.edds"
+ Author "vaker"
+ ChangeDate 645162595
+ Configurations {
+  TGAResourceClass PC {
+   SourceFile "ZB_menuLogo.tga"
+   FormatCompress Copy
+   TiledTexture 0
+  }
+  TGAResourceClass XBOX_ONE : PC {
+  }
+  TGAResourceClass PS4 : PC {
+  }
+  TGAResourceClass LINUX : PC {
+  }
+ }
+}

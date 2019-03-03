@@ -18,10 +18,10 @@ class CfgMods
 	class ZomBerry_AT
 	{
 		dir = "ZomBerry";
-		picture = "";
+		picture = "set:zomberry_images image:ZBMenuLogo";
 		action = "";
 		hideName = 0;
-		hidePicture = 1;
+		hidePicture = 0;
 		name = "ZomBerry Admin Tools";
 		credits = "Vaker";
 		author = "Vaker";
@@ -34,12 +34,16 @@ class CfgMods
 
 		class defs
 		{
+			class imageSets
+			{
+				files[] = {"ZomBerry/AT/scripts/imagesets/zomberry_images.imageset"};
+			};
 			class missionScriptModule
 			{
 				value = "";
 				files[] = {"ZomBerry/AT/scripts/5_Mission"};
 			};
-		}
+		};
 	};
 };
 
