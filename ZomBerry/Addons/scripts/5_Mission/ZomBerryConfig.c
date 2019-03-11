@@ -4,6 +4,7 @@ class ZomberryConfig {
 
 	protected int menuKey = KeyCode.KC_M;
 	protected int zbryDebug = 0;
+	protected bool defaultIOFlag = false;
 	protected autoptr TStringIntMap m_keyBindList = new TStringIntMap;
 
 	void ZomberryConfig() {
@@ -17,6 +18,10 @@ class ZomberryConfig {
 
 	int GetDebugLvl() {
 		return zbryDebug;
+	}
+
+	bool IsDefaultIO() {
+		return defaultIOFlag;
 	}
 
 	int GetKeyByFunc(string fName) {
@@ -85,6 +90,7 @@ class ZomberryConfig {
 
 					case "menuKey":
 					string tempKeyCode;
+					if (GetGame().IsMultiplayer() && GetGame().IsServer()) continue;
 					for (int i = 0; i < 126; ++i) {
 						tempKeyCode = typename.EnumToString(KeyCode, i);
 						if (sParams[1] == tempKeyCode) {
@@ -95,6 +101,13 @@ class ZomberryConfig {
 					}
 					if (sParams[1] != tempKeyCode)
 						ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
+					break;
+
+					case "writeToScriptLog":
+					if (sParams[1].ToInt() >= 1) {
+						ZomberryBase.Log( "ZomBerryConfig", "INFO: writeToScriptLog is true; continue logging to script log (instead of ZomBerry log)" );
+						defaultIOFlag = true;
+					}
 					break;
 				}
 				sParams = {};
@@ -193,6 +206,7 @@ class ZomberryConfig {
 			if (configFile != 0) {
 				FPrintln(configFile, "debug = 0;");
 				FPrintln(configFile, "menuKey = KC_M;");
+				FPrintln(configFile, "writeToScriptLog = 0;");
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: config file created successfully." );
 				CloseFile(configFile);
 			} else {
