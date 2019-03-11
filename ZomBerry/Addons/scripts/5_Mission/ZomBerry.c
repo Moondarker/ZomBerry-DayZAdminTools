@@ -455,7 +455,7 @@ modded class MissionGameplay {
 		switch ( key ) {
 			case ZomberryBase.GetConfig().GetMenuKey(): {
 				string r_zbryVer = GetZomberryBase().GetRemoteVersion();
-				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && GetZomberryBase().IsAdmin()) {
+				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && GetZomberryBase().IsAdmin()) {
 					UIMgr.HideDialog(); UIMgr.CloseAll();
 					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
 				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
