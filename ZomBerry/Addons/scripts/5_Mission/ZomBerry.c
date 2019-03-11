@@ -14,6 +14,10 @@ class ZomberryBase {
 		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
 		string tmpStr = "";
 
+		if (!GetConfig().IsDefaultIO()) {
+			GetLogger().SwitchToCustomIO();
+		}
+
 		if (GetCLIParam("zbryInstallMode", tmpStr) && GetGame().IsMultiplayer()) {
 			if (tmpStr == "true") {
 				GetZomberryCmdAPI().AddCategory("ZomBerry Installation Mode", COLOR_RED);
@@ -384,7 +388,7 @@ modded class MissionServer {
 	ref ZomberryBase m_ZomberryBase;
 
 	void MissionServer() {
-		ZomberryBase.Log( "ZomBerry", "Loaded Server side v" + g_zbryVer );
+		ZomberryBase.Log( "ZomBerry", "Starting Server side v" + g_zbryVer );
 	}
 
 	private ref ZomberryBase GetZomberryBase() {
@@ -409,7 +413,7 @@ modded class MissionGameplay {
 
 	void MissionGameplay() {
 
-		ZomberryBase.Log( "ZomBerry", "Loaded Client side v" + g_zbryVer );
+		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
 	}
 
 	private ref ZomberryBase GetZomberryBase() {
@@ -451,7 +455,7 @@ modded class MissionGameplay {
 		switch ( key ) {
 			case ZomberryBase.GetConfig().GetMenuKey(): {
 				string r_zbryVer = GetZomberryBase().GetRemoteVersion();
-				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && GetZomberryBase().IsAdmin()) {
+				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && GetZomberryBase().IsAdmin()) {
 					UIMgr.HideDialog(); UIMgr.CloseAll();
 					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
 				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {

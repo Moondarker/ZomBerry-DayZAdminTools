@@ -3,7 +3,7 @@ class ZomberryLogger {
 	private bool defaultIO = true;
 
 	void ZomberryLogger() {
-		FindFP();
+		//FindFP();
 	}
 
 	void Log(string module, string txt) {
@@ -28,55 +28,61 @@ class ZomberryLogger {
 		}
 	}
 
-	private void FindFP() {
+	void SwitchToCustomIO() {
 		string temp_path = "";
+		if (!defaultIO) return;
+
 		if (GetCLIParam("zbryDir", temp_path)) {
-			Log("ZomBerryLogger", "INFO: Will try to create log file ZB_log.txt in custom directory: " + temp_path);
+			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in custom directory: " + temp_path);
 			SetDir(temp_path);
 		}
 		if (defaultIO) {
 			temp_path = "$profile:ZomBerry\\";
-			Log("ZomBerryLogger", "INFO: Will try to create log file ZB_log.txt in profile directory: " + temp_path);
+			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile directory: " + temp_path);
 			SetDir(temp_path);
 		}
 		if (defaultIO) {
 			temp_path = "$profile:";
-			Log("ZomBerryLogger", "INFO: Will try to create log file ZB_log.txt in profile root: " + temp_path);
+			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile root: " + temp_path);
 			SetDir(temp_path);
 		}
 		if (defaultIO) Log("ZomBerryLogger", "WARN: All attempts to use custom log file failed, using script.log");
 	}
 
 	private void SetDir(string fPath) {
-		string tPath = fPath + "ZB_log.txt";
+		string tPath = fPath + "ZomBerry_" + GetDate(true) + ".log";
 		if (!FileExist(fPath)) MakeDirectory(fPath);
 
 		FileHandle logFile = OpenFile(tPath, FileMode.APPEND);
 		if (logFile != 0) {
-			//Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
-			//defaultIO = false; //Disabled until write to file will be fixed
+			Log("ZomBerryLogger", "INFO: Switching to logfile: " + tPath);
+			defaultIO = false;
 			file_path = tPath;
 			FPrintln(logFile, "---------------------------------------------");
 			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
 			FPrintln(logFile, "");
-			FPrintln(logFile, "Will use script.log");
 			CloseFile(logFile);
 		} else {
 			if (FileExist(tPath)) {
 				Log("ZomBerryLogger", "INFO: Can't write to file " + tPath);
 			} else {
-				Log("ZomBerryLogger", "INFO: Can't create file " + tPath + " (try creating one manually)");
+				Log("ZomBerryLogger", "INFO: Can't create file " + tPath + " (files per directory limit exceeded?)");
 			}
 		}
 	}
 
-	static private string GetDate() {
+	static private string GetDate(bool fileFriendly = false) {
 		int year, month, day, hour, minute, second;
 
 		GetYearMonthDay(year, month, day);
 		GetHourMinuteSecond(hour, minute, second);
 
 		string date = day.ToStringLen(2) + "." + month.ToStringLen(2) + "." + year.ToStringLen(4) + " " + hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2);
+		if (fileFriendly) {
+			date.Replace(" ", "_");
+			date.Replace(".", "-");
+			date.Replace(":", "-");
+		}
 
 		return date;
 	}
