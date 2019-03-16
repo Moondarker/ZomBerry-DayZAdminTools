@@ -237,24 +237,26 @@ class ZomberryConfig {
 	}
 
 	private string FindAdmins() {
-		string temp_path;
+		string temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
 
-		if (!FileExist(temp_path + "admins.cfg")) {
-			if (FileExist("$profile:ZomBerry\\admins.cfg")) {
-				temp_path = "$profile:ZomBerry\\";
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
-			} else if (FileExist("$CurrentDir:admins.cfg")) {
-				temp_path = "$CurrentDir:";
-				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from server root directory (Better use Profile dir!)" );
-			} else if (FileExist("$CurrentDir:\\ZomBerry\\Config\\admins.cfg")) {
-				temp_path = "$CurrentDir:ZomBerry\\Config\\";
-				ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile dir!)" );
-			} else {
-				temp_path = "";
-				ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
-			}
-			if ((temp_path == "" || temp_path.Contains("$CurrentDir")) && realProfilesPath != "") ZomberryBase.Log( "ZomBerryConfig", "INFO: We highly recommend to put admins.cfg inside this folder: " + realProfilesPath + "\\ZomBerry (create it manually if it doesn't exist)");
+		temp_path.Replace("mission.c", "");
+
+		if (FileExist(temp_path + "admins.cfg")) {
+			ZomberryBase.Log( "ZomBerryConfig", "WARN !!!: Using admins.cfg from MISSION directory, this directory WON'T BE USED after v0.6 release!");
+		} else if (FileExist("$profile:ZomBerry\\admins.cfg")) {
+			temp_path = "$profile:ZomBerry\\";
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
+		} else if (FileExist("$CurrentDir:admins.cfg")) {
+			temp_path = "$CurrentDir:";
+			ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from server root directory (Better use Profile dir!)" );
+		} else if (FileExist("$CurrentDir:\\ZomBerry\\Config\\admins.cfg")) {
+			temp_path = "$CurrentDir:ZomBerry\\Config\\";
+			ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile dir!)" );
+		} else {
+			temp_path = "";
+			ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
 		}
+		if ((temp_path == "" || temp_path.Contains("$CurrentDir")) && realProfilesPath != "") ZomberryBase.Log( "ZomBerryConfig", "INFO: We highly recommend to put admins.cfg inside this folder: " + realProfilesPath + "\\ZomBerry (create it manually if it doesn't exist)");
 
 		return temp_path;
 	}
