@@ -91,10 +91,10 @@ class ZomberryBase {
 		return remoteZbryVer;
 	}
 
-	bool IsAdmin(string plyUID = "") {
+	bool IsAdmin(PlayerIdentity plyIdent = NULL) {
 		string tmpStr = "";
 		if (!GetGame().IsMultiplayer() || GetGame().IsClient()) return isAdmin;
-		if (adminList.Find(plyUID) != -1) return true;
+		if ((adminList.Find(plyIdent.GetId()) != -1) || (adminList.Find(plyIdent.GetPlainId()) != -1)) return true;
 
 		if (GetCLIParam("zbryGiveAdminRightsToEveryone", tmpStr) || GetCLIParam("zbryInstallMode", tmpStr)) {
 			if (tmpStr == "true") return true;
@@ -178,7 +178,7 @@ class ZomberryBase {
 		}
 
 		if ( type == CallType.Server ) {
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer ), true, sender );
 				Log( "ZomBerryDbg", "Auth respond to admin " + sender.GetName() + " (" + sender.GetId() + ")");
 				if (authInfo.param2 != g_zbryVer) {
@@ -216,7 +216,7 @@ class ZomberryBase {
 		bool plyAdmin;
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				if (GetCLIParam("zbryInstallMode", plyName)) {
 					if (plyName == "true") {
 						playerListS.Insert(new ZBerryPlayer(3, "ZomBerry", false, Vector(0,0,0), 0, 0));
@@ -235,7 +235,7 @@ class ZomberryBase {
 					player = PlayerBase.Cast(players.Get(i));
 					plyId = player.GetIdentity().GetPlayerId();
 					plyName = player.GetIdentity().GetName();
-					plyAdmin = IsAdmin(player.GetIdentity().GetId());
+					plyAdmin = IsAdmin(player.GetIdentity());
 
 					if (player.GetItemInHands() && !player.GetCommand_Vehicle()) {plyName += (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 					if (player.GetCommand_Vehicle()) {plyName += (" [" + player.GetCommand_Vehicle().GetTransport().GetDisplayName() + "]")}
@@ -266,7 +266,7 @@ class ZomberryBase {
 		ref ZBerryCategoryArray catList;
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				catList = GetZomberryCmdAPI().GetList();
 
 				GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, sender );
@@ -293,7 +293,7 @@ class ZomberryBase {
 		int targetId = funcParam.param3;
 		if ( type == CallType.Server && GetGame().IsServer() ) {
 			PlayerIdentity targetIdent = ZBGetPlayerById(targetId).GetIdentity();
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, oldFuncParam );
 				if (targetId != funcParam.param2) {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
@@ -324,7 +324,7 @@ class ZomberryBase {
 		if ( !ctx.Read( tgtParam ) ) return;
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				if (tgtParam.param4) {
 					item = ItemBase.Cast(ZBGetPlayerById(tgtParam.param2).GetInventory().CreateInInventory(tgtParam.param1));
 					if (item) item.SetQuantity(item.GetQuantityMax());
@@ -362,7 +362,7 @@ class ZomberryBase {
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender.GetId())) {
+			if (IsAdmin(sender)) {
 				if (!adminPly.GetCommand_Vehicle()) {
 					adminPly.SetPosition(reqpos);
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") teleported to position " + reqpos.ToString());
