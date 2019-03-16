@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.5.7";
+static string g_zbryVer = "0.5.8";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
@@ -42,6 +42,7 @@ class ZomberryBase {
 		GetRPCManager().AddRPC( "ZomBerryAT", "ExecuteCommand", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "SpawnObject", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "MapTeleport", this, SingeplayerExecutionType.Client );
+		//GetRPCManager().AddRPC( "ZomBerryAT", "MiscFunctionData", this, SingeplayerExecutionType.Server );
 	}
 
 	static ref ZomberryConfig GetConfig() {

@@ -428,8 +428,8 @@ class ZomberryStockFunctions {
 
 			m_spectatingList.Insert(adminId);
 
-			GetGame().SelectSpectator(adminIdent, "DayZSpectator", (adminPly.GetPosition() + Vector(0,1.75,0)));
-			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use Q/E to change camera speed");
+			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
+			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
 		}
 	}
 
