@@ -11,7 +11,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected EditBoxWidget m_FuncPEBox0, m_FuncPEBox1, m_FuncPEBox2;
 
 	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton, m_BindButton;
-	protected ButtonWidget m_FilterItemsButton, m_FilterObjectsButton, m_FilterAIButton;
+	protected ButtonWidget m_FilterCatOneButton, m_FilterCatTwoButton, m_FilterCatThreeButton;
 	protected ButtonWidget m_SpawnTargetButton, m_ExecFuncButton, m_PlayersRefresh;
 
 	protected MapWidget m_MapWidget;
@@ -26,6 +26,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected bool m_mapTPAllowed = true;
 	protected autoptr TIntArray m_lastFuncParams = {0,0,0};
 	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
+	protected autoptr ZBerryJsonSpawnMenuGroupArray m_spawnMenuGroups;
 
 	protected string m_lastSelObj;
 	protected string m_objFilter;
@@ -54,9 +55,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_SpawnButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpawnButton") );
 		m_MapButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("MapButton") );
 		m_BindButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("BindButton") );
-		m_FilterItemsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ItemsButton") );
-		m_FilterObjectsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ObjectsButton") );
-		m_FilterAIButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AIButton") );
+		m_FilterCatOneButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ItemsButton") );
+		m_FilterCatTwoButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ObjectsButton") );
+		m_FilterCatThreeButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AIButton") );
 		m_SpawnTargetButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("TargetButton") );
 		m_ExecFuncButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SecondaryExecButton") );
 		m_PlayersRefresh = ButtonWidget.Cast( layoutRoot.FindAnyWidget("PlayersRefresh") );
@@ -103,6 +104,11 @@ class ZomberryMenu extends UIScriptedMenu {
 		GetGame().GetInput().ChangeGameFocus( 1 );
 
 		UpdateObjList("All");
+		m_spawnMenuGroups = ZomberryBase.GetConfig().GetSpawnMenuData();
+
+		m_FilterCatOneButton.SetText(m_spawnMenuGroups[0].CategoryName);
+		m_FilterCatTwoButton.SetText(m_spawnMenuGroups[1].CategoryName);
+		m_FilterCatThreeButton.SetText(m_spawnMenuGroups[2].CategoryName);
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
 		GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
@@ -206,9 +212,9 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {
-		string ItemsFilter = "Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base";
-		string ObjectsFilter = "Transport,House";
-		string AIFilter = "DZ_LightAI";
+		string FilterOne = m_spawnMenuGroups[0].BaseClassNames;
+		string FilterTwo = m_spawnMenuGroups[1].BaseClassNames;
+		string FilterThree = m_spawnMenuGroups[2].BaseClassNames;
 		Param3<int, bool, int> funcData;
 
 		if ( w == m_FunctionsButton ) {
@@ -318,45 +324,45 @@ class ZomberryMenu extends UIScriptedMenu {
 			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
 		}
 
-		if ( w == m_FilterItemsButton ) {
-			if (m_objFilter == ItemsFilter) {
-				m_FilterItemsButton.SetTextColor(0xFFFFFFFF);
+		if ( w == m_FilterCatOneButton ) {
+			if (m_objFilter == FilterOne) {
+				m_FilterCatOneButton.SetTextColor(0xFFFFFFFF);
 				m_objFilter = "All";
 			} else {
-				m_FilterItemsButton.SetTextColor(COLOR_GREEN);
-				m_objFilter = ItemsFilter;
+				m_FilterCatOneButton.SetTextColor(COLOR_GREEN);
+				m_objFilter = FilterOne;
 			}
 
-			m_FilterObjectsButton.SetTextColor(0xFFFFFFFF);
-			m_FilterAIButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatTwoButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatThreeButton.SetTextColor(0xFFFFFFFF);
 			UpdateObjList( m_objFilter );
 		}
 
-		if ( w == m_FilterObjectsButton ) {
-			if (m_objFilter == ObjectsFilter) {
-				m_FilterObjectsButton.SetTextColor(0xFFFFFFFF);
+		if ( w == m_FilterCatTwoButton ) {
+			if (m_objFilter == FilterTwo) {
+				m_FilterCatTwoButton.SetTextColor(0xFFFFFFFF);
 				m_objFilter = "All";
 			} else {
-				m_FilterObjectsButton.SetTextColor(COLOR_GREEN);
-				m_objFilter = ObjectsFilter;
+				m_FilterCatTwoButton.SetTextColor(COLOR_GREEN);
+				m_objFilter = FilterTwo;
 			}
 
-			m_FilterItemsButton.SetTextColor(0xFFFFFFFF);
-			m_FilterAIButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatOneButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatThreeButton.SetTextColor(0xFFFFFFFF);
 			UpdateObjList( m_objFilter );
 		}
 
-		if ( w == m_FilterAIButton ) {
-			if (m_objFilter == AIFilter) {
-				m_FilterAIButton.SetTextColor(0xFFFFFFFF);
+		if ( w == m_FilterCatThreeButton ) {
+			if (m_objFilter == FilterThree) {
+				m_FilterCatThreeButton.SetTextColor(0xFFFFFFFF);
 				m_objFilter = "All";
 			} else {
-				m_FilterAIButton.SetTextColor(COLOR_GREEN);
-				m_objFilter = AIFilter;
+				m_FilterCatThreeButton.SetTextColor(COLOR_GREEN);
+				m_objFilter = FilterThree;
 			}
 
-			m_FilterItemsButton.SetTextColor(0xFFFFFFFF);
-			m_FilterObjectsButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatOneButton.SetTextColor(0xFFFFFFFF);
+			m_FilterCatTwoButton.SetTextColor(0xFFFFFFFF);
 			UpdateObjList( m_objFilter );
 		}
 

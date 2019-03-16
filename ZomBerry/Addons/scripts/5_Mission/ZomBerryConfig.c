@@ -7,6 +7,7 @@ class ZomberryConfig {
 	protected int zbryDebug = 0;
 	protected bool defaultIOFlag = false;
 	protected autoptr TStringIntMap m_keyBindList = new TStringIntMap;
+	protected autoptr ZBerryJsonSpawnMenuGroupArray m_spawnMenuGroups;
 
 	void ZomberryConfig() {
 		if (GetGame().IsMultiplayer() && GetGame().IsServer()) {
@@ -44,6 +45,10 @@ class ZomberryConfig {
 
 	string GetProfilesPath() {
 		return realProfilesPath;
+	}
+
+	ref ZBerryJsonSpawnMenuGroupArray GetSpawnMenuData() {
+		return m_spawnMenuGroups;
 	}
 
 	bool IsDefaultIO() {
@@ -126,8 +131,11 @@ class ZomberryConfig {
 					break;
 				}
 			}
+
 			if ((menuKey == KeyCode.KC_M) && (newConfigData.MenuKey != "KC_M"))
 				ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + newConfigData.MenuKey + " - unknown keycode" );
+
+			m_spawnMenuGroups = newConfigData.SpawnMenuSorting;
 		}
 	}
 
