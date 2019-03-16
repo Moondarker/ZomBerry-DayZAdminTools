@@ -30,13 +30,18 @@ class CfgMods
 		extra = 0;
 		type = "mod";
 
-		dependencies[] = {"Mission"};
+		dependencies[] = {"World", "Mission"};
 
 		class defs
 		{
 			class imageSets
 			{
 				files[] = {"ZomBerry/AT/scripts/imagesets/zomberry_images.imageset"};
+			};
+			class worldScriptModule
+			{
+				value = "";
+				files[] = {"ZomBerry/AT/scripts/4_World"};
 			};
 			class missionScriptModule
 			{

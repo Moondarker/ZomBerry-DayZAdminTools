@@ -29,22 +29,21 @@ class ZomberryLogger {
 	}
 
 	void SwitchToCustomIO() {
-		string temp_path = "";
+		string tempPath = "";
+		string realProfiles = ZomberryBase.GetConfig().GetProfilesPath();
 		if (!defaultIO) return;
 
-		if (GetCLIParam("zbryDir", temp_path)) {
-			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in custom directory: " + temp_path);
-			SetDir(temp_path);
+		if (defaultIO) {
+			tempPath = "$profile:ZomBerry\\";
+			if (realProfiles != "") Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile directory: " + realProfiles + "\\ZomBerry\\");
+				else Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile directory: " + tempPath);
+			SetDir(tempPath);
 		}
 		if (defaultIO) {
-			temp_path = "$profile:ZomBerry\\";
-			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile directory: " + temp_path);
-			SetDir(temp_path);
-		}
-		if (defaultIO) {
-			temp_path = "$profile:";
-			Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile root: " + temp_path);
-			SetDir(temp_path);
+			tempPath = "$profile:";
+			if (realProfiles != "") Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile root: " + realProfiles);
+				else Log("ZomBerryLogger", "INFO: Will try to create ZomBerry log file in profile root: " + tempPath);
+			SetDir(tempPath);
 		}
 		if (defaultIO) Log("ZomBerryLogger", "WARN: All attempts to use custom log file failed, using script.log");
 	}
