@@ -2,6 +2,10 @@ typedef array<ref ZBerryPlayer> ZBerryPlayerArray;
 
 typedef array<ref ZBerryFunction> ZBerryFunctionArray;
 
+typedef array<ref ZBerryJsonSpawnMenuGroup> ZBerryJsonSpawnMenuGroupArray;
+
+typedef array<ref ZBerryJsonPermissionsGroup> ZBerryJsonPermissionsGroupArray;
+
 class ZBerryPlayer {
 	int m_PlayerID;
 	string m_PlayerName;
@@ -200,3 +204,26 @@ class ZBerryFuncParam {
 		return "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString();
 	}
 }
+
+class ZBerryJsonConfig {
+	int DebugLevel;
+	bool UseScriptLog;
+	string MenuKey;
+	ref ZBerryJsonSpawnMenuGroupArray SpawnMenuSorting;
+	ref ZBerryJsonPermissionsGroupArray PermissionGroups;
+};
+
+class ZBerryJsonSpawnMenuGroup {
+	string CategoryName;
+	string BaseClassNames;
+
+	void ZBerryJsonSpawnMenuGroup(string name, string classes) {
+		CategoryName = name;
+		BaseClassNames = classes;
+	}
+};
+
+class ZBerryJsonPermissionsGroup {
+	string GroupName;
+	ref TStringArray AllowedFunctions;
+};
