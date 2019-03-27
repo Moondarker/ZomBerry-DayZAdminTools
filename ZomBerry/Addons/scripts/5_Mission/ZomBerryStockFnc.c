@@ -229,41 +229,60 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		autoptr TStringArray attachments = {
-			"SparkPlug", "CarRadiator", "CarBattery", "GlowPlug", "TruckExhaust", "TruckBattery", "EngineBelt",
-			"HatchbackHood", "CivSedanHood", "CivSedanTrunk", "V3SHood", "BusHood", "HeadlightH7", "HatchbackTrunk",
-			"HatchbackWheel", "CivSedanWheel", "V3SWheel", "V3SWheelDouble", "TransitBusWheel", "TransitBusWheelDouble",
-			"HatchbackDoors_Driver", "HatchbackDoors_CoDriver", "CivVanDoors_Driver", "CivVanDoors_CoDriver", "V3SDoors_Driver",
-			"BusDoors_Left", "BusDoors_Right", "CivSedanDoors_BackLeft", "CivSedanDoors_BackRight", "V3SDoors_CoDriver",
-		};
+		TStringArray slotsCar = new TStringArray;
+		TStringArray slotsTemp = new TStringArray;
+		string strName, strNameTemp;
+
+		Car toBeFixed;
+		ItemBase attachmentTemp;
 		ref array<Object> nearest_objects = new array<Object>;
 		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
-		Car toBeFixed;
+		int i, j, m, sc;
 		vector position = GetPosSafe(target);
 		GetGame().GetObjectsAtPosition ( position, 15, nearest_objects, proxy_cargos );
 
-		for (int i = 0; i < nearest_objects.Count(); ++i) {
+		for (i = 0; i < nearest_objects.Count(); ++i) {
 			if (nearest_objects[i].IsKindOf("CarScript")) {
 				toBeFixed = Car.Cast(nearest_objects[i]);
 
 				//Repair
-				int slotsCount = toBeFixed.GetInventory().GetAttachmentSlotsCount();
+				GetGame().ConfigGetTextArray("CfgVehicles " + toBeFixed.GetType() + " attachments", slotsCar);
+				ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Fixing " + toBeFixed.GetType());
 
-				for (int m = 0; m < attachments.Count(); ++m) {
-					EntityAI attachment = EntityAI.Cast( GetGame().CreateObject(attachments[m], vector.Zero, false, false, false) );
+				sc = GetGame().ConfigGetChildrenCount("CfgVehicles");
+				for (j = 0; j < sc; j++) {
+					GetGame().ConfigGetChildName("CfgVehicles", j, strName );
+					strNameTemp = strName; strNameTemp.ToLower();
 
-					ZomberryBase.Log( "ZomberryFncDbg", "RefuelAndRepair: trying " + attachments[m]);
+					if (!GetGame().IsKindOf(strNameTemp, "Inventory_Base") || strNameTemp.Contains("ruined")) continue;
 
-					if (!attachment) continue;
-					while (toBeFixed.GetInventory().CanAddAttachment(attachment)) { //TOBEFIXED: Known possible 'NULL pointer to instance'
-						//Print("[ZomberryFnc] RefuelAndRepair: attached " + attachments[m]);
-						toBeFixed.GetInventory().CreateAttachment(attachments[m]);
+					if (GetGame().ConfigGetType("CfgVehicles " + strName + " inventorySlot") == CT_ARRAY) {
+						GetGame().ConfigGetTextArray("CfgVehicles " + strName + " inventorySlot", slotsTemp);
+					} else {
+						GetGame().ConfigGetText("CfgVehicles " + strName + " inventorySlot", strNameTemp);
+						slotsTemp.Insert(strNameTemp);
 					}
 
-					attachment.Delete();
+					for (m = 0; m < slotsTemp.Count(); m++) {
+						if (slotsCar.Find(slotsTemp[m]) != -1) {
+							Class.CastTo(attachmentTemp, toBeFixed.FindAttachmentBySlotName(slotsTemp[m]));
+							if (attachmentTemp) {
+								if (attachmentTemp.GetHealth01() > 0.75) continue;
+								ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: " + attachmentTemp.GetType() + " (" + attachmentTemp.GetHealth().ToString() + " HP) - detached");
+								toBeFixed.GetInventory().DropEntity(InventoryMode.PREDICTIVE, toBeFixed, attachmentTemp);
+								attachmentTemp.SetPosition("0 0 0");
+								GetGame().ObjectDelete(attachmentTemp);
+							}
+
+							ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Found and attached " + strName);
+							toBeFixed.GetInventory().CreateInInventory(strName);
+						}
+					}
+
+					slotsTemp.Clear();
 				}
 
-				toBeFixed.SetPosition(toBeFixed.GetPosition() + Vector(0, 0.3, 0));
+				toBeFixed.SetHealth("Engine", "", toBeFixed.GetMaxHealth("Engine", ""));
 
 				//Refuel
 				float fuelReq = toBeFixed.GetFluidCapacity( CarFluid.FUEL ) - (toBeFixed.GetFluidCapacity( CarFluid.FUEL ) * toBeFixed.GetFluidFraction( CarFluid.FUEL ));
