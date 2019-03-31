@@ -270,6 +270,8 @@ class ZomberryStockFunctions {
 								if (attachmentTemp.GetHealth01() > 0.75) continue;
 								ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: " + attachmentTemp.GetType() + " (" + attachmentTemp.GetHealth().ToString() + " HP) - detached");
 								toBeFixed.GetInventory().DropEntity(InventoryMode.PREDICTIVE, toBeFixed, attachmentTemp);
+								attachmentTemp.SetPosition("0 0 0");
+								GetGame().ObjectDelete(attachmentTemp);
 							}
 
 							ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Found and attached " + strName);

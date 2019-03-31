@@ -113,6 +113,15 @@ class ZomberryConfig {
 		ref ZBerryJsonConfig newConfigData;
 
 		JsonFileLoader<ZBerryJsonConfig>.JsonLoadFile(cfgPath + "ZomBerryConfig.json", newConfigData);
+		if (!newConfigData) {
+			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Unable to find config file, will continue with default settings (MenuKey is M, debug disabled, separate log files)" );
+			m_spawnMenuGroups = {
+				new ZBerryJsonSpawnMenuGroup("Items","Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"),
+				new ZBerryJsonSpawnMenuGroup("Objects","Transport,House"),
+				new ZBerryJsonSpawnMenuGroup("AI","DZ_LightAI"),
+			};
+			return;
+		}
 
 		zbryDebug = newConfigData.DebugLevel;
 		defaultIOFlag = newConfigData.UseScriptLog;
