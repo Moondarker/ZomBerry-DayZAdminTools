@@ -148,7 +148,7 @@ class ZomberryStockFunctions {
 		target.GetStatWater().Set(1000);
 		BSMgr.RemoveAllSources();
 
-		MessagePlayer(admin, "Healed target");
+		if (admin) MessagePlayer(admin, "Healed target");
 	}
 
 	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
@@ -164,13 +164,15 @@ class ZomberryStockFunctions {
 		if (listId != -1) {
 			target.SetAllowDamage(true);
 			MessagePlayer(target, "God mode deactivated");
-			if (adminId != targetId) MessagePlayer(admin, "Target - god mode deactivated");
+			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + target.GetIdentity().GetName());
 
 			m_godList.Remove(listId);
 		} else {
+			HealTarget("HealTarget", -1, targetId, "0 0 0");
+
 			target.SetAllowDamage(false);
 			MessagePlayer(target, "God mode activated");
-			if (adminId != targetId) MessagePlayer(admin, "Target - god mode activated");
+			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + target.GetIdentity().GetName());
 
 			m_godList.Insert(targetId);
 		}
