@@ -10,21 +10,21 @@ class ZomBerryCamFree extends ZomBerryCamBase {
 
 		Input input = GetGame().GetInput();
 
-		if( input.GetActionDown("UAZoomInOptics") )
+		if( input.LocalPress("UAZoomInOptics") )
 			speedMultiplier = speedMultiplier + 2;
-		if( input.GetActionDown("UAZoomOutOptics") )
+		if( input.LocalPress("UAZoomOutOptics") )
 			speedMultiplier = speedMultiplier - 2;
 
 		float speed = 5.0 * speedMultiplier;
-		if( input.GetAction("UATurbo") )
+		if( input.LocalValue("UATurbo") )
 			speed *= 2;
 
-		if( input.GetAction("UAWalkRunTemp") )
+		if( input.LocalValue("UAWalkRunTemp") )
 			speed *= 0.5;
 
-		float forward = input.GetAction("UAMoveForward") - input.GetAction("UAMoveBack");
-		float strafe = input.GetAction("UAMoveRight") - input.GetAction("UAMoveLeft"); //BI, pls fix
-		float vertical = input.GetAction("UALeanLeft") - input.GetAction("UALeanRight");
+		float forward = input.LocalValue("UAMoveForward") - input.LocalValue("UAMoveBack");
+		float strafe = input.LocalValue("UAMoveRight") - input.LocalValue("UAMoveLeft"); //BI, pls fix
+		float vertical = input.LocalValue("UALeanLeft") - input.LocalValue("UALeanRight");
 
 		vector direction = GetDirection();
 		vector directionAside = vector.Up * direction;
@@ -40,8 +40,8 @@ class ZomBerryCamFree extends ZomBerryCamBase {
 
 		SetPosition(newPos);
 
-		float yawDiff = input.GetAction("UAAimLeft") - input.GetAction("UAAimRight");
-		float pitchDiff = input.GetAction("UAAimDown") - input.GetAction("UAAimUp");
+		float yawDiff = input.LocalValue("UAAimLeft") - input.LocalValue("UAAimRight");
+		float pitchDiff = input.LocalValue("UAAimDown") - input.LocalValue("UAAimUp");
 		vector oldOrient = GetOrientation();
 		vector newOrient = oldOrient;
 		newOrient[0] = newOrient[0] - Math.RAD2DEG * yawDiff * timeSlice;
