@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.5.9x";
+static string g_zbryVer = "0.6";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
@@ -292,10 +292,13 @@ class ZomberryBase {
 
 		int targetId = funcParam.param3;
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			PlayerIdentity targetIdent = ZBGetPlayerById(targetId).GetIdentity();
+			PlayerBase targetPly = ZBGetPlayerById(targetId);
+			PlayerIdentity targetIdent;
+			if (targetPly) targetIdent = targetPly.GetIdentity();
+
 			if (IsAdmin(sender)) {
 				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, oldFuncParam );
-				if (targetId != funcParam.param2) {
+				if (targetId != funcParam.param2 && targetPly) {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
 				} else {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName());

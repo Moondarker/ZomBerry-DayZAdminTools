@@ -135,7 +135,7 @@ class ZomberryStockFunctions {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
 		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
+			if (admin) MessagePlayer(admin, "Target not found (probably disconnected?)");
 			return;
 		}
 
