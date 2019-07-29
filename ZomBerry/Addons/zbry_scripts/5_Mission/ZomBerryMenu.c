@@ -41,7 +41,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	override Widget Init() {
-		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "ZomBerry\\AT\\scripts\\5_Mission\\layouts\\AdminDialog.layout" );
+		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "ZomBerry\\AT\\gui\\layouts\\AdminDialog.layout" );
 
 		m_TxtTitle = TextWidget.Cast( layoutRoot.FindAnyWidget("TitleText") );
 		m_PlayersList = TextListboxWidget.Cast( layoutRoot.FindAnyWidget("PlayerList") );

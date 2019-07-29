@@ -1,7 +1,7 @@
 MetaFileClass {
- Name "{544691EB4781971C}ZomBerry/AT/scripts/imagesets/zb_menulogo.edds"
+ Name "{544691EB4781971C}ZomBerry/AT/gui/imagesets/zb_menulogo.edds"
  Author "vaker"
- ChangeDate 645162595
+ ChangeDate 1377543933
  Configurations {
   TGAResourceClass PC {
    SourceFile "ZB_menuLogo.tga"
