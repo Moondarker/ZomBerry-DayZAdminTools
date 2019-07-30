@@ -37,7 +37,7 @@ class CfgMods
 		{
 			class imageSets
 			{
-				files[] = {"ZomBerry/AT/gui/imagesets/zomberry_images.imageset"};
+				files[] = {"ZomBerry/AT/gui/imagesets/ZB_menuLogo.imageset"};
 			};
 			class gameScriptModule
 			{

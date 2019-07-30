@@ -8,6 +8,11 @@ modded class MissionGameplay {
 		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
 	}
 
+	void ~MissionGameplay() {
+
+		if (g_ZomberryClient) delete g_ZomberryClient;
+	}
+
 	private ref ZomberryBase GetZomberryBase() {
 		if ( !m_ZomberryBase ) {
 			m_ZomberryBase = new ref ZomberryBase;
@@ -20,7 +25,7 @@ modded class MissionGameplay {
 		if ( !m_ZomberryMenu ) {
 			m_ZomberryMenu = new ref ZomberryMenu;
 			m_ZomberryMenu.Init();
-			GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayers", m_ZomberryMenu, SingeplayerExecutionType.Client );
+			GetZomberryClient();
 			GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctions", m_ZomberryMenu, SingeplayerExecutionType.Client );
 		}
 

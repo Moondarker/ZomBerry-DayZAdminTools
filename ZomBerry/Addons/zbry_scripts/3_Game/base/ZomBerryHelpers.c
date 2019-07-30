@@ -6,21 +6,39 @@ typedef array<ref ZBerryJsonSpawnMenuGroup> ZBerryJsonSpawnMenuGroupArray;
 
 typedef array<ref ZBerryJsonPermissionsGroup> ZBerryJsonPermissionsGroupArray;
 
+typedef array<ref ZBerrySubscription> ZBerrySubscriptionArray;
+
+typedef array<ref ZBerryESPIcon> ZBerryESPIconArray;
+
+class ZBerrySubscription {
+	int m_SubId;
+	Class m_Instance;
+	string m_FncName;
+
+	void ZBerrySubscription(int sid, Class inst, string fncName) {
+		m_SubId = sid;
+		m_Instance = inst;
+		m_FncName = fncName;
+	}
+}
+
 class ZBerryPlayer {
 	int m_PlayerID;
 	string m_PlayerName;
 	bool m_IsAdmin;
 	vector m_PlayerPos;
+	vector m_PlayerDir;
 	int m_PlayerHealth;
 	int m_PlayerBlood;
 
-	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld ) {
+	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld, vector plyDir = "0 0 0" ) {
 		m_PlayerID = uid;
 		m_PlayerName = plyName;
 		m_IsAdmin = isAdmin;
 		m_PlayerPos = plyPos;
 		m_PlayerHealth = plyHP;
 		m_PlayerBlood = plyBld;
+		m_PlayerDir = plyDir;
 	}
 }
 

@@ -28,16 +28,18 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
 	protected autoptr ZBerryJsonSpawnMenuGroupArray m_spawnMenuGroups;
 
+	protected int m_subId = 0;
+
 	protected string m_lastSelObj;
 	protected string m_objFilter;
 	protected string m_objTarget = "Cursor";
 
 	void ZomberryMenu() {
-		//Print ("[ZomBerryUI] INFO: ZomberryMenu::ZomberryMenu()");
+		Print ("[ZomBerryUI] INFO: ZomberryMenu::ZomberryMenu()");
 	}
 
 	void ~ZomberryMenu() {
-		//Print ("[ZomBerryUI] INFO: ZomberryMenu::~ZomberryMenu()");
+		Print ("[ZomBerryUI] INFO: ZomberryMenu::~ZomberryMenu()");
 	}
 
 	override Widget Init() {
@@ -111,7 +113,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FilterCatThreeButton.SetText(m_spawnMenuGroups[2].CategoryName);
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
-		GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
+		m_subId = GetZomberryClient().Subscribe(this, "SyncPlayers");
+		Message("Subbed with ID " + m_subId.ToString());
 		GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctionsRequest", new Param1< int >( 0 ), true, NULL );
 
 		if ( m_objTarget != "Ground" ) m_SpawnTargetButton.SetText( m_objTarget );
@@ -120,6 +123,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	override void OnHide() {
 		super.OnHide();
 		GetGame().GetInput().ResetGameFocus();
+		GetZomberryClient().UnSubscribe(m_subId);
 
 		m_lastSelFunc = -1;
 	}
@@ -318,10 +322,6 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		if ( w == m_ExecFuncButton ) {
 			OnDoubleClick( m_FunctionsList, 0, 0, 0 );
-		}
-
-		if ( w == m_PlayersRefresh ) {
-			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
 		}
 
 		if ( w == m_FilterCatOneButton ) {
@@ -604,21 +604,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		return -1;
 	}
 
-	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
-		Param2<ref ZBerryPlayerArray, int> playerListS;
-		ref ZBerryPlayerArray playerListC;
-		int sUpTime = 0;
-
-		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
-			if ( !ctx.Read( playerListS ) ) {
-				Message("Player sync data read error - possible version mismatch");
-				return;
-			}
-
-			m_PlayersList.ClearItems();
-			playerListC = playerListS.param1;
-			sUpTime = Math.Round(playerListS.param2/1000);
-		}
+	void SyncPlayers(ref ZBerryPlayerArray playerListC, int sUpTime) {
 
 		if (layoutRoot.IsVisible()) {
 			int playerId, playerHealth, playerBlood;
@@ -628,6 +614,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			m_TxtTitle.SetText( "Players in game: " + playerListC.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
 			m_MapWidget.ClearUserMarks();
+			m_PlayersList.ClearItems();
 
 			for ( int i = 0; i < playerListC.Count(); ++i ) {
 				playerId = playerListC.Get(i).m_PlayerID;

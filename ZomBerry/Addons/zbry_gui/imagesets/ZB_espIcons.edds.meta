@@ -1,10 +1,10 @@
 MetaFileClass {
- Name "{544691EB4781971C}ZomBerry/AT/gui/imagesets/ZB_menuLogo.edds"
+ Name "{75068ED6AEA14942}ZomBerry/AT/gui/imagesets/ZB_espIcons.edds"
  Author "Vaker"
- ChangeDate 1377543933
+ ChangeDate 223880958
  Configurations {
   TGAResourceClass PC {
-   SourceFile "ZB_menuLogo.tga"
+   SourceFile "ZB_espIcons.tga"
    FormatCompress Copy
    TiledTexture 0
   }
