@@ -35,11 +35,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected string m_objTarget = "Cursor";
 
 	void ZomberryMenu() {
-		Print ("[ZomBerryUI] INFO: ZomberryMenu::ZomberryMenu()");
-	}
-
-	void ~ZomberryMenu() {
-		Print ("[ZomBerryUI] INFO: ZomberryMenu::~ZomberryMenu()");
+		//Print ("[ZomBerryUI] INFO: ZomberryMenu::ZomberryMenu()");
 	}
 
 	override Widget Init() {
@@ -113,8 +109,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FilterCatThreeButton.SetText(m_spawnMenuGroups[2].CategoryName);
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
+		m_lastSelPlayer = GetZomberryClient().GetSelectedId();
 		m_subId = GetZomberryClient().Subscribe(this, "SyncPlayers");
-		Message("Subbed with ID " + m_subId.ToString());
+		ZomberryClient.Message("Subbed with ID " + m_subId.ToString());
 		GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctionsRequest", new Param1< int >( 0 ), true, NULL );
 
 		if ( m_objTarget != "Ground" ) m_SpawnTargetButton.SetText( m_objTarget );
@@ -296,11 +293,11 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		if ( w == m_BindButton ) {
 			int selFunc = m_FunctionsList.GetSelectedRow();
-			if (selFunc == -1) { Message("No function selected. [Dbl click] to delete bind, [A] + [Dbl click] to remove ALL binds."); return true; }
+			if (selFunc == -1) { ZomberryClient.Message("No function selected. [Dbl click] to delete bind, [A] + [Dbl click] to remove ALL binds."); return true; }
 
 			m_FunctionsList.GetItemData( selFunc, 0, funcData );
 			if (funcData.param3 == -1) return true;
-			if (m_funcParams[funcData.param3].Count() > 0) { Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return true; }
+			if (m_funcParams[funcData.param3].Count() > 0) { ZomberryClient.Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return true; }
 			int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
 
 			if (m_setBindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
@@ -407,6 +404,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_PlayersList.GetItemData( selPlayer, 0, plyData );
 
 			m_lastSelPlayer = plyData.param1;
+			GetZomberryClient().SetSelectedId(m_lastSelPlayer);
 			m_PlyHealth.SetText("  Health: " + plyData.param3.ToString());
 			m_PlyBlood.SetText("  Blood: " + plyData.param4.ToString());
 		}
@@ -426,7 +424,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			if (funcId == -1) return true;
 
 			if ( funcData.param2 ) {
-				if ( FindPlyInList(m_lastSelPlayer) == -1 ) { Message("No player selected"); return true; }
+				if ( FindPlyInList(m_lastSelPlayer) == -1 ) { ZomberryClient.Message("No player selected"); return true; }
 
 				m_PlayersList.GetItemData( FindPlyInList(m_lastSelPlayer), 0, plyData );
 				targetId = plyData.param1;
@@ -500,10 +498,6 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			m_setBindMode = 0;
 		}
-	}
-
-	static void Message( string txt ) {
-		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
 	}
 
 	vector GetCursorPos() { //<3 Arkensor and CO

@@ -38,6 +38,9 @@ class ZomberryStockFunctions {
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
 		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Toggle ESP", "ToggleESPAdm", this, "OnServer", false, {
+			new ZBerryFuncParam("Range", {10, 22000, 1800,}),
+		});
 		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, "OnServer", false, {
@@ -452,6 +455,13 @@ class ZomberryStockFunctions {
 			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
 			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
 		}
+	}
+
+	void ToggleESPAdm( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+		PlayerBase adminPly = ZBGetPlayerById(adminId);
+		PlayerIdentity adminIdent = adminPly.GetIdentity();
+
+		GetRPCManager().SendRPC("ZomBerryAT", "ToggleESPState", new Param1<int> (fValues[0]), true, adminIdent);
 	}
 
 	void SetTime( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {

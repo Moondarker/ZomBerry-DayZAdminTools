@@ -137,6 +137,7 @@ class ZomberryBase {
 		PlayerBase player;
 		int plyId;
 		string plyName;
+		vector plyPos;
 		bool plyAdmin;
 
 		if (GetGame().IsMultiplayer() && GetGame().IsServer()) {
@@ -147,13 +148,14 @@ class ZomberryBase {
 				plyId = player.GetIdentity().GetPlayerId();
 				plyName = player.GetIdentity().GetName();
 				plyAdmin = IsAdmin(player.GetIdentity());
+				MiscGameplayFunctions.GetHeadBonePos(player, plyPos);
 
 				if (plyAdmin) adminsList.Insert(player.GetIdentity());
 
 				if (player.GetItemInHands() && !player.GetCommand_Vehicle()) {plyName += (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 				if (player.GetCommand_Vehicle()) {plyName += (" [" + player.GetCommand_Vehicle().GetTransport().GetDisplayName() + "]")}
 
-				plyData = new ZBerryPlayer(plyId, plyName, plyAdmin, player.GetPosition(), player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation() + "180 0 0");
+				plyData = new ZBerryPlayer(plyId, plyName, plyAdmin, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation());
 				playerListS.Insert(plyData);
 			}
 
@@ -162,9 +164,10 @@ class ZomberryBase {
 
 		} else {
 			player = PlayerBase.Cast(GetGame().GetPlayer());
+			MiscGameplayFunctions.GetHeadBonePos(player, plyPos)
 			if (player.GetItemInHands()) {plyName = (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 
-			plyData = new ZBerryPlayer(0, "Player" + plyName, true, player.GetPosition(), player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation());
+			plyData = new ZBerryPlayer(0, "Player" + plyName, true, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation());
 
 			playerListS.Insert(plyData);
 			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, NULL );

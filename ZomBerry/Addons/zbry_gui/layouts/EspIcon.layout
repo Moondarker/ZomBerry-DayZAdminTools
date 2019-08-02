@@ -1,41 +1,61 @@
-FrameWidgetClass frameWidget {
+FrameWidgetClass FrameWidgetExt {
  ignorepointer 1
  position 0 0
- size 96 80
+ size 128 70
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
  {
-  ImageWidgetClass plyIcon {
-   visible 1
-   size 64 64
+  FrameWidgetClass FrameWidgetIcon {
+   clipchildren 0
+   ignorepointer 1
+   position 0 0
+   size 78 40
    halign center_ref
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   imageTexture "{762C72D7F20167D7}ZomBerry/AT/gui/imagesets/ZB_espIcons.edds"
-   mode blend
-   "src alpha" 1
-   stretch 1
-   "flip u" 0
-   "flip v" 0
-   filter 0
+   {
+    ImageWidgetClass plyIcon {
+     visible 1
+     size 32 32
+     halign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     imageTexture "{762C72D7F20167D7}ZomBerry/AT/gui/imagesets/ZB_espIcons.edds"
+     mode blend
+     "src alpha" 1
+     stretch 1
+     "flip u" 0
+     "flip v" 0
+     filter 0
+    }
+   }
   }
   MultilineTextWidgetClass plyName {
-   size 96 15
+   position 0 0
+   size 128 30
    halign center_ref
    valign bottom_ref
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "Player"
+   style DayZNormal
+   text "Player\nData"
    font "gui/fonts/sdf_metronlight42"
+   "exact text" 1
+   "exact text size" 11
+   "size to text h" 0
+   "size to text v" 0
    "text halign" center
    "text valign" center
    wrap 1
+   "strip newlines" 1
   }
  }
 }

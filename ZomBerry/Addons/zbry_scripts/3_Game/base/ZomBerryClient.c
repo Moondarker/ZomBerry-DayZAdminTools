@@ -2,13 +2,15 @@ class ZomberryClient {
 	autoptr protected ref ZBerryPlayerArray playerListC = new ZBerryPlayerArray;
 	autoptr protected ref ZBerrySubscriptionArray subbedInstances = new ZBerrySubscriptionArray;
 	autoptr protected ref ZomberryESPManager m_ZomberryESPManager;
+	protected bool espEnabled = false;
 	protected int sUpTime = 0;
 	protected int subCount = 0;
+	protected int selectedId = -1;
 
 	void ZomberryClient() {
 
 		GetRPCManager().AddRPC("ZomBerryAT", "SyncPlayers", this, SingeplayerExecutionType.Client);
-		GetZomberryESPManager().HUDLoop(true);
+		GetRPCManager().AddRPC("ZomBerryAT", "ToggleESPState", this, SingeplayerExecutionType.Client);
 	}
 
 	void ~ZomberryClient() {
@@ -19,11 +21,8 @@ class ZomberryClient {
 	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
 		Param2<ref ZBerryPlayerArray, int> playerListS;
 
-		if ( type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer() ) {
-			if ( !ctx.Read( playerListS ) ) {
-				/*Message("Player sync data read error - possible version mismatch");*/
-				return;
-			}
+		if (type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) {
+			if (!ctx.Read( playerListS )) return;
 
 			playerListC.Clear();
 			playerListC = playerListS.param1;
@@ -32,8 +31,30 @@ class ZomberryClient {
 
 		if (subbedInstances.Count() > 0) {
 			foreach(ZBerrySubscription sub: subbedInstances)
-				GetGame().GameScript.CallFunctionParams(sub.m_Instance, sub.m_FncName, NULL, new Param2<ref ZBerryPlayerArray, int>(playerListC, sUpTime));
+				if (sub)
+					GetGame().GameScript.CallFunctionParams(sub.m_Instance, sub.m_FncName, NULL, new Param2<ref ZBerryPlayerArray, int>(playerListC, sUpTime));
 		}
+	}
+
+
+	void ToggleESPState( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param1<int> espParams;
+
+		if (type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) {
+			if (!ctx.Read( espParams )) return;
+
+			SetESPState(!espEnabled, espParams.param1);
+		}
+	}
+
+	private void SetESPState(bool espEn, int espRng) {
+		espEnabled = espEn;
+		GetZomberryESPManager().HUDLoop(espEn, espRng);
+
+		if (espEn)
+			Message("Toggled ESP ON, range is " + espRng.ToString() + "m");
+		else
+			Message("Toggled ESP OFF");
 	}
 
 	int Subscribe(Class instance, string fncName) {
@@ -49,11 +70,21 @@ class ZomberryClient {
 	}
 
 	ref ZBerryPlayerArray GetPlayerList() {
+		//Message(playerListC[0].m_PlayerPos.ToString());
+		//Message(GetGame().GetScreenPos(playerListC[0].m_PlayerPos + "0 1.85 0").ToString());
 		return playerListC;
 	}
 
 	int GetServerUpTime() {
 		return sUpTime;
+	}
+
+	void SetSelectedId(int sId) {
+		selectedId = sId;
+	}
+
+	int GetSelectedId() {
+		return selectedId;
 	}
 
 	ref ZomberryESPManager GetZomberryESPManager() {
@@ -62,6 +93,10 @@ class ZomberryClient {
 	    }
 
 	    return m_ZomberryESPManager;
+	}
+
+	static void Message( string txt ) {
+		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] " + txt, ""));
 	}
 }
 
