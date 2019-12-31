@@ -10,7 +10,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected SliderWidget m_FuncPSlider0, m_FuncPSlider1, m_FuncPSlider2;
 	protected EditBoxWidget m_FuncPEBox0, m_FuncPEBox1, m_FuncPEBox2;
 
-	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton, m_BindButton;
+	protected ButtonWidget m_FunctionsButton, m_SpawnButton, m_MapButton, m_MultiButton;
 	protected ButtonWidget m_FilterCatOneButton, m_FilterCatTwoButton, m_FilterCatThreeButton;
 	protected ButtonWidget m_SpawnTargetButton, m_ExecFuncButton, m_PlayersRefresh;
 
@@ -24,6 +24,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected bool m_mouseOnMap = false;
 	protected bool m_mouseOnSearch = false;
 	protected bool m_mapTPAllowed = true;
+	protected bool m_spawnModeExpert = false;
 	protected autoptr TIntArray m_lastFuncParams = {0,0,0};
 	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
 	protected autoptr ZBerryJsonSpawnMenuGroupArray m_spawnMenuGroups;
@@ -54,7 +55,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FunctionsButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("FunctionsButton") );
 		m_SpawnButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpawnButton") );
 		m_MapButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("MapButton") );
-		m_BindButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("BindButton") );
+		m_MultiButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("BindButton") );
 		m_FilterCatOneButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ItemsButton") );
 		m_FilterCatTwoButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("ObjectsButton") );
 		m_FilterCatThreeButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AIButton") );
@@ -221,7 +222,8 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_FunctionsButton.SetTextColor(COLOR_GREEN);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
 			m_MapButton.SetTextColor(0xFFFFFFFF);
-			m_BindButton.Show( true );
+			m_MultiButton.SetTextColor(0xFFFFFFFF);
+			m_MultiButton.SetText( "Bind" );
 			m_FunctionsPage.Show( true );
 			m_SpawnPage.Show( false );
 			m_MapPage.Show( false );
@@ -231,17 +233,25 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
 			m_SpawnButton.SetTextColor(COLOR_GREEN);
 			m_MapButton.SetTextColor(0xFFFFFFFF);
-			m_BindButton.Show( false );
 			m_FunctionsPage.Show( false );
 			m_SpawnPage.Show( true );
 			m_MapPage.Show( false );
+
+			if (!m_spawnModeExpert) {
+				m_MultiButton.SetTextColor(COLOR_GREEN);
+				m_MultiButton.SetText( "Safe" );
+			} else {
+				m_MultiButton.SetTextColor(COLOR_RED);
+				m_MultiButton.SetText( "Expert" );
+			}
 		}
 
 		if ( w == m_MapButton ) {
 			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
 			m_MapButton.SetTextColor(COLOR_GREEN);
-			m_BindButton.Show( false );
+			m_MultiButton.SetTextColor(0xFFFFFFFF);
+			m_MultiButton.SetText( "WIP" );
 			m_FunctionsPage.Show( false );
 			m_SpawnPage.Show( false );
 			m_MapPage.Show( true );
@@ -267,12 +277,12 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			if (fKeyBind) {
 				string fButtonName = typename.EnumToString(KeyCode, fKeyBind);
-				m_BindButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
+				m_MultiButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
 			} else {
-				m_BindButton.SetText("Bind");
+				m_MultiButton.SetText("Bind");
 			}
 
-			if (m_setBindMode == 1) m_BindButton.SetText("[...]");
+			if (m_setBindMode == 1) m_MultiButton.SetText("[...]");
 
 			fParamId = funcData.param3;
 			if (fParamId == -1) return true;
@@ -290,29 +300,45 @@ class ZomberryMenu extends UIScriptedMenu {
 			SetParams(m_funcParams[fParamId].Count(), fParamId);
 		}
 
-		if ( w == m_BindButton ) {
-			int selFunc = m_FunctionsList.GetSelectedRow();
-			if (selFunc == -1) { Message("No function selected. [Dbl click] to delete bind, [A] + [Dbl click] to remove ALL binds."); return true; }
+		if ( w == m_MultiButton ) {
+			if (m_FunctionsPage.IsVisible()) {
+				int selFunc = m_FunctionsList.GetSelectedRow();
+				if (selFunc == -1) { Message("No function selected. [Dbl click] to delete bind, [A] + [Dbl click] to remove ALL binds."); return true; }
 
-			m_FunctionsList.GetItemData( selFunc, 0, funcData );
-			if (funcData.param3 == -1) return true;
-			if (m_funcParams[funcData.param3].Count() > 0) { Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return true; }
-			int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
+				m_FunctionsList.GetItemData( selFunc, 0, funcData );
+				if (funcData.param3 == -1) return true;
+				if (m_funcParams[funcData.param3].Count() > 0) { Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return true; }
+				int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
 
-			if (m_setBindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
-				m_BindButton.SetText("CLRALL?");
-				m_setBindMode = -1;
-			} else if (m_setBindMode == 0) {
-				m_BindButton.SetText("[...]");
-				m_setBindMode = 1;
-			} else if (m_setBindMode == -1) {
-				m_BindButton.SetText("Bind");
-				if (KeyState(KeyCode.KC_A) & 0x00000001) ZomberryBase.GetKeyBindsMgr().SetFuncKey(-2, -1);
-				m_setBindMode = 0;
-			} else {
-				m_BindButton.SetText("Bind");
-				ZomberryBase.GetKeyBindsMgr().SetFuncKey(-1, oldKey);
-				m_setBindMode = 0;
+				if (m_setBindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
+					m_MultiButton.SetText("CLRALL?");
+					m_setBindMode = -1;
+				} else if (m_setBindMode == 0) {
+					m_MultiButton.SetText("[...]");
+					m_setBindMode = 1;
+				} else if (m_setBindMode == -1) {
+					m_MultiButton.SetText("Bind");
+					if (KeyState(KeyCode.KC_A) & 0x00000001) ZomberryBase.GetKeyBindsMgr().SetFuncKey(-2, -1);
+					m_setBindMode = 0;
+				} else {
+					m_MultiButton.SetText("Bind");
+					ZomberryBase.GetKeyBindsMgr().SetFuncKey(-1, oldKey);
+					m_setBindMode = 0;
+				}
+			}
+
+			if (m_SpawnPage.IsVisible()) {
+				if (m_spawnModeExpert) {
+					m_MultiButton.SetTextColor(COLOR_GREEN);
+					m_MultiButton.SetText( "Safe" );
+					m_spawnModeExpert = false;
+					UpdateObjList( m_objFilter );
+				} else {
+					m_MultiButton.SetTextColor(COLOR_RED);
+					m_MultiButton.SetText( "Expert" );
+					m_spawnModeExpert = true;
+					UpdateObjList( m_objFilter );
+				}
 			}
 		}
 
@@ -450,10 +476,10 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			m_ObjectsList.GetItemText(selectedObjRow, 0, currentObject);
 
-			//if (m_lastSelObj == currentObject) {
-			Param1<string> currentObjectParam;
+			Param2<string, string> currentObjectParam;
 			m_ObjectsList.GetItemData(selectedObjRow, 0, currentObjectParam);
 			string currentObjectData = currentObjectParam.param1;
+			string currentObjectCName = currentObjectParam.param2;
 
 			if (currentObjectData == "Category") {
 				currentObject.Replace(" == ", "");
@@ -467,14 +493,15 @@ class ZomberryMenu extends UIScriptedMenu {
 				if (m_objTarget == "Ground") targetPlace = adminPly.GetPosition();
 				if (m_objTarget == "Inventory") targetInventory = true;
 
-				GetRPCManager().SendRPC( "ZomBerryAT", "SpawnObject", new Param4< string, int, vector, bool >( currentObject, adminId, targetPlace, targetInventory ), true );
+				GetRPCManager().SendRPC( "ZomBerryAT", "SpawnObject", new Param4< string, int, vector, bool >( currentObjectCName, adminId, targetPlace, targetInventory ), true );
 			}
 			m_lastSelObj = "";
-			//} else {
-			//  m_lastSelObj = currentObject;
-			//}
 		}
 		return true;
+	}
+
+	bool GetCloseClearance() {
+		return !m_mouseOnSearch;
 	}
 
 	void OnKeyPress( int key ) {
@@ -482,10 +509,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		Param3<int, bool, int> funcData;
 		int fKeyBind;
 
-		if (key == ZomberryBase.GetConfig().GetMenuKey()) {
-			if (!m_mouseOnSearch && !UIMgr.IsMenuOpen(MENU_INGAME)) UIMgr.CloseAll();
-			return;
-		}
+		if (key == KeyCode.KC_ESCAPE) return;
 
 		if (m_setBindMode == 1) {
 			if ( m_lastSelFunc == -1 ) return;
@@ -496,7 +520,7 @@ class ZomberryMenu extends UIScriptedMenu {
 			fKeyBind = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
 
 			string fButtonName = typename.EnumToString(KeyCode, key);
-			m_BindButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
+			m_MultiButton.SetText("[" + fButtonName.Substring(3, fButtonName.Length() + -3) + "]");
 
 			m_setBindMode = 0;
 		}
@@ -723,7 +747,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		for (int i = 0; i < splitFilters.Count(); ++i) {
 			int color;
 			m_oCategoryIndex.Insert( splitFilters[i], i );
-			m_ObjectsList.AddItem( " == "+splitFilters[i]+" == ", new Param1<string>("Category"), 0, i );
+			m_ObjectsList.AddItem( " == "+splitFilters[i]+" == ", new Param2<string, string>("Category", ""), 0, i );
 
 			if (m_oCategoryHiddenStatus.Get(splitFilters[i])) {color = 0xFF6767E0;} else {color = 0xFFBCCDE8;};
 			m_ObjectsList.SetItemColor(i, 0, color);
@@ -741,23 +765,27 @@ class ZomberryMenu extends UIScriptedMenu {
 
 				g_Game.ConfigGetChildName( strConfigPath, nClass, strName );
 
+				string displayName;
+				g_Game.ConfigGetText( strConfigPath + " " + strName + " displayName", displayName );
 				int scope = g_Game.ConfigGetInt( strConfigPath + " " + strName + " scope" );
 
 				if ( scope == 0 ) continue;
 
 				string strNameLower = strName;
+				string displayNameLower = displayName;
 
 				strNameLower.ToLower();
+				displayNameLower.ToLower();
+
 				for (int sFilter = 0; sFilter < splitFilters.Count(); ++sFilter) {
 					if (m_oCategoryHiddenStatus.Get(splitFilters[sFilter])) continue;
 
 					if ( GetGame().IsKindOf( strNameLower, splitFilters[sFilter] ) || splitFilters[sFilter] == "All" ) {
-						if ( (strSearch != "" && (!strNameLower.Contains( strSearch ))) ) continue;
-
-						if ( strName == "ItemOptics" ) continue; // Fix crash
+						if ((strSearch != "" && !(strNameLower.Contains(strSearch) || displayNameLower.Contains(strSearch)))) continue;
+						if (!m_spawnModeExpert && (displayName == "" || displayName.Contains("$UNT$"))) continue;
 
 						int catPlace = m_oCategoryIndex.Get( splitFilters[sFilter] );
-						m_ObjectsList.AddItem( strName, new Param1<string>( "Entry" ), 0, catPlace+1);
+						m_ObjectsList.AddItem(strName + " [" + displayName + "]", new Param2<string, string>("Entry", strName), 0, catPlace+1);
 
 						for (int m = 0; m < m_oCategoryIndex.Count(); ++m) { //m+1
 							if (m_oCategoryIndex.GetElement(m) >= catPlace+1) {

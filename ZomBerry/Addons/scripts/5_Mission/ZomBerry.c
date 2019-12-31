@@ -1,4 +1,5 @@
-static string g_zbryVer = "0.5.9x";
+#define ZOMBERRY_AT
+static string g_zbryVer = "0.6.0";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
@@ -413,16 +414,15 @@ modded class MissionGameplay {
 	ref ZomberryMenu m_ZomberryMenu;
 
 	void MissionGameplay() {
+		m_ZomberryBase = new ref ZomberryBase;
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
 	}
 
-	private ref ZomberryBase GetZomberryBase() {
-		if ( !m_ZomberryBase ) {
-			m_ZomberryBase = new ref ZomberryBase;
-		}
+	void ~MissionGameplay() {
 
-		return m_ZomberryBase;
+		if (m_ZomberryMenu) delete m_ZomberryMenu;
+		if (m_ZomberryBase) delete m_ZomberryBase;
 	}
 
 	private ref ZomberryMenu GetZomberryMenu() {
@@ -439,45 +439,51 @@ modded class MissionGameplay {
 	override void OnMissionStart() {
 		super.OnMissionStart();
 
-		GetZomberryBase().OnClientReady();
+		m_ZomberryBase.OnClientReady();
 	}
 
-	override void OnKeyPress( int key ) {
-		super.OnKeyPress( key );
-
-		UIManager UIMgr = GetGame().GetUIManager();
+	override void OnKeyPress(int key) {
+		super.OnKeyPress(key);
 
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-			GetZomberryMenu().OnKeyPress( key );
-		} else if (GetZomberryBase().IsAdmin()) {
-			ZomberryBase.GetKeyBindsMgr().OnKeyPress( key );
+			GetZomberryMenu().OnKeyPress(key);
+		} else if (m_ZomberryBase.IsAdmin()) {
+			ZomberryBase.GetKeyBindsMgr().OnKeyPress(key);
+		}
+	}
+
+	void DisplayMessage(string msg) {
+		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", msg, ""));
+	}
+
+	override void OnUpdate(float timeslice) {
+		super.OnUpdate(timeslice);
+
+		if (GetUApi().GetInputByName("UAZBerryOpenAdminMenu").LocalPress()) {
+			string r_zbryVer = m_ZomberryBase.GetRemoteVersion();
+			UIScriptedMenu menu = GetUIManager().GetMenu();
+
+			if (!menu && m_ZomberryBase.IsAdmin()) {
+				GetUIManager().ShowScriptedMenu( GetZomberryMenu(), NULL );
+				PlayerControlDisable(INPUT_EXCLUDE_ALL);
+			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
+				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
+				PlayerControlEnable(false);
+			} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
+				DisplayMessage("[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer);
+			} else if (r_zbryVer.Contains("CFGFailed")) {
+				DisplayMessage("[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script_date_time.log(s) and FAQ");
+			}
+			if (g_zbryVer.Substring(2, 3).ToFloat() > r_zbryVer.Substring(2, 3).ToFloat() && !m_plyWarned) {
+				DisplayMessage("[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+ to get latest features!");
+				DisplayMessage("[ZomBerry] INFO: Server is currently running on: v" + r_zbryVer);
+				m_plyWarned = true;
+			}
 		}
 
-		switch ( key ) {
-			case ZomberryBase.GetConfig().GetMenuKey(): {
-				string r_zbryVer = GetZomberryBase().GetRemoteVersion();
-				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && GetZomberryBase().IsAdmin()) {
-					UIMgr.HideDialog(); UIMgr.CloseAll();
-					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
-				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer, ""));
-				} else if (r_zbryVer.Contains("CFGFailed")) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script_date_time.log(s) and FAQ", ""));
-				}
-				if (g_zbryVer.Substring(2, 3).ToFloat() > r_zbryVer.Substring(2, 3).ToFloat() && !m_plyWarned) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+ to get latest features!", ""));
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Server is currently running on: v" + r_zbryVer, ""));
-					m_plyWarned = true;
-				}
-				break;
-			}
-
-			case KeyCode.KC_ESCAPE: {
-				if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-					UIMgr.HideScriptedMenu( GetZomberryMenu() );
-				}
-				break;
-			}
+		if (GetUApi().GetInputByName("UAUIBack").LocalPress() && GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
+			GetUIManager().HideScriptedMenu( GetZomberryMenu() );
+			PlayerControlEnable(false);
 		}
 	}
 };

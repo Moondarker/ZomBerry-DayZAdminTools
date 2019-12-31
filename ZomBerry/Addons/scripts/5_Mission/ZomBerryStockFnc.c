@@ -1,7 +1,6 @@
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
-	autoptr TIntArray m_godList = new TIntArray;
 	autoptr TIntStringMap m_deleteList = new TIntStringMap;
 
 	void ZomberryStockFunctions() {
@@ -11,6 +10,7 @@ class ZomberryStockFunctions {
 	void Init() {
 		m_ZomberryCmdAPI.AddCategory("OnTarget", 0xFF42AAFF);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
@@ -80,6 +80,29 @@ class ZomberryStockFunctions {
 			return true;
 		}
 		return false;
+	}
+
+	void TPForward( string funcName, int adminId, int targetId, vector cursor ) {
+		const int tpDist = 10;
+		vector currentPos, curToTgtDir, targetPos;
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		currentPos = GetPosSafe(admin);
+		currentPos[1] = 0;
+		cursor[1] = 0;
+
+		curToTgtDir = vector.Direction(currentPos, cursor);
+		curToTgtDir.Normalize();
+
+		targetPos[0] = curToTgtDir[0]*tpDist;
+		targetPos[2] = curToTgtDir[2]*tpDist;
+		targetPos = targetPos + currentPos;
+
+		targetPos[1] = GetGame().SurfaceY(targetPos[0], targetPos[2]);
+
+		if (!SetPosSafe(admin, targetPos)) {
+			MessagePlayer(admin, "Unable to teleport: admin in vehicle");
+		}
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
@@ -152,7 +175,6 @@ class ZomberryStockFunctions {
 	}
 
 	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		int listId = m_godList.Find(targetId);
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -161,20 +183,17 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		if (listId != -1) {
-			target.SetAllowDamage(true);
+		if (target.ZBIsGod()) {
+			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + target.GetIdentity().GetName());
 
-			m_godList.Remove(listId);
 		} else {
 			HealTarget("HealTarget", -1, targetId, "0 0 0");
 
-			target.SetAllowDamage(false);
+			target.ZBSetGod(true);
 			MessagePlayer(target, "God mode activated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + target.GetIdentity().GetName());
-
-			m_godList.Insert(targetId);
 		}
 	}
 

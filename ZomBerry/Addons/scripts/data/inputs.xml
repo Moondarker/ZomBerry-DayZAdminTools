@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<modded_inputs>
+    <inputs>
+        <actions>
+            <input name="UAZBerryOpenAdminMenu" loc="Open Admin menu" />
+        </actions>
+    </inputs>
+
+    <preset>
+		<input name="UAZBerryOpenAdminMenu">
+            <btn name="kO">
+            </btn>
+        </input>
+    </preset>
+</modded_inputs>

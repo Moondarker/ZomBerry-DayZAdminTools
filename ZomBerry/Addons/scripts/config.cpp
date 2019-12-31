@@ -19,6 +19,7 @@ class CfgMods
 	{
 		dir = "ZomBerry";
 		picture = "set:zomberry_images image:ZBMenuLogo";
+		inputs = "ZomBerry/AT/scripts/data/inputs.xml";
 		action = "";
 		hideName = 0;
 		hidePicture = 0;
