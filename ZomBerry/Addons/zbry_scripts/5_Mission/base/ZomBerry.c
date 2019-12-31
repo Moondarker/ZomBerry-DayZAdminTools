@@ -5,13 +5,16 @@ class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
 	protected bool isAdmin = false;
 	protected autoptr TStringArray adminList = new TStringArray;
+	protected autoptr array<PlayerIdentity> m_activeAdmins;
 	ref ZomberryStockFunctions m_ZomberryStockFunctions;
 	static ref ZomberryConfig m_ZomberryConfig;
+	static ref ZomberryPermissions m_ZomberryPermissions;
 	static ref ZomberryLogger m_ZomberryLogger;
 	static ref ZomberryKeybinds m_ZomberryKeybinds;
 
 	void ZomberryBase() {
-		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
+		m_activeAdmins = new array<PlayerIdentity>;
+		m_ZomberryStockFunctions = new ZomberryStockFunctions;
 		string tmpStr = "";
 
 		if (!GetConfig().IsDefaultIO()) {
@@ -21,7 +24,7 @@ class ZomberryBase {
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) {
 			m_ZomberryStockFunctions.Init();
 			SCQueue = GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM);
-			SCQueue.CallLater(SyncPlayersList, 100);
+			SCQueue.CallLater(SyncPlayersList, 5000);
 		}
 
 		if (GetConfig().GetDebugLvl() >= 2) {
@@ -29,6 +32,7 @@ class ZomberryBase {
 		}
 
 		GetRPCManager().AddRPC( "ZomBerryAT", "AdminAuth", this, SingeplayerExecutionType.Client );
+		GetRPCManager().AddRPC( "ZomBerryAT", "SetActiveAdmin", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctionsRequest", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "ExecuteCommand", this, SingeplayerExecutionType.Client );
 		GetRPCManager().AddRPC( "ZomBerryAT", "SpawnObject", this, SingeplayerExecutionType.Client );
@@ -42,6 +46,14 @@ class ZomberryBase {
 		}
 
 		return m_ZomberryConfig;
+	}
+
+	static ref ZomberryPermissions GetPermsMgr() {
+		if ( !m_ZomberryPermissions ) {
+			m_ZomberryPermissions = new ref ZomberryPermissions;
+		}
+
+		return m_ZomberryPermissions;
 	}
 
 	static ref ZomberryLogger GetLogger() {
@@ -75,7 +87,7 @@ class ZomberryBase {
 	}
 
 	void OnServerReady() {
-		adminList = GetConfig().ConfigureAdmins();
+		//adminList = GetConfig().ConfigureAdmins();
 	}
 
 	string GetRemoteVersion() {
@@ -85,9 +97,9 @@ class ZomberryBase {
 	bool IsAdmin(PlayerIdentity plyIdent = NULL) {
 		string tmpStr = "";
 		if (!GetGame().IsMultiplayer() || GetGame().IsClient()) return isAdmin;
-		if ((adminList.Find(plyIdent.GetId()) != -1) || (adminList.Find(plyIdent.GetPlainId()) != -1)) return true;
+		if (GetPermsMgr().CheckPermission(plyIdent.GetPlainId(), "OpenMenu")) return true;
 
-		if (GetCLIParam("zbryGiveAdminRightsToEveryone", tmpStr) || GetCLIParam("zbryInstallMode", tmpStr)) {
+		if (GetCLIParam("zbryGiveAdminRightsToEveryone", tmpStr)) {
 			if (tmpStr == "true") return true;
 		}
 		return false;
@@ -108,7 +120,7 @@ class ZomberryBase {
 					Log( "ZomBerryAT", "WARN: Admin " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! S: v" + g_zbryVer + ", C: v" + authInfo.param2 + ", clientside may not start!");
 				}
 			} else {
-				if (adminList.Count() <= 1) GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer + "CFGFailed" ), true, sender );
+				if (GetPermsMgr().CountAdmins() < 1) GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer + "CFGFailed" ), true, sender );
 				Log( "ZomBerryDbg", "Auth Request ignored (not an admin) " + sender.GetName() + " (" + sender.GetId() + ")" );
 			}
 		} else {
@@ -129,10 +141,21 @@ class ZomberryBase {
 		}
 	}
 
+	void SetActiveAdmin( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param2<bool, bool> isActive;
+
+		if (!ctx.Read( isActive ) || m_activeAdmins.Find(sender) != -1) return;
+
+		if (isActive.param1)
+			m_activeAdmins.Insert(sender);
+		else
+			m_activeAdmins.RemoveItem(sender);
+
+		if (isActive.param2) SyncPlayersList(); //to be changed
+	}
+
 	void SyncPlayersList() {
-		ref ZBerryPlayer plyData;
 		ref ZBerryPlayerArray playerListS = new ZBerryPlayerArray;
-		ref array<PlayerIdentity> adminsList = new array<PlayerIdentity>;
 		array<Man> players = new array<Man>;
 		PlayerBase player;
 		int plyId;
@@ -150,30 +173,25 @@ class ZomberryBase {
 				plyAdmin = IsAdmin(player.GetIdentity());
 				MiscGameplayFunctions.GetHeadBonePos(player, plyPos);
 
-				if (plyAdmin) adminsList.Insert(player.GetIdentity());
-
 				if (player.GetItemInHands() && !player.GetCommand_Vehicle()) {plyName += (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 				if (player.GetCommand_Vehicle()) {plyName += (" [" + player.GetCommand_Vehicle().GetTransport().GetDisplayName() + "]")}
 
-				plyData = new ZBerryPlayer(plyId, plyName, plyAdmin, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation());
-				playerListS.Insert(plyData);
+				playerListS.Insert(new ZBerryPlayer(plyId, plyName, plyAdmin, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation()));
 			}
 
-			foreach (PlayerIdentity admin: adminsList)
+			foreach(PlayerIdentity admin: m_activeAdmins)
 				GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, admin );
 
 		} else {
 			player = PlayerBase.Cast(GetGame().GetPlayer());
-			MiscGameplayFunctions.GetHeadBonePos(player, plyPos)
+			MiscGameplayFunctions.GetHeadBonePos(player, plyPos);
 			if (player.GetItemInHands()) {plyName = (" [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]")}
 
-			plyData = new ZBerryPlayer(0, "Player" + plyName, true, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation());
-
-			playerListS.Insert(plyData);
+			playerListS.Insert(new ZBerryPlayer(0, "Player" + plyName, true, plyPos, player.GetHealth(), player.GetHealth("", "Blood"), player.GetOrientation()));
 			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, NULL );
 		}
 
-		SCQueue.CallLater(SyncPlayersList, 100 + players.Count() * 1.5);
+		SCQueue.CallLater(SyncPlayersList, 5000);
 	}
 
 	void SyncFunctionsRequest( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {

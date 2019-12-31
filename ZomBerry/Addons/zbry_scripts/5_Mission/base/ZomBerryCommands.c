@@ -1,9 +1,14 @@
 class ZomberryCmdAPI {
-	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
-	protected int m_lastFuncId = 0;
+	protected ref ZBerryCategoryArray m_oCategoryList;
+	protected int m_lastFuncId;
 
 	void ZomberryCmdAPI() {
+		m_lastFuncId = 0;
+		m_oCategoryList = new ZBerryCategoryArray();
+	}
 
+	void ~ZomberryCmdAPI() {
+		delete m_oCategoryList;
 	}
 
 	void AddCategory(string catName, int funcColor) {

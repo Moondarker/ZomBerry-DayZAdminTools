@@ -4,6 +4,7 @@ modded class MissionGameplay {
 	ref ZomberryMenu m_ZomberryMenu;
 
 	void MissionGameplay() {
+		m_ZomberryBase = new ref ZomberryBase;
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
 	}
@@ -11,14 +12,8 @@ modded class MissionGameplay {
 	void ~MissionGameplay() {
 
 		if (g_ZomberryClient) delete g_ZomberryClient;
-	}
-
-	private ref ZomberryBase GetZomberryBase() {
-		if ( !m_ZomberryBase ) {
-			m_ZomberryBase = new ref ZomberryBase;
-		}
-
-		return m_ZomberryBase;
+		if (m_ZomberryMenu) delete m_ZomberryMenu;
+		if (m_ZomberryBase) delete m_ZomberryBase;
 	}
 
 	private ref ZomberryMenu GetZomberryMenu() {
@@ -35,7 +30,7 @@ modded class MissionGameplay {
 	override void OnMissionStart() {
 		super.OnMissionStart();
 
-		GetZomberryBase().OnClientReady();
+		m_ZomberryBase.OnClientReady();
 	}
 
 	override void OnKeyPress( int key ) {
@@ -45,14 +40,14 @@ modded class MissionGameplay {
 
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
 			GetZomberryMenu().OnKeyPress( key );
-		} else if (GetZomberryBase().IsAdmin()) {
+		} else if (m_ZomberryBase.IsAdmin()) {
 			ZomberryBase.GetKeyBindsMgr().OnKeyPress( key );
 		}
 
 		switch ( key ) {
 			case ZomberryBase.GetConfig().GetMenuKey(): {
-				string r_zbryVer = GetZomberryBase().GetRemoteVersion();
-				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && GetZomberryBase().IsAdmin()) {
+				string r_zbryVer = m_ZomberryBase.GetRemoteVersion();
+				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && m_ZomberryBase.IsAdmin()) {
 					UIMgr.HideDialog(); UIMgr.CloseAll();
 					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
 				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {

@@ -1,41 +1,57 @@
 class ZomberryClient {
-	autoptr protected ref ZBerryPlayerArray playerListC = new ZBerryPlayerArray;
-	autoptr protected ref ZBerrySubscriptionArray subbedInstances = new ZBerrySubscriptionArray;
-	autoptr protected ref ZomberryESPManager m_ZomberryESPManager;
-	protected bool espEnabled = false;
-	protected int sUpTime = 0;
-	protected int subCount = 0;
-	protected int selectedId = -1;
+	protected ref ZBerryPlayerArray playerListC;
+	protected ref ZBerrySubscriptionArray subbedInstances;
+	protected ref ZomberryESPManager m_ZomberryESPManager;
+	protected bool espEnabled;
+	protected int sUpTime, subCount, selectedId, cliSrvTDelta;
 
 	void ZomberryClient() {
+		playerListC = new ZBerryPlayerArray();
+		subbedInstances = new ZBerrySubscriptionArray();
+		espEnabled = false;
+		sUpTime = 0;
+		subCount = 0;
+		selectedId = -1;
+		cliSrvTDelta = 0;
 
 		GetRPCManager().AddRPC("ZomBerryAT", "SyncPlayers", this, SingeplayerExecutionType.Client);
 		GetRPCManager().AddRPC("ZomBerryAT", "ToggleESPState", this, SingeplayerExecutionType.Client);
+		GetRPCManager().AddRPC("ZomBerryAT", "FreezePlayer", this, SingeplayerExecutionType.Client);
 	}
 
 	void ~ZomberryClient() {
-
+		if (playerListC) delete playerListC;
+		if (subbedInstances) delete subbedInstances;
 		if (m_ZomberryESPManager) delete m_ZomberryESPManager;
+	}
+
+	void ReportActive(bool isActive) {
+		GetRPCManager().SendRPC( "ZomBerryAT", "SetActiveAdmin", new Param2<bool, bool> (isActive, (playerListC.Count() == 0)), true, NULL );
 	}
 
 	void SyncPlayers( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
 		Param2<ref ZBerryPlayerArray, int> playerListS;
 
 		if (type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) {
-			if (!ctx.Read( playerListS )) return;
+			if (!ctx.Read(playerListS) || !playerListC || !subbedInstances) return;
 
 			playerListC.Clear();
 			playerListC = playerListS.param1;
-			sUpTime = Math.Round(playerListS.param2/1000);
-		}
 
-		if (subbedInstances.Count() > 0) {
-			foreach(ZBerrySubscription sub: subbedInstances)
-				if (sub)
-					GetGame().GameScript.CallFunctionParams(sub.m_Instance, sub.m_FncName, NULL, new Param2<ref ZBerryPlayerArray, int>(playerListC, sUpTime));
+			if (GetGame().IsMultiplayer())
+				cliSrvTDelta = playerListS.param2 - GetGame().GetTime();
+
+			SendUpdToSubs();
 		}
 	}
 
+	private void SendUpdToSubs(int subId = -1) {
+		if (subbedInstances.Count() > 0) {
+			foreach(ZBerrySubscription sub: subbedInstances)
+				if (sub && (subId == -1 || subId == sub.m_SubId))
+					GetGame().GameScript.CallFunctionParams(sub.m_Instance, sub.m_FncName, NULL, new Param2<ref ZBerryPlayerArray, int>(playerListC, cliSrvTDelta));
+		}
+	}
 
 	void ToggleESPState( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
 		Param1<int> espParams;
@@ -44,6 +60,16 @@ class ZomberryClient {
 			if (!ctx.Read( espParams )) return;
 
 			SetESPState(!espEnabled, espParams.param1);
+		}
+	}
+
+	void FreezePlayer( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+		Param1<bool> isFrozen;
+
+		if (type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) {
+			if (!ctx.Read( isFrozen )) return;
+
+			GetGame().GetPlayer().GetInputController().SetDisabled(isFrozen.param1);
 		}
 	}
 
@@ -60,6 +86,7 @@ class ZomberryClient {
 	int Subscribe(Class instance, string fncName) {
 		subCount++;
 		subbedInstances.Insert(new ZBerrySubscription(subCount, instance, fncName));
+		SendUpdToSubs(subCount);
 		return subCount;
 	}
 
@@ -75,8 +102,12 @@ class ZomberryClient {
 		return playerListC;
 	}
 
-	int GetServerUpTime() {
-		return sUpTime;
+	bool IsESPEnabled() {
+		return espEnabled;
+	}
+
+	int GetCliSrvTDelta() {
+		return cliSrvTDelta;
 	}
 
 	void SetSelectedId(int sId) {

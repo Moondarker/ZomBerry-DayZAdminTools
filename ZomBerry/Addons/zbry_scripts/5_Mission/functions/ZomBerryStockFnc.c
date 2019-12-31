@@ -11,6 +11,7 @@ class ZomberryStockFunctions {
 	void Init() {
 		m_ZomberryCmdAPI.AddCategory("OnTarget", 0xFF42AAFF);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
@@ -83,6 +84,29 @@ class ZomberryStockFunctions {
 			return true;
 		}
 		return false;
+	}
+
+	void TPForward( string funcName, int adminId, int targetId, vector cursor ) {
+		const int tpDist = 10;
+		vector currentPos, curToTgtDir, targetPos;
+		PlayerBase admin = ZBGetPlayerById(adminId);
+
+		currentPos = GetPosSafe(admin);
+		currentPos[1] = 0;
+		cursor[1] = 0;
+
+		curToTgtDir = vector.Direction(currentPos, cursor);
+		curToTgtDir.Normalize();
+
+		targetPos[0] = curToTgtDir[0]*tpDist;
+		targetPos[2] = curToTgtDir[2]*tpDist;
+		targetPos = targetPos + currentPos;
+
+		targetPos[1] = GetGame().SurfaceY(targetPos[0], targetPos[2]);
+
+		if (!SetPosSafe(admin, targetPos)) {
+			MessagePlayer(admin, "Unable to teleport: admin in vehicle");
+		}
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
@@ -441,6 +465,7 @@ class ZomberryStockFunctions {
 			adminInput.OverrideAimChangeY(false, 0);
 
 			m_spectatingList.Remove(listId);
+			GetRPCManager().SendRPC("ZomBerryAT", "FreezePlayer", new Param1<bool>(false), true, adminIdent);
 
 			GetGame().SelectPlayer(adminIdent, adminPly);
 			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
@@ -451,6 +476,7 @@ class ZomberryStockFunctions {
 			adminInput.OverrideAimChangeY(true, 0);
 
 			m_spectatingList.Insert(adminId);
+			GetRPCManager().SendRPC("ZomBerryAT", "FreezePlayer", new Param1<bool>(true), true, adminIdent);
 
 			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
 			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");

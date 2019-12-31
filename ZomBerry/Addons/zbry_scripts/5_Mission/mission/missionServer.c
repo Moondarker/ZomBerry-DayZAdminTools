@@ -1,21 +1,18 @@
 modded class MissionServer {
-	ref ZomberryBase m_ZomberryBase;
+	protected ref ZomberryBase m_ZomberryBase;
 
 	void MissionServer() {
+		m_ZomberryBase = new ref ZomberryBase;
 		ZomberryBase.Log( "ZomBerry", "Starting Server side v" + g_zbryVer );
 	}
 
-	private ref ZomberryBase GetZomberryBase() {
-		if ( !m_ZomberryBase ) {
-			m_ZomberryBase = new ref ZomberryBase;
-		}
-
-		return m_ZomberryBase;
+	void ~MissionServer() {
+		if (!m_ZomberryBase)
 	}
 
 	override void OnInit() {
 		super.OnInit();
 
-		GetZomberryBase().OnServerReady();
+		m_ZomberryBase.OnServerReady();
 	}
 };

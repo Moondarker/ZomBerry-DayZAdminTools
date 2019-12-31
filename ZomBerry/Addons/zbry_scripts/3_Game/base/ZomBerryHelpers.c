@@ -1,14 +1,14 @@
+typedef array<ref ZBerryFunction> ZBerryFunctionArray;
+typedef array<ref ZBerryJsonSpawnMenuGroup> ZBerryJsonSpawnMenuGroupArray;
+typedef array<ref ZBerrySubscription> ZBerrySubscriptionArray;
+typedef array<ref ZBerryESPIcon> ZBerryESPIconArray;
+typedef array<ref ZBerryAdmin> ZBerryAdminArray;
+typedef array<ref ZBerryPermGroup> ZBerryPermGroupArray;
 typedef array<ref ZBerryPlayer> ZBerryPlayerArray;
 
-typedef array<ref ZBerryFunction> ZBerryFunctionArray;
-
-typedef array<ref ZBerryJsonSpawnMenuGroup> ZBerryJsonSpawnMenuGroupArray;
-
-typedef array<ref ZBerryJsonPermissionsGroup> ZBerryJsonPermissionsGroupArray;
-
-typedef array<ref ZBerrySubscription> ZBerrySubscriptionArray;
-
-typedef array<ref ZBerryESPIcon> ZBerryESPIconArray;
+typedef map<string, ref ZBerryPermGroup> ZBerryPermGroupMap;
+typedef map<string, ref ZBerryAdmin> ZBerryAdminMap;
+//typedef map<int, ref ZBerryPlayer> ZBerryPlayerMap;
 
 class ZBerrySubscription {
 	int m_SubId;
@@ -22,6 +22,18 @@ class ZBerrySubscription {
 	}
 }
 
+class ZBerryAdmin {
+	string AdminName;
+	string AdminId;
+	string PermGroup;
+
+	void ZBerryAdmin( string admName, string admId, string pGroup ) {
+		AdminName = admName;
+		AdminId = admId;
+		PermGroup = pGroup;
+	}
+}
+
 class ZBerryPlayer {
 	int m_PlayerID;
 	string m_PlayerName;
@@ -31,8 +43,8 @@ class ZBerryPlayer {
 	int m_PlayerHealth;
 	int m_PlayerBlood;
 
-	void ZBerryPlayer( int uid, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld, vector plyDir = "0 0 0" ) {
-		m_PlayerID = uid;
+	void ZBerryPlayer( int plyId, string plyName, bool isAdmin, vector plyPos, int plyHP, int plyBld, vector plyDir = "0 0 0" ) {
+		m_PlayerID = plyId;
 		m_PlayerName = plyName;
 		m_IsAdmin = isAdmin;
 		m_PlayerPos = plyPos;
@@ -226,9 +238,9 @@ class ZBerryFuncParam {
 class ZBerryJsonConfig {
 	int DebugLevel;
 	bool UseScriptLog;
-	string MenuKey;
 	ref ZBerryJsonSpawnMenuGroupArray SpawnMenuSorting;
-	ref ZBerryJsonPermissionsGroupArray PermissionGroups;
+	ref ZBerryPermGroupArray PermissionGroups;
+	ref ZBerryAdminArray AdminList;
 };
 
 class ZBerryJsonSpawnMenuGroup {
@@ -241,7 +253,25 @@ class ZBerryJsonSpawnMenuGroup {
 	}
 };
 
-class ZBerryJsonPermissionsGroup {
+class ZBerryPermGroup {
+	int GroupId;
+	int GroupColor;
 	string GroupName;
-	ref TStringArray AllowedFunctions;
+	ref TStringArray GroupPerms;
+
+	void ZBerryPermGroup(int gId, int gColor, string gName, ref TStringArray aFuncs) {
+		GroupId = gId;
+		GroupColor = gColor;
+		GroupName = gName;
+		GroupPerms = new TStringArray;
+		GroupPerms.InsertAll(aFuncs);
+	}
+
+	bool HavePermission(string permName) {
+		foreach(string currentPerm: GroupPerms)
+			if (currentPerm == "*" || currentPerm == permName)
+				return true;
+
+		return false;
+	}
 };
