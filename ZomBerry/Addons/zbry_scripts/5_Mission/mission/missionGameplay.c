@@ -33,42 +33,48 @@ modded class MissionGameplay {
 		m_ZomberryBase.OnClientReady();
 	}
 
-	override void OnKeyPress( int key ) {
-		super.OnKeyPress( key );
-
-		UIManager UIMgr = GetGame().GetUIManager();
+	override void OnKeyPress(int key) {
+		super.OnKeyPress(key);
 
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-			GetZomberryMenu().OnKeyPress( key );
+			GetZomberryMenu().OnKeyPress(key);
 		} else if (m_ZomberryBase.IsAdmin()) {
-			ZomberryBase.GetKeyBindsMgr().OnKeyPress( key );
+			ZomberryBase.GetKeyBindsMgr().OnKeyPress(key);
+		}
+	}
+
+	void DisplayMessage(string msg) {
+		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", msg, ""));
+	}
+
+	override void OnUpdate(float timeslice) {
+		super.OnUpdate(timeslice);
+
+		if (GetUApi().GetInputByName("UAZBerryOpenAdminMenu").LocalPress()) {
+			string r_zbryVer = m_ZomberryBase.GetRemoteVersion();
+			UIScriptedMenu menu = GetUIManager().GetMenu();
+
+			if (!menu && m_ZomberryBase.IsAdmin()) {
+				GetUIManager().ShowScriptedMenu( GetZomberryMenu(), NULL );
+				PlayerControlDisable(INPUT_EXCLUDE_ALL);
+			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
+				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
+				PlayerControlEnable(false);
+			} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
+				DisplayMessage("[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer);
+			} else if (r_zbryVer.Contains("CFGFailed")) {
+				DisplayMessage("[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script_date_time.log(s) and FAQ");
+			}
+			if (g_zbryVer.Substring(2, 3).ToFloat() > r_zbryVer.Substring(2, 3).ToFloat() && !m_plyWarned) {
+				DisplayMessage("[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+ to get latest features!");
+				DisplayMessage("[ZomBerry] INFO: Server is currently running on: v" + r_zbryVer);
+				m_plyWarned = true;
+			}
 		}
 
-		switch ( key ) {
-			case ZomberryBase.GetConfig().GetMenuKey(): {
-				string r_zbryVer = m_ZomberryBase.GetRemoteVersion();
-				if (!GetZomberryMenu().GetLayoutRoot().IsVisible() && !UIMgr.IsMenuOpen(MENU_INGAME) && !UIMgr.IsMenuOpen(MENU_CHAT_INPUT) && m_ZomberryBase.IsAdmin()) {
-					UIMgr.HideDialog(); UIMgr.CloseAll();
-					UIMgr.ShowScriptedMenu( GetZomberryMenu() , NULL );
-				} else if (r_zbryVer.Substring(0, 3) != g_zbryVer.Substring(0, 3)) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer, ""));
-				} else if (r_zbryVer.Contains("CFGFailed")) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry]: Serverside loaded, but misconfigured. 0 admins in list, please check admins.cfg, script_date_time.log(s) and FAQ", ""));
-				}
-				if (g_zbryVer.Substring(2, 3).ToFloat() > r_zbryVer.Substring(2, 3).ToFloat() && !m_plyWarned) {
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Don't forget to update your server to v" + g_zbryVer + "+ to get latest features!", ""));
-					GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", "[ZomBerry] INFO: Server is currently running on: v" + r_zbryVer, ""));
-					m_plyWarned = true;
-				}
-				break;
-			}
-
-			case KeyCode.KC_ESCAPE: {
-				if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-					UIMgr.HideScriptedMenu( GetZomberryMenu() );
-				}
-				break;
-			}
+		if (GetUApi().GetInputByName("UAUIBack").LocalPress() && GetZomberryMenu().GetCloseClearance()) {
+			GetUIManager().HideScriptedMenu( GetZomberryMenu() );
+			PlayerControlEnable(false);
 		}
 	}
 };
