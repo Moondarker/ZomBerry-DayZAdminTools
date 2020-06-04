@@ -3,7 +3,6 @@ class ZomberryConfig {
 	const private string cfgPathServer = "$profile:ZomBerry\\";
 	protected string realProfilesPath = "";
 
-	protected int menuKey = KeyCode.KC_M;
 	protected int zbryDebug = 0;
 	protected bool defaultIOFlag = false;
 	protected autoptr TStringIntMap m_keyBindList = new TStringIntMap;
@@ -24,10 +23,6 @@ class ZomberryConfig {
 		}
 
 		Configure();
-	}
-
-	int GetMenuKey() {
-		return menuKey;
 	}
 
 	int GetDebugLvl() {

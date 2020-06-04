@@ -223,22 +223,23 @@ class ZomberryBase {
 		oldFuncParam = new Param5< string, int, int, vector, autoptr TIntArray >(GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), funcParam.param2, funcParam.param3, funcParam.param4, funcParam.param5 );
 
 		int targetId = funcParam.param3;
+		string fncName = GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName();
 		if ( type == CallType.Server && GetGame().IsServer() ) {
 			PlayerIdentity targetIdent = ZBGetPlayerById(targetId).GetIdentity();
-			if (IsAdmin(sender)) {
-				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, oldFuncParam );
+			if (GetPermsMgr().CheckPermission(sender.GetPlainId(), fncName)) {
+				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), fncName, NULL, oldFuncParam );
 				if (targetId != funcParam.param2) {
-					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + fncName + " on target " + targetIdent.GetName()  + " (" + targetIdent.GetId() + ")");
 				} else {
-					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName());
+					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") executed " + fncName);
 				}
 			} else {
-				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " but IS NOT ADMIN");
+				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute " + fncName + " (But had no permission to do that)");
 			}
 		} else {
 			if (!GetGame().IsMultiplayer()) {
-				Log( "ZomBerryAdmin", "Executed " + GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName() + " (singleplayer)");
-				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), GetZomberryCmdAPI().GetFunc(funcParam.param1).GetName(), NULL, oldFuncParam );
+				Log( "ZomBerryAdmin", "Executed " + fncName + " (singleplayer)");
+				GetGame().GameScript.CallFunctionParams( GetZomberryCmdAPI().GetFunc(funcParam.param1).GetInstance(), fncName, NULL, oldFuncParam );
 			}
 		}
 	}
@@ -256,7 +257,7 @@ class ZomberryBase {
 		if ( !ctx.Read( tgtParam ) ) return;
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender)) {
+			if (GetPermsMgr().CheckPermission(sender.GetPlainId(), "SpawnEverything") || GetPermsMgr().CheckPermission(sender.GetPlainId(), "Spawn" + tgtParam.param1)) {
 				if (tgtParam.param4) {
 					item = ItemBase.Cast(ZBGetPlayerById(tgtParam.param2).GetInventory().CreateInInventory(tgtParam.param1));
 					if (item) item.SetQuantity(item.GetQuantityMax());
@@ -266,7 +267,7 @@ class ZomberryBase {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") spawned " + tgtParam.param1 + " at " + tgtParam.param3);
 				}
 			} else {
-				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to spawn " + tgtParam.param1 + " (NOT AN ADMIN)");
+				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to spawn " + tgtParam.param1 + " (But had no permission to do that)");
 			}
 		} else {
 			if (!GetGame().IsMultiplayer()) {
@@ -294,7 +295,7 @@ class ZomberryBase {
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
-			if (IsAdmin(sender)) {
+			if (GetPermsMgr().CheckPermission(sender.GetPlainId(), "MapTeleport")) {
 				if (!adminPly.GetCommand_Vehicle()) {
 					adminPly.SetPosition(reqpos);
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") teleported to position " + reqpos.ToString());
@@ -302,7 +303,7 @@ class ZomberryBase {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport, but was in vehicle");
 				}
 			} else {
-				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport (NOT AN ADMIN)");
+				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport (But had no permission to do that)");
 			}
 		} else {
 			if (!GetGame().IsMultiplayer()) {

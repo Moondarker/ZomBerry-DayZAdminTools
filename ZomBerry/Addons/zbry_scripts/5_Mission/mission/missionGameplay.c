@@ -72,9 +72,11 @@ modded class MissionGameplay {
 			}
 		}
 
-		if (GetUApi().GetInputByName("UAUIBack").LocalPress() && GetZomberryMenu().GetCloseClearance()) {
-			GetUIManager().HideScriptedMenu( GetZomberryMenu() );
-			PlayerControlEnable(false);
+		if (GetUApi().GetInputByName("UAUIBack").LocalPress() && GetZomberryMenu().GetLayoutRoot().IsVisible()) {
+			if (GetZomberryMenu().GetCloseClearance()) {
+				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
+				PlayerControlEnable(false);
+			};
 		}
 	}
 };
