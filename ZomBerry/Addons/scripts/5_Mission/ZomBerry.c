@@ -1,5 +1,4 @@
-#define ZOMBERRY_AT
-static string g_zbryVer = "0.6.0";
+static string g_zbryVer = "0.6.1";
 
 class ZomberryBase {
 	protected string remoteZbryVer = g_zbryVer;
