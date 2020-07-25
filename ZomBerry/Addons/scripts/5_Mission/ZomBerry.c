@@ -462,7 +462,7 @@ modded class MissionGameplay {
 			string r_zbryVer = m_ZomberryBase.GetRemoteVersion();
 			UIScriptedMenu menu = GetUIManager().GetMenu();
 
-			if (!menu && m_ZomberryBase.IsAdmin()) {
+			if (!menu && !GetZomberryMenu().GetLayoutRoot().IsVisible() && m_ZomberryBase.IsAdmin()) {
 				GetUIManager().ShowScriptedMenu( GetZomberryMenu(), NULL );
 				PlayerControlDisable(INPUT_EXCLUDE_ALL);
 			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
