@@ -532,7 +532,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 		
 		if ( w == m_MapWidget ) {
-			ZomberryBase.Log("", "scale: " + m_MapWidget.GetScale());
 			m_MapWidget.SetScale(0.94);
 		}
 		
