@@ -15,6 +15,9 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ButtonWidget m_SpawnTargetButton, m_ExecFuncButton, m_PlayersRefresh;
 
 	protected MapWidget m_MapWidget;
+	protected vector m_MapPos;
+	protected bool m_MapDiff;
+	protected float m_MapScale; 
 
 	protected autoptr map< string, bool > m_oCategoryHiddenStatus = new map< string, bool >;
 
@@ -120,6 +123,9 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void OnHide() {
 		super.OnHide();
+		
+		m_MapDiff = false;
+				
 		GetGame().GetInput().ResetGameFocus();
 
 		m_lastSelFunc = -1;
@@ -193,21 +199,39 @@ class ZomberryMenu extends UIScriptedMenu {
 		return false;
 	}
 
+	void CorrectMapPos(string MapPos, float MapScale) {
+		m_MapWidget.SetMapPos(MapPos.ToVector());
+		m_MapWidget.SetScale(MapScale);
+		m_MapDiff = true;
+	}
+	
 	override void Update(float tDelta) {
-		if (m_MapPage.IsVisible() && m_mouseOnMap) {
-			int sX, sY;
-			vector mapXZY;
-			GetMousePos(sX, sY);
-			mapXZY = m_MapWidget.ScreenToMap(Vector(sX, sY, 0));
-			m_MapText.SetText("X: " + mapXZY[0] + "  Y: " + mapXZY[2]);
-
-			if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
-				if (m_mapTPAllowed) {
-					m_mapTPAllowed = false;
-					GetRPCManager().SendRPC( "ZomBerryAT", "MapTeleport", new Param1< vector >( mapXZY ), true );
-				}
+		if (m_MapPage.IsVisible()) {
+			
+			if(!m_MapDiff && m_MapPos && m_MapPos != m_MapWidget.GetMapPos()) {
+				GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(CorrectMapPos, 100, false, m_MapPos.ToString(false), m_MapScale);
 			} else {
-				if (!m_mapTPAllowed) m_mapTPAllowed = true;
+				m_MapPos = m_MapWidget.GetMapPos();
+				m_MapScale = m_MapWidget.GetScale();
+			}
+			
+			if(m_mouseOnMap) {
+			
+				int sX, sY;
+				vector mapXZY;
+				GetMousePos(sX, sY);
+				mapXZY = m_MapWidget.ScreenToMap(Vector(sX, sY, 0));
+				m_MapText.SetText("X: " + mapXZY[0] + "  Y: " + mapXZY[2]);
+	
+				
+				if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
+					if (m_mapTPAllowed) {
+						m_mapTPAllowed = false;
+						GetRPCManager().SendRPC( "ZomBerryAT", "MapTeleport", new Param1< vector >( mapXZY ), true );
+					}
+				} else {
+					if (!m_mapTPAllowed) m_mapTPAllowed = true;
+				}
 			}
 		}
 	}
@@ -247,6 +271,15 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		if ( w == m_MapButton ) {
+			
+			if(!m_MapPos) {
+				m_MapPos = m_MapWidget.GetMapPos();
+				m_MapScale = m_MapWidget.GetScale();
+			} else {
+				m_MapWidget.SetMapPos(m_MapPos);
+				m_MapWidget.SetScale(m_MapScale);
+			}
+			
 			m_FunctionsButton.SetTextColor(0xFFFFFFFF);
 			m_SpawnButton.SetTextColor(0xFFFFFFFF);
 			m_MapButton.SetTextColor(COLOR_GREEN);
@@ -413,7 +446,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		} else {
 			adminId = 0;
 		}
-
+		
 		if ( w == m_PlayersList ) {
 
 			if ( FindPlyInList(m_lastSelPlayer) != -1 ) {
@@ -497,6 +530,11 @@ class ZomberryMenu extends UIScriptedMenu {
 			}
 			m_lastSelObj = "";
 		}
+		
+		if ( w == m_MapWidget ) {
+			m_MapWidget.SetScale(0.94);
+		}
+		
 		return true;
 	}
 
