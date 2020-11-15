@@ -43,17 +43,26 @@ class CfgMods
 			class gameScriptModule
 			{
 				value = "";
-				files[] = {"ZomBerry/AT/scripts/3_Game"};
+				files[] = {
+					"ZomBerry/AT/scripts/common",
+					"ZomBerry/AT/scripts/3_Game"
+				};
 			};
 			class worldScriptModule
 			{
 				value = "";
-				files[] = {"ZomBerry/AT/scripts/4_World"};
+				files[] = {
+					"ZomBerry/AT/scripts/common",
+					"ZomBerry/AT/scripts/4_World"
+				};
 			};
 			class missionScriptModule
 			{
 				value = "";
-				files[] = {"ZomBerry/AT/scripts/5_Mission"};
+				files[] = {
+					"ZomBerry/AT/scripts/common",
+					"ZomBerry/AT/scripts/5_Mission"
+				};
 			};
 		};
 	};
