@@ -94,7 +94,7 @@ class ZomberryConfig {
 
 		if (FileExist(cfgPath + "ZomBerry.cfg") && !FileExist(cfgPath + "ZomBerryConfig.json")) ReadOldConfig(); //Read an old config, new one will be created with old params
 
-		if (!FileExist(cfgPath + "ZomBerryConfig.json") || !FileExist(cfgPath + "ZomBerryKeybinds.bin")) CreateNew(cfgPath);
+		CreateNew(cfgPath);
 
 		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) ConfigureKeybinds();
 
@@ -245,32 +245,42 @@ class ZomberryConfig {
 		return adminList;
 	}
 
-	private string FindAdmins() {
+	private string FindAdmins(bool doLogs = true) {
 		string temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
 
 		temp_path.Replace("mission.c", "");
 
 		if (FileExist(temp_path + "admins.cfg")) {
-			ZomberryBase.Log( "ZomBerryConfig", "WARN !!!: Using admins.cfg from MISSION directory, this directory WON'T BE USED after v0.6 release!");
+			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "WARN !!!: Using admins.cfg from MISSION directory, this directory WON'T BE USED after v0.6 release!");
 		} else if (FileExist("$profile:ZomBerry\\admins.cfg")) {
 			temp_path = "$profile:ZomBerry\\";
-			ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
+			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
 		} else if (FileExist("$CurrentDir:admins.cfg")) {
 			temp_path = "$CurrentDir:";
-			ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from server root directory (Better use Profile dir!)" );
+			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from server root directory (Better use Profile dir!)" );
 		} else if (FileExist("$CurrentDir:\\ZomBerry\\Config\\admins.cfg")) {
 			temp_path = "$CurrentDir:ZomBerry\\Config\\";
-			ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile dir!)" );
+			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "WARN: Using admins.cfg from ZomBerry Addon directory (Better use Profile dir!)" );
 		} else {
 			temp_path = "";
-			ZomberryBase.Log( "ZomBerryConfig", "FATAL: admins.cfg was NOT found, please check previous logs and read FAQ." );
 		}
-		if ((temp_path == "" || temp_path.Contains("$CurrentDir")) && realProfilesPath != "") ZomberryBase.Log( "ZomBerryConfig", "INFO: We highly recommend to put admins.cfg inside this folder: " + realProfilesPath + "\\ZomBerry (create it manually if it doesn't exist)");
-
+		
 		return temp_path;
 	}
 
 	private void CreateNew(string dPath) {
+		if (FindAdmins(false) == "") {
+			FileHandle adminsFile = OpenFile(dPath + "admins.cfg", FileMode.WRITE);
+
+			ZomberryBase.Log( "ZomBerryConfig", "INFO: Trying to create new admins.cfg file in " + dPath + "admins.cfg" );
+
+			if (adminsFile != 0) {
+				FPrintln(adminsFile, "76561198038543835");
+				ZomberryBase.Log( "ZomBerryConfig", "INFO: admins.cfg created successfully." );
+				CloseFile(adminsFile);
+			}
+		}
+
 		if (!FileExist(dPath + "ZomBerryConfig.json")) {
 			ref ZBerryJsonConfig newConfigData = new ZBerryJsonConfig();
 
