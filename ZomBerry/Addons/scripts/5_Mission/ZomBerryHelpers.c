@@ -41,6 +41,11 @@ class ZBerryCategoryArray: array<ref ZBerryCategory> {
 }
 
 class ZBerryFuncParamArray: array<ref ZBerryFuncParam> {
+	void Clone(ref ZBerryFuncParamArray original) {
+		for (int idx = 0; idx < original.Count(); ++idx) {
+			Insert(new ZBerryFuncParam(original.Get(idx).name, original.Get(idx).values));
+		}
+	}
 
 	void Debug() {
 		for (int idx = 0; idx < Count(); ++idx) {

@@ -29,7 +29,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected bool m_mapTPAllowed = true;
 	protected bool m_spawnModeExpert = false;
 	protected autoptr TIntArray m_lastFuncParams = {0,0,0};
-	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
+	protected ref array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
 	protected autoptr ZBerryJsonSpawnMenuGroupArray m_spawnMenuGroups;
 
 	protected string m_lastSelObj;
@@ -446,7 +446,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		} else {
 			adminId = 0;
 		}
-		
+
 		if ( w == m_PlayersList ) {
 
 			if ( FindPlyInList(m_lastSelPlayer) != -1 ) {
@@ -748,10 +748,12 @@ class ZomberryMenu extends UIScriptedMenu {
 
 			for (int j = 0; j < funcArray.Count(); ++j) {
 				ref ZBerryFunction funcData;
+				ref ZBerryFuncParamArray funcParams = new ZBerryFuncParamArray;
 				funcData = funcArray.Get(j);
 				entryId = funcData.GetId();
+				funcParams.Clone(funcData.GetParams())
 
-				int fParamId = m_funcParams.Insert(funcData.GetParams());
+				int fParamId = m_funcParams.Insert(funcParams);
 
 				ZomberryBase.GetKeyBindsMgr().AddFunc(entryId, funcData.GetName());
 
