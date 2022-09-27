@@ -251,69 +251,95 @@ class ZomberryStockFunctions {
 		}
 
 		TStringArray slotsCar = new TStringArray;
-		TStringArray slotsTemp = new TStringArray;
-		string strName, strNameTemp;
+		TStringArray cfgVehItemCompatSlots = new TStringArray;
+		string cfgVehItem, cfgVehItemLower;
 
-		Car toBeFixed;
-		ItemBase attachmentTemp;
-		ref array<Object> nearest_objects = new array<Object>;
-		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
-		int i, j, m, sc;
+		Car carObject;
+		ItemBase currentAttachment;
+		ref array<Object> nearestObjects = new array<Object>;
+		ref array<CargoBase> proxyCargos = new array<CargoBase>;
+		int m, cfgVehId, cfgVehiclesCount;
+
 		vector position = GetPosSafe(target);
-		GetGame().GetObjectsAtPosition ( position, 15, nearest_objects, proxy_cargos );
+		GetGame().GetObjectsAtPosition(position, 15, nearestObjects, proxyCargos);
 
-		for (i = 0; i < nearest_objects.Count(); ++i) {
-			if (nearest_objects[i].IsKindOf("CarScript")) {
-				toBeFixed = Car.Cast(nearest_objects[i]);
+		foreach(Object nearObject: nearestObjects) {
+			if (nearObject.IsKindOf("CarScript")) {
+				carObject = Car.Cast(nearObject);
 
-				//Repair
-				GetGame().ConfigGetTextArray("CfgVehicles " + toBeFixed.GetType() + " attachments", slotsCar);
-				ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Fixing " + toBeFixed.GetType());
+				ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Fixing " + carObject.GetType());
 
-				sc = GetGame().ConfigGetChildrenCount("CfgVehicles");
-				for (j = 0; j < sc; j++) {
-					GetGame().ConfigGetChildName("CfgVehicles", j, strName );
-					strNameTemp = strName; strNameTemp.ToLower();
+				// Get list of available attachment slots from config
+				GetGame().ConfigGetTextArray("CfgVehicles " + carObject.GetType() + " attachments", slotsCar);
 
-					if (!GetGame().IsKindOf(strNameTemp, "Inventory_Base") || strNameTemp.Contains("ruined")) continue;
+				// Get list of ALL items in CfgVehicles, we'll filter compatible ones using slot names later on
+				cfgVehiclesCount = GetGame().ConfigGetChildrenCount("CfgVehicles");
 
-					if (GetGame().ConfigGetType("CfgVehicles " + strName + " inventorySlot") == CT_ARRAY) {
-						GetGame().ConfigGetTextArray("CfgVehicles " + strName + " inventorySlot", slotsTemp);
+				for (cfgVehId = 0; cfgVehId < cfgVehiclesCount; cfgVehId++) {
+
+					// Get item name
+					GetGame().ConfigGetChildName("CfgVehicles", cfgVehId, cfgVehItem );
+					
+					// Make a lower case copy
+					cfgVehItemLower = cfgVehItem;
+					cfgVehItemLower.ToLower();
+
+					// We don't need ruined, and unfortunately the most common root for all car parts is Inventory_Base
+					if (!GetGame().IsKindOf(cfgVehItemLower, "Inventory_Base") || cfgVehItemLower.Contains("ruined")) continue;
+
+					// Get list of slots this item can fit into (cfgVehItemCompatSlots)
+					if (GetGame().ConfigGetType("CfgVehicles " + cfgVehItem + " inventorySlot") == CT_ARRAY) {
+						GetGame().ConfigGetTextArray("CfgVehicles " + cfgVehItem + " inventorySlot", cfgVehItemCompatSlots);
 					} else {
-						GetGame().ConfigGetText("CfgVehicles " + strName + " inventorySlot", strNameTemp);
-						slotsTemp.Insert(strNameTemp);
+						GetGame().ConfigGetText("CfgVehicles " + cfgVehItem + " inventorySlot", cfgVehItemLower);
+						cfgVehItemCompatSlots.Insert(cfgVehItemLower);
 					}
 
-					for (m = 0; m < slotsTemp.Count(); m++) {
-						if (slotsCar.Find(slotsTemp[m]) != -1) {
-							Class.CastTo(attachmentTemp, toBeFixed.FindAttachmentBySlotName(slotsTemp[m]));
-							if (attachmentTemp) {
-								if (attachmentTemp.GetHealth01() > 0.75) continue;
-								ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: " + attachmentTemp.GetType() + " (" + attachmentTemp.GetHealth().ToString() + " HP) - detached");
-								toBeFixed.GetInventory().DropEntity(InventoryMode.PREDICTIVE, toBeFixed, attachmentTemp);
-								attachmentTemp.SetPosition("0 0 0");
-								GetGame().ObjectDelete(attachmentTemp);
+					// For each of compatible slots
+					for (m = 0; m < cfgVehItemCompatSlots.Count(); m++) {
+
+						// If this slot exists in vehicle
+						if (slotsCar.Find(cfgVehItemCompatSlots[m]) != -1) {
+
+							// Cast attachment that's currently in this slot to ItemBase
+							Class.CastTo(currentAttachment, carObject.FindAttachmentBySlotName(cfgVehItemCompatSlots[m]));
+
+							// If attachment is present
+							if (currentAttachment) {
+								
+								// Skip if health is good
+								if (currentAttachment.GetHealth01() > 0.75) continue;
+
+								// Destroy if health is *not so good*
+								ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: " + currentAttachment.GetType() + " (" + currentAttachment.GetHealth().ToString() + " HP) - detached");
+								carObject.GetInventory().DropEntity(InventoryMode.PREDICTIVE, carObject, currentAttachment);
+								currentAttachment.SetPosition("0 0 0");
+								GetGame().ObjectDelete(currentAttachment);
 							}
 
-							ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Found and attached " + strName);
-							toBeFixed.GetInventory().CreateInInventory(strName);
+							// Get slot id from name
+							int slotId = InventorySlots.GetSlotIdFromString(cfgVehItemCompatSlots[m]);
+
+							// Add new attachment to vehicle
+							carObject.GetInventory().CreateAttachmentEx(cfgVehItem, slotId);
+							ZomberryBase.DebugLog(2, "ZomBerryFncDbg", "RefuelAndRepair: Found and attached " + cfgVehItem);
 						}
 					}
 
-					slotsTemp.Clear();
+					cfgVehItemCompatSlots.Clear();
 				}
 
-				toBeFixed.SetHealth("Engine", "", toBeFixed.GetMaxHealth("Engine", ""));
+				carObject.SetHealth("Engine", "", carObject.GetMaxHealth("Engine", ""));
 
-				//Refuel
-				float fuelReq = toBeFixed.GetFluidCapacity( CarFluid.FUEL ) - (toBeFixed.GetFluidCapacity( CarFluid.FUEL ) * toBeFixed.GetFluidFraction( CarFluid.FUEL ));
-				float oilReq = toBeFixed.GetFluidCapacity( CarFluid.OIL ) - (toBeFixed.GetFluidCapacity( CarFluid.OIL ) * toBeFixed.GetFluidFraction( CarFluid.OIL ));
-				float coolantReq = toBeFixed.GetFluidCapacity( CarFluid.COOLANT ) - (toBeFixed.GetFluidCapacity( CarFluid.COOLANT ) * toBeFixed.GetFluidFraction( CarFluid.COOLANT ));
-				float brakeReq = toBeFixed.GetFluidCapacity( CarFluid.BRAKE ) - (toBeFixed.GetFluidCapacity( CarFluid.BRAKE ) * toBeFixed.GetFluidFraction( CarFluid.BRAKE ));
-				toBeFixed.Fill( CarFluid.FUEL, fuelReq );
-				toBeFixed.Fill( CarFluid.OIL, oilReq );
-				toBeFixed.Fill( CarFluid.COOLANT, coolantReq );
-				toBeFixed.Fill( CarFluid.BRAKE, brakeReq );
+				// Refuel
+				float fuelReq = carObject.GetFluidCapacity( CarFluid.FUEL ) - (carObject.GetFluidCapacity( CarFluid.FUEL ) * carObject.GetFluidFraction( CarFluid.FUEL ));
+				float oilReq = carObject.GetFluidCapacity( CarFluid.OIL ) - (carObject.GetFluidCapacity( CarFluid.OIL ) * carObject.GetFluidFraction( CarFluid.OIL ));
+				float coolantReq = carObject.GetFluidCapacity( CarFluid.COOLANT ) - (carObject.GetFluidCapacity( CarFluid.COOLANT ) * carObject.GetFluidFraction( CarFluid.COOLANT ));
+				float brakeReq = carObject.GetFluidCapacity( CarFluid.BRAKE ) - (carObject.GetFluidCapacity( CarFluid.BRAKE ) * carObject.GetFluidFraction( CarFluid.BRAKE ));
+				carObject.Fill( CarFluid.FUEL, fuelReq );
+				carObject.Fill( CarFluid.OIL, oilReq );
+				carObject.Fill( CarFluid.COOLANT, coolantReq );
+				carObject.Fill( CarFluid.BRAKE, brakeReq );
 			}
 		}
 		MessagePlayer(ZBGetPlayerById(adminId), "Refueled and repaired vehicles near to target");
