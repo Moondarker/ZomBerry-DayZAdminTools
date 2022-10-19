@@ -14,6 +14,11 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Partial heal", "HealTargetPart", this, "OnTarget", false, {
+			new ZBerryFuncParam("Heal diseases", {0, 1, 1,}),
+			new ZBerryFuncParam("Heal wounds", {0, 1, 1,}),
+			new ZBerryFuncParam("Feed", {0, 1, 1,}),
+		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
 		//m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false); //Not ready yet
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
@@ -154,6 +159,10 @@ class ZomberryStockFunctions {
 	}
 
 	void HealTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		HealTargetPart(funcName, adminId, targetId, cursor, {1, 1, 1});
+	}
+
+	void HealTargetPart( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -162,16 +171,66 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		BleedingSourcesManagerServer BSMgr = target.GetBleedingManagerServer();
+		string result_message = target.GetIdentity().GetName() + " has been ";
 
-		target.SetHealth(target.GetMaxHealth());
-		target.SetHealth("", "Blood", target.GetMaxHealth("", "Blood"));
-		target.GetStatStamina().Set(1000);
-		target.GetStatEnergy().Set(1000);
-		target.GetStatWater().Set(1000);
-		BSMgr.RemoveAllSources();
+		if (fValues[0]) {
+			bool is_area_exposure, is_mask;
 
-		if (admin) MessagePlayer(admin, "Healed target");
+			target.GetStomach().ClearContents();
+			
+			if (target.GetModifiersManager())
+			{
+				is_mask = target.GetModifiersManager().IsModifierActive(eModifiers.MDF_MASK);
+				is_area_exposure = target.GetModifiersManager().IsModifierActive(eModifiers.MDF_AREAEXPOSURE);
+				target.GetModifiersManager().DeactivateAllModifiers();
+			}
+
+			if (is_area_exposure)
+				target.GetModifiersManager().ActivateModifier(eModifiers.MDF_AREAEXPOSURE);
+			if (is_mask)
+				target.GetModifiersManager().ActivateModifier(eModifiers.MDF_MASK);
+
+			target.RemoveAllAgents();
+			
+			result_message += "cured; ";
+		}
+
+		if (fValues[1]) {
+			if (target.GetBleedingManagerServer())
+				target.GetBleedingManagerServer().RemoveAllSources();
+
+			DamageZoneMap zones = new DamageZoneMap;
+			DamageSystem.GetDamageZoneMap(target, zones);
+			target.SetHealth("", "Health", target.GetMaxHealth("","Health"));
+			target.SetHealth("", "Shock", target.GetMaxHealth("","Shock"));
+			target.SetHealth("", "Blood", target.GetMaxHealth("","Blood"));
+			
+			for (int i = 0; i < zones.Count(); i++)
+			{
+				string zone = zones.GetKey(i);
+				target.SetHealth(zone, "Health", target.GetMaxHealth(zone,"Health"));
+				target.SetHealth(zone, "Shock", target.GetMaxHealth(zone,"Shock"));
+				target.SetHealth(zone, "Blood", target.GetMaxHealth(zone,"Blood"));
+			}
+
+			if(target.IsUnconscious())
+				DayZPlayerSyncJunctures.SendPlayerUnconsciousness(target, false);
+			
+			result_message += "healed; ";
+		}
+
+		if (fValues[2]) {
+			target.GetStatStamina().Set(target.GetStatStamina().GetMax());
+			target.GetStatWater().Set(target.GetStatWater().GetMax());
+			target.GetStatEnergy().Set(target.GetStatEnergy().GetMax());
+			
+			result_message += "rehydrated and fed";
+		}
+
+		PluginLifespan module_lifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
+		module_lifespan.UpdateBloodyHandsVisibilityEx(target, eBloodyHandsTypes.CLEAN);
+
+		MessagePlayer(admin, result_message);
 	}
 
 	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
