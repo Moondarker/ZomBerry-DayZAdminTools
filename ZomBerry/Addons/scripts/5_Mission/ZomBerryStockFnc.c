@@ -20,7 +20,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Feed", {0, 1, 1,}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
-		//m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false); //Not ready yet
+		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
 		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
@@ -62,7 +62,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
 	}
 
-	void MessagePlayer(PlayerBase player, string msg) {
+	static void MessagePlayer(PlayerBase player, string msg) {
 		Param1<string> param = new Param1<string>( "[ZomBerry]: " + msg );
 		if (GetGame().IsMultiplayer()) {
 			GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, player.GetIdentity());
@@ -265,37 +265,25 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		InventoryItem targetItem = target.GetItemInHands();
+		InventoryItem target_item = target.GetItemInHands();
 
-		if (!targetItem) {
+		if (!target_item) {
 			MessagePlayer(admin, "No item in target's hands");
 			return;
 		}
 
-		MessagePlayer(admin, "Item: " + targetItem.GetDisplayName() + ", start health: " + targetItem.GetHealth().ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
-		targetItem.AddHealth("", "", (targetItem.GetMaxHealth() - targetItem.GetHealth())); //SetHealth doesn't update HealthLevel
-		targetItem.ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), targetItem.GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
-		ItemBase.Cast(targetItem).SetQuantityMax();
-		MessagePlayer(ZBGetPlayerById(adminId), "New health: " + targetItem.GetHealth().ToString() + " out of " + targetItem.GetMaxHealth("", "").ToString() + " (state " + targetItem.GetHealthLevel().ToString() + ")");
+		GameInventory target_item_inv = target_item.GetInventory();
+		ref array<EntityAI> sub_items = new array<EntityAI>;
 
-		for (int i = 0; i < targetItem.GetInventory().AttachmentCount(); ++i) {
-			EntityAI attachment = targetItem.GetInventory().GetAttachmentFromIndex(i);
-			attachment.AddHealth("", "", (attachment.GetMaxHealth() - attachment.GetHealth()));
-			attachment.ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), attachment.GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
-			if (attachment.IsMagazine()) Magazine.Cast(attachment).ServerSetAmmoMax();
+		if (target_item_inv)
+			target_item_inv.EnumerateInventory(InventoryTraversalType.INORDER, sub_items);
+
+		target_item.SetHealthMax("","");
+		for (int i = 0; i < sub_items.Count(); i++)
+		{
+			EntityAI item = sub_items.Get(i);
+			item.SetHealthMax("","");
 		}
-
-		array<EntityAI> subItems = new array<EntityAI>;
-		if (targetItem.GetInventory().EnumerateInventory(InventoryTraversalType.LEVELORDER, subItems)) {
-			for(int j = 0; j < subItems.Count(); ++j) {
-				if (!subItems.Get(j)) continue;
-				subItems.Get(j).AddHealth("", "", (subItems.Get(j).GetMaxHealth() - subItems.Get(j).GetHealth()));
-				subItems.Get(j).ProcessDirectDamage(DT_FIRE_ARM, EntityAI.Cast(targetItem), subItems.Get(j).GetDamageZoneNameByComponentIndex(0), "Bullet_556x45", "0 0 0", 0);
-				ItemBase.Cast(subItems.Get(j)).SetQuantityMax();
-			}
-		}
-
-		targetItem.SetSynchDirty();
 
 		MessagePlayer(admin, "Repaired item to the best condition it can achieve");
 	}

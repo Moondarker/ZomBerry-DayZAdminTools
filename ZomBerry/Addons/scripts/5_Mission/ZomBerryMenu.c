@@ -751,7 +751,7 @@ class ZomberryMenu extends UIScriptedMenu {
 				ref ZBerryFuncParamArray funcParams = new ZBerryFuncParamArray;
 				funcData = funcArray.Get(j);
 				entryId = funcData.GetId();
-				funcParams.Clone(funcData.GetParams())
+				funcParams.Clone(funcData.GetParams());
 
 				int fParamId = m_funcParams.Insert(funcParams);
 
