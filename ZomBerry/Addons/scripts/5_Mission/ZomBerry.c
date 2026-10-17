@@ -445,7 +445,7 @@ modded class MissionGameplay {
 		super.OnKeyPress(key);
 
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
-			GetZomberryMenu().OnKeyPress(key);
+			GetZomberryMenu().OnBindKeyPress(key);
 		} else if (m_ZomberryBase.IsAdmin()) {
 			ZomberryBase.GetKeyBindsMgr().OnKeyPress(key);
 		}

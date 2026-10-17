@@ -1,0 +1,55 @@
+FrameWidgetClass PlayersPanel {
+ position 0 0
+ size 350 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  TextListboxWidgetClass PlayerList {
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 0.9
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 20
+   font "gui/fonts/Metron14"
+  }
+  TextWidgetClass PlayerHealth {
+   position 0 0.045
+   size 260 0.045
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 0
+   hexactsize 1
+   vexactsize 0
+   "text valign" center
+  }
+  TextWidgetClass PlayerBlood {
+   position 0 0
+   size 260 0.045
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   "text valign" center
+  }
+  ButtonWidgetClass PlayersRefresh {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 260 0
+   size 90 0.09
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 0
+   hexactsize 1
+   vexactsize 0
+   style Colorable
+   text "Update"
+   font "gui/fonts/Metron16"
+  }
+ }
+}
