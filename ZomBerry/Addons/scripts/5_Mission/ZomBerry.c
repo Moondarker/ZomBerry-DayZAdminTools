@@ -247,7 +247,7 @@ class ZomberryBase {
 				}
 
 				GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
-				Log( "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - player list sync");
+				DebugLog( 1, "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - player list sync"); //Every 2 seconds while the map is open
 
 			} else {
 				Log( "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - player list sync denied (not an admin)" );
