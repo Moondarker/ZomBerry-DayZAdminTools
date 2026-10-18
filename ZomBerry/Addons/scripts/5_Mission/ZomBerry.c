@@ -375,14 +375,22 @@ class ZomberryBase {
 
 	//Returns a log line describing what happened
 	protected string DoSpawn(string className, PlayerBase admin, vector position, bool insideInventory) {
-		ItemBase item;
-
 		if (!IsSpawnableClass(className)) return "tried to spawn unknown class " + className;
 
 		if (insideInventory) {
 			if (!admin) return "tried to add " + className + " to inventory, but has no character";
 
-			item = ItemBase.Cast(admin.GetInventory().CreateInInventory(className));
+			EntityAI entity = admin.GetInventory().CreateInInventory(className);
+			if (!entity) {
+				string reason = "it can't be carried";
+				typename classType = className.ToType();
+				if (classType && classType.IsInherited(InventoryItem)) reason = "no room in inventory";
+
+				ZomberryStockFunctions.MessagePlayer(admin, "Can't add " + className + " to inventory: " + reason);
+				return "couldn't add " + className + " to theirs inventory (" + reason + ")";
+			}
+
+			ItemBase item = ItemBase.Cast(entity);
 			if (item) item.SetQuantity(item.GetQuantityMax());
 			return "added " + className + " to theirs inventory";
 		}
