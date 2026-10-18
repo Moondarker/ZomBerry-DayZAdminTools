@@ -4,13 +4,9 @@ class ZomberryKeybinds {
 	protected autoptr TIntStringMap m_funcIdNameMap = new TIntStringMap;
 
 	void OnKeyPress( int key ) {
-		int funcId, adminId;
+		int funcId;
 		if (m_dKeyBindList.Find(key, funcId)) {
-			if (GetGame().IsMultiplayer()) {
-				adminId = GetGame().GetPlayer().GetIdentity().GetPlayerId();
-			} else {
-				adminId = 0;
-			}
+			int adminId = ZBerryUIUtils.GetLocalPlayerId(); //Also without a character (dead, respawning)
 			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
 		};
 	}

@@ -74,10 +74,15 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	//Looks both players up; tells the admin and returns false when the target is gone
+	//Looks both players up; returns false when the admin has no character (dead, respawning),
+	//tells the admin and returns false when the target is gone
 	protected bool GetTargets(int adminId, int targetId, out PlayerBase admin, out PlayerBase target) {
 		admin = ZBGetPlayerById(adminId);
 		target = ZBGetPlayerById(targetId);
+		if (!admin) {
+			ZomberryBase.Log( "ZomBerryFnc", "WARN: Admin #" + adminId + " has no character, function skipped" );
+			return false;
+		}
 		if (target) return true;
 
 		MessagePlayer(admin, "Target not found (probably disconnected?)");
@@ -111,6 +116,7 @@ class ZomberryStockFunctions {
 		const int tpDist = 10;
 		vector currentPos, curToTgtDir, targetPos;
 		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return; //No character (dead, respawning)
 
 		currentPos = GetPosSafe(admin);
 		currentPos[1] = 0;
@@ -483,6 +489,11 @@ class ZomberryStockFunctions {
 	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
 		int listId = m_spectatingList.Find(adminId);
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
+		if (!adminPly) { //No character (dead, respawning)
+			if (listId != -1) m_spectatingList.Remove(listId);
+			return;
+		}
+
 		PlayerIdentity adminIdent = adminPly.GetIdentity();
 		HumanInputController adminInput = adminPly.GetInputController();
 
