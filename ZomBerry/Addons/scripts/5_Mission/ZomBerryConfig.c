@@ -17,9 +17,6 @@ class ZomberryConfig {
 
 			if (!FileExist(cfgPath + "ZomBerry\\")) MakeDirectory(cfgPath + "\\ZomBerry\\");
 			if (FileExist(cfgPath + "ZomBerry\\")) {
-				if (FileExist(cfgPath + "ZomBerryConfig.json")) CopyFile(cfgPath + "ZomBerryConfig.json", cfgPath + "ZomBerry\\ZomBerryConfig.json");
-				DeleteFile(cfgPath + "ZomBerryConfig.json");
-
 				cfgPath += "ZomBerry\\";
 			} else {
 				if (realProfilesPath != "") ZomberryBase.Log( "ZomBerryConfig", "WARN: Can't create ZomBerry subfolder (" + realProfilesPath + "\\ZomBerry\\), please create one manually!" );
