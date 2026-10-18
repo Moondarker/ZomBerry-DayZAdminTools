@@ -6,7 +6,7 @@ class ZomberryBase {
 	ref ZomberryStockFunctions m_ZomberryStockFunctions;
 	protected ref ZBerryAuth m_Auth;
 	protected ref ZBerryServerRPC m_ServerRPC;
-	protected ref ZBerryBans m_Bans = new ZBerryBans;
+	protected ref ZBerryBans m_Bans;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -19,10 +19,11 @@ class ZomberryBase {
 			GetLogger().SwitchToCustomIO();
 		}
 
-		m_Auth = new ZBerryAuth;
-		m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
-
+		//Server side only: in singleplayer the request handlers run locally, on a multiplayer client they'd be dead weight
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) {
+			m_Auth = new ZBerryAuth;
+			m_Bans = new ZBerryBans;
+			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
 			m_ZomberryStockFunctions.Init();
 		}
 
@@ -72,6 +73,7 @@ class ZomberryBase {
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
 	}
 
+	//Server only, NULL on clients
 	ZBerryBans GetBans() {
 		return m_Bans;
 	}
@@ -84,7 +86,7 @@ class ZomberryBase {
 	bool IsAdmin(PlayerIdentity plyIdent = NULL) {
 		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) return GetZBerryClientAuth().IsAdmin();
 
-		return m_Auth.IsAdmin(plyIdent);
+		return m_Auth && m_Auth.IsAdmin(plyIdent);
 	}
 };
 
@@ -129,7 +131,7 @@ modded class MissionServer {
 	}
 
 	protected ZBerryBanEntry FindZBerryBan(PlayerIdentity identity) {
-		if (!m_ZomberryBase || !identity) return NULL;
+		if (!m_ZomberryBase || !m_ZomberryBase.GetBans() || !identity) return NULL;
 
 		return m_ZomberryBase.GetBans().FindActiveFor(identity);
 	}
