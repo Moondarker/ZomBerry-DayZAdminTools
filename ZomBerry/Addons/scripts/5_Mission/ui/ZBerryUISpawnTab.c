@@ -3,7 +3,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	static const int COLOR_CATEGORY = 0xFFBCCDE8;
 	static const int COLOR_CATEGORY_HIDDEN = 0xFF6767E0;
 
-	protected TextListboxWidget m_ObjectsList;
+	protected TextListboxWidget m_ObjectsList; //The visible variant of m_ObjectsLists
+	protected ref ZBerryScaledList m_ObjectsLists;
 	protected EditBoxWidget m_SearchInput;
 	protected ButtonWidget m_TargetButton;
 	protected ref array<ButtonWidget> m_FilterButtons = new array<ButtonWidget>;
@@ -18,7 +19,9 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected bool m_ListDirty = true;
 
 	protected override void OnInit() {
-		m_ObjectsList = TextListboxWidget.Cast( BindWidget("ObjectsList") );
+		m_ObjectsLists = new ZBerryScaledList(m_Root, "ObjectsList", this);
+		m_ObjectsLists.Pick();
+		m_ObjectsList = m_ObjectsLists.GetActive();
 		m_SearchInput = EditBoxWidget.Cast( BindWidget("SearchInput") );
 		m_TargetButton = ButtonWidget.Cast( BindWidget("TargetButton") );
 
@@ -33,6 +36,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	override void OnMenuShow() {
+		if (m_ObjectsLists.Pick()) m_ObjectsList = m_ObjectsLists.GetActive(); //Rebuilt below (m_ListDirty)
 		m_SpawnMenuGroups = ZomberryBase.GetConfig().GetSpawnMenuData();
 
 		for (int i = 0; i < m_FilterButtons.Count(); ++i) {

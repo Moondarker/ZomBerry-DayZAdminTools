@@ -5,7 +5,8 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	static const int COLOR_SELECTED = 0xFFFF751A;
 	static const int COLOR_OFFLINE = 0xFF909090;
 
-	protected TextListboxWidget m_PlayersList;
+	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
+	protected ref ZBerryScaledList m_PlayersLists;
 	protected TextWidget m_PlyHealth, m_PlyBlood;
 	protected ButtonWidget m_RefreshButton;
 
@@ -23,7 +24,9 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	void Init(Widget parent) {
 		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/PlayersPanel.layout", parent)) return;
 
-		m_PlayersList = TextListboxWidget.Cast( BindWidget("PlayerList") );
+		m_PlayersLists = new ZBerryScaledList(m_Root, "PlayerList", this);
+		m_PlayersLists.Pick();
+		m_PlayersList = m_PlayersLists.GetActive();
 		m_RefreshButton = ButtonWidget.Cast( BindWidget("PlayersRefresh") );
 		m_PlyHealth = TextWidget.Cast( m_Root.FindAnyWidget("PlayerHealth") );
 		m_PlyBlood = TextWidget.Cast( m_Root.FindAnyWidget("PlayerBlood") );
@@ -34,6 +37,18 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		if (!GetZBerryClientAuth().HasAny({ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS})) return;
 
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( 0 ), true, NULL );
+	}
+
+	//Menu shown: the resolution may have changed since
+	void UpdateListScale() {
+		if (!m_PlayersLists.Pick()) return;
+
+		m_PlayersList = m_PlayersLists.GetActive();
+		if (m_PermsMode) {
+			if (m_PermsSnapshot) SetPermsEntries(m_PermsSnapshot);
+		} else if (m_LastPlayers) {
+			SetPlayers(m_LastPlayers);
+		}
 	}
 
 	void SetPermsListener(ZBerryUIPermsTab tab) {

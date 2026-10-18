@@ -2,7 +2,8 @@
 class ZBerryUIFunctionsTab extends ZBerryUITab {
 	static const int MAX_PARAMS = 3; //Server-side functions always receive this many values
 
-	protected TextListboxWidget m_FunctionsList;
+	protected TextListboxWidget m_FunctionsList; //The visible variant of m_FunctionsLists
+	protected ref ZBerryScaledList m_FunctionsLists;
 	protected TextWidget m_FncName;
 	protected ButtonWidget m_ExecButton;
 	protected ref array<ref ZBerryUIFuncParamRow> m_ParamRows = new array<ref ZBerryUIFuncParamRow>;
@@ -18,7 +19,9 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	}
 
 	protected override void OnInit() {
-		m_FunctionsList = TextListboxWidget.Cast( BindWidget("FunctionsList") );
+		m_FunctionsLists = new ZBerryScaledList(m_Root, "FunctionsList", this);
+		m_FunctionsLists.Pick();
+		m_FunctionsList = m_FunctionsLists.GetActive();
 		m_ExecButton = ButtonWidget.Cast( BindWidget("SecondaryExecButton") );
 		m_FncName = TextWidget.Cast( m_Root.FindAnyWidget("FuncName") );
 		m_FncName.SetText("");
@@ -39,6 +42,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	}
 
 	override void OnMenuShow() {
+		if (m_FunctionsLists.Pick()) m_FunctionsList = m_FunctionsLists.GetActive(); //Filled by the list requested below
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncFunctionsRequest, new Param1< int >( 0 ), true, NULL );
 	}
 

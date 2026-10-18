@@ -112,6 +112,58 @@ PanelWidgetClass PermsWrapper {
    lines 100
    font "gui/fonts/Metron14"
   }
+  TextListboxWidgetClass GroupsList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass GroupsList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass GroupsList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass GroupsList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron28"
+  }
   TextListboxWidgetClass PermsList {
    color 0 0 0 0.7843
    position 225 70
@@ -123,6 +175,58 @@ PanelWidgetClass PermsWrapper {
    style Editor
    lines 501
    font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass PermsList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass PermsList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass PermsList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass PermsList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron28"
   }
   EditBoxWidgetClass GroupNameInput {
    color 0.3255 0.3255 0.3255 0.7843

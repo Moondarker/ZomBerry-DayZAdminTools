@@ -110,6 +110,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker" );
 		ApplyPermissions();
+		m_PlayersPanel.UpdateListScale();
 		ZBerryUIPlayersPanel.RequestSync();
 
 		foreach (ZBerryUITab tab : m_Tabs) {

@@ -83,6 +83,15 @@ class ZBerryUIUtils {
 		}
 	}
 
+	//How much the engine scales exact sizes: screen height relative to 1080p (measured with the scale lab)
+	static float GetUIScale() {
+		int screenWidth, screenHeight;
+		GetScreenSize(screenWidth, screenHeight);
+		if (screenHeight <= 0) return 1;
+
+		return screenHeight / 1080.0;
+	}
+
 	static void Message( string txt ) {
 		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
 	}

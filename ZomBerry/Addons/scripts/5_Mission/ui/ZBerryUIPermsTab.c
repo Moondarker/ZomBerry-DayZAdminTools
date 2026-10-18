@@ -12,7 +12,8 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	protected TextWidget m_SelectedText, m_PermsTitle;
 	protected ButtonWidget m_GroupButton, m_AddGroupButton, m_DeleteGroupButton, m_AddPermButton, m_SpawnPreviewButton;
-	protected TextListboxWidget m_GroupsList, m_PermsList;
+	protected TextListboxWidget m_GroupsList, m_PermsList; //Visible variants of m_GroupsLists, m_PermsLists
+	protected ref ZBerryScaledList m_GroupsLists, m_PermsLists;
 	protected EditBoxWidget m_GroupNameInput, m_PermInput, m_SpawnRulesInput, m_LevelInput;
 
 	protected ZBerryUIPlayersPanel m_PlayersPanel;
@@ -34,8 +35,9 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		m_AddGroupButton = ButtonWidget.Cast( BindWidget("AddGroupButton") );
 		m_DeleteGroupButton = ButtonWidget.Cast( BindWidget("DeleteGroupButton") );
 		m_AddPermButton = ButtonWidget.Cast( BindWidget("AddPermButton") );
-		m_GroupsList = TextListboxWidget.Cast( BindWidget("GroupsList") );
-		m_PermsList = TextListboxWidget.Cast( BindWidget("PermsList") );
+		m_GroupsLists = new ZBerryScaledList(m_Root, "GroupsList", this);
+		m_PermsLists = new ZBerryScaledList(m_Root, "PermsList", this);
+		UpdateListScale();
 		m_GroupNameInput = EditBoxWidget.Cast( BindWidget("GroupNameInput") );
 		m_PermInput = EditBoxWidget.Cast( BindWidget("PermInput") );
 		m_SpawnRulesInput = EditBoxWidget.Cast( BindWidget("SpawnRulesInput") );
@@ -71,22 +73,24 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		float screenWidth, screenHeight;
 		m_Root.GetScreenSize(screenWidth, screenHeight);
 		if (screenWidth <= 0 || screenHeight <= 0) return;
+		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5) return;
+		m_LaidOutHeight = screenHeight;
 
-		//Exact layout units aren't always screen pixels (UI scale): the wrapper is exactly 600 units wide
-		float height = screenHeight * 600 / screenWidth;
-		if (Math.AbsFloat(height - m_LaidOutHeight) < 0.5) return;
-		m_LaidOutHeight = height;
+		//SetPos/SetSize take physical pixels, the offsets below are layout units: the wrapper is exactly 600 units wide
+		float u = screenWidth / 600;
+		float listTop = 70 * u;
+		float spawnInputY = screenHeight - (6 + 24) * u;
+		float spawnTitleY = spawnInputY - (4 + 22) * u;
+		float inputRowY = spawnTitleY - (10 + 24) * u;
+		float listHeight = Math.Max(60 * u, inputRowY - 4 * u - listTop);
 
-		const float LIST_TOP = 70;
-		float spawnInputY = height - 6 - 24;
-		float spawnTitleY = spawnInputY - 4 - 22;
-		float inputRowY = spawnTitleY - 10 - 24;
-		float listHeight = Math.Max(60, inputRowY - 4 - LIST_TOP);
-
-		SetRowY("GroupsList", LIST_TOP);
-		SetRowY("PermsList", LIST_TOP);
-		SetHeight("GroupsList", listHeight);
-		SetHeight("PermsList", listHeight);
+		array<TextListboxWidget> lists = {};
+		lists.InsertAll(m_GroupsLists.GetAll());
+		lists.InsertAll(m_PermsLists.GetAll());
+		foreach (TextListboxWidget list : lists) {
+			SetWidgetY(list, listTop);
+			SetWidgetHeight(list, listHeight);
+		}
 
 		TStringArray inputRow = {"GroupNameInput", "AddGroupButton", "DeleteGroupButton", "PermInput", "AddPermButton"};
 		foreach (string inputName : inputRow) SetRowY(inputName, inputRowY);
@@ -97,7 +101,10 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	}
 
 	protected void SetRowY(string widgetName, float y) {
-		Widget w = m_Root.FindAnyWidget(widgetName);
+		SetWidgetY(m_Root.FindAnyWidget(widgetName), y);
+	}
+
+	protected void SetWidgetY(Widget w, float y) {
 		if (!w) return;
 
 		float x, oldY;
@@ -105,8 +112,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		w.SetPos(x, y);
 	}
 
-	protected void SetHeight(string widgetName, float height) {
-		Widget w = m_Root.FindAnyWidget(widgetName);
+	protected void SetWidgetHeight(Widget w, float height) {
 		if (!w) return;
 
 		float width, oldHeight;
@@ -138,7 +144,19 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	}
 
 	override void OnMenuShow() {
+		UpdateListScale();
 		if (IsVisible()) RequestData();
+	}
+
+	protected void UpdateListScale() {
+		bool groupsChanged = m_GroupsLists.Pick();
+		bool permsChanged = m_PermsLists.Pick();
+		m_GroupsList = m_GroupsLists.GetActive();
+		m_PermsList = m_PermsLists.GetActive();
+
+		if (groupsChanged) RefreshGroups();
+		if (permsChanged) RefreshPerms();
+		m_LaidOutHeight = -1; //New variants need their position too
 	}
 
 	override void OnMenuHide() {

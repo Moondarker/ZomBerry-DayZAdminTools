@@ -114,6 +114,58 @@ PanelWidgetClass SpawnWrapper {
      lines 500
      font "gui/fonts/Metron14"
     }
+    TextListboxWidgetClass ObjectsList_F12 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 1 0.93
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron12"
+    }
+    TextListboxWidgetClass ObjectsList_F16 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 1 0.93
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron16"
+    }
+    TextListboxWidgetClass ObjectsList_F22 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 1 0.93
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron22"
+    }
+    TextListboxWidgetClass ObjectsList_F28 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 1 0.93
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron28"
+    }
     TextWidgetClass SearchText {
      visible 1
      position 195 10

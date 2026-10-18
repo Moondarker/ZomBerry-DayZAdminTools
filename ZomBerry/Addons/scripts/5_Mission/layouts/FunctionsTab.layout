@@ -19,6 +19,58 @@ PanelWidgetClass FunctionsWrapper {
    lines 50
    font "gui/fonts/Metron14"
   }
+  TextListboxWidgetClass FunctionsList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 0
+   size 600 0.8
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 50
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass FunctionsList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 0
+   size 600 0.8
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 50
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass FunctionsList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 0
+   size 600 0.8
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 50
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass FunctionsList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 0
+   size 600 0.8
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 50
+   font "gui/fonts/Metron28"
+  }
   PanelWidgetClass FuncParamsWrapper {
    position 0 0
    size 600 0.19
