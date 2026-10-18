@@ -60,12 +60,13 @@ class ZBerryServerRPC {
 	void SyncPlayersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		if (!CanRun(type, sender, {ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS}, "get the player list")) return;
 
-		ZBerryPlayerArray playerList = BuildPlayerList();
+		ZBerryPlayerArray playerList = BuildPlayerList(sender);
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayers, new Param2<ref ZBerryPlayerArray, int> (playerList, GetGame().GetTime()), true, sender );
 		ZomberryBase.DebugLog( 1, "ZomBerryDbg", Who(sender) + " - player list sync"); //Every 2 seconds while the map is open
 	}
 
-	protected ZBerryPlayerArray BuildPlayerList() {
+	//Positions only go to admins who see map markers, health and blood only to those who see the player list
+	protected ZBerryPlayerArray BuildPlayerList(PlayerIdentity recipient) {
 		ZBerryPlayerArray playerList = new ZBerryPlayerArray;
 
 		if (!GetGame().IsMultiplayer()) {
@@ -77,6 +78,8 @@ class ZBerryServerRPC {
 			return playerList;
 		}
 
+		bool showPositions = m_Auth.HasPermission(recipient, ZBerryPermissions.MAP_PLAYER_MARKERS);
+		bool showHealth = m_Auth.HasPermission(recipient, ZBerryPermissions.PLAYERS_LIST);
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 
@@ -88,7 +91,16 @@ class ZBerryServerRPC {
 			if (player.GetItemInHands() && !player.GetCommand_Vehicle()) plyName += " [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]";
 			if (player.GetCommand_Vehicle()) plyName += " [" + player.GetCommand_Vehicle().GetTransport().GetDisplayName() + "]";
 
-			playerList.Insert(new ZBerryPlayer(player.GetIdentity().GetPlayerId(), plyName, m_Auth.IsAdmin(player.GetIdentity()), player.GetPosition(), player.GetHealth(), player.GetHealth("", "Blood")));
+			vector position = "0 0 0";
+			if (showPositions) position = player.GetPosition();
+			int health = 0;
+			int blood = 0;
+			if (showHealth) {
+				health = player.GetHealth();
+				blood = player.GetHealth("", "Blood");
+			}
+
+			playerList.Insert(new ZBerryPlayer(player.GetIdentity().GetPlayerId(), plyName, m_Auth.IsAdmin(player.GetIdentity()), position, health, blood));
 		}
 
 		return playerList;
