@@ -10,7 +10,9 @@ ZomBerry has **no dependencies**, so it doesn't need Community Framework or any 
 - [Troubleshooting](#troubleshooting)
 - [For developers](#for-developers)
 - [Building from source](#building-from-source)
-- [Planned features](#planned-features)
+- [Roadmap](#roadmap)
+
+What changed in each version is in the [changelog](CHANGELOG.md).
 
 ## Installation
 
@@ -23,6 +25,12 @@ ZomBerry is a client **and** server mod. Admins need it loaded on their game, an
 5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab.
 
 Client and server must run the same major and minor version (for example 0.7.x on both). Otherwise the client refuses to open the menu and says why in chat.
+
+**Upgrading from 0.6.x:**
+- Update both sides: a 0.6.x client gets no answer from a 0.7 server, and the other way round.
+- Community Framework is no longer needed.
+- Your `admins.cfg` is imported on the first start (see [Upgrading from admins.cfg](#upgrading-from-adminscfg)).
+- The [changelog](CHANGELOG.md#upgrading-from-06x) lists everything else.
 
 ## Configuration
 
@@ -38,14 +46,15 @@ With no admins configured, the server prints a large **SETUP TOKEN** banner with
 
 #### Groups
 
-Each admin belongs to one group, and each group has a level, permission patterns and spawn rules:
+Each admin belongs to one group, and each group has a level, permission patterns and spawn rules. A new file starts with these two groups:
 
 ```json
 {
     "Groups": [
         { "Name": "superadmin", "Level": 100, "Permissions": ["*"], "SpawnAllowed": ["*"] },
         { "Name": "moderator", "Level": 10,
-          "Permissions": ["zomberry.players.list", "zomberry.map.*", "zomberry.functions.TPToTarget", "zomberry.functions.HealTarget"],
+          "Permissions": ["zomberry.players.list", "zomberry.players.kick", "zomberry.map.*",
+                          "zomberry.functions.TPToTarget", "zomberry.functions.TPToAdmin", "zomberry.functions.HealTarget"],
           "SpawnAllowed": [] }
     ],
     "Admins": [
@@ -78,6 +87,8 @@ The `superadmin` group is always level 100, and level 100 may change everything,
 | `zomberry.spawn.inventory` | Spawning into your inventory |
 | `zomberry.permissions.manage` | The Permissions tab |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
+
+Other mods and missions can add their own nodes through the [Permissions API](#permissions-api). These are listed after ZomBerry's own in the Permissions tab.
 
 How patterns match:
 - **Wildcards:** `*` and `?` work anywhere. `zomberry.map.*` grants every map permission, and `*` alone grants everything.
@@ -120,6 +131,7 @@ For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every 
 Bans are ZomBerry's own list, stored in `<profiles>/ZomBerry/ZomBerryBans.json`. They don't touch BattlEye's `ban.txt`.
 - **Who can be kicked or banned:** levels apply here too. Admins can only kick or ban admins ranked **below** them, and superadmins can kick or ban everyone. Nobody can kick or ban themselves. This also applies to offline bans of an admin's ID.
 - **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect.
+- **Unconscious or restrained players:** kicking them kills their character. The normal logout treats it like combat logging. See [#53](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/53).
 - **Rejoining:** banned players are refused while they connect, before their character loads. The game can't show them a reason at that point, so they only see a disconnect. The server's ZomBerry log names them and the reason.
 - **Durations:** 1 hour, 1 day, 7 days, 30 days or permanent. Expired bans are removed on their own.
 - **The file:** entries have `Id` (Steam64), `Guid` (BattlEye GUID), `Name`, `Reason`, `BannedBy`, `Since` and `Until` (seconds since 1970, UTC; `0` means permanent). Either ID is enough for a ban to match. If the file can't be read, nobody is banned until it's fixed, and ZomBerry never overwrites it.
@@ -146,11 +158,15 @@ Created with default values on first start:
 |---|---|
 | `DebugLevel` | `0` normal, `1` adds frequent events (like the player list sync), `2` also dumps the whole function list and vehicle repair details |
 | `UseScriptLog` | `0` writes ZomBerry's own log files to `<profiles>/ZomBerry/`, `1` writes to the game's script log instead |
-| `SpawnMenuSorting` | Client side: the filter buttons of the Spawn tab, up to three. Each one lists the classes inheriting from any of its comma-separated `BaseClassNames` |
+| `SpawnMenuSorting` | Client side: the filter buttons of the Spawn tab, up to three. Each one lists the classes inheriting from any of its comma-separated `BaseClassNames`. Without it, the defaults above are used |
+
+If the file can't be read (broken JSON), the log says why, and ZomBerry runs with the default settings until it's fixed.
 
 ### Keybinds
 
 Function keybinds are saved per client in `Documents/DayZ/ZomBerryKeybinds.bin`. By default `Delete` runs "Delete object near cursor". See [Functions](#functions) for how to change them.
+
+Keybinds only work while no menu is open, so they don't fire while you type in chat or have the inventory open.
 
 ## Using the menu
 
@@ -197,7 +213,7 @@ The stock set:
 
 ### Map
 
-Players appear as markers, green for admins and blue for everyone else. They update every 2 seconds while the map is open.
+With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. They update every 2 seconds while the map is open.
 - **Teleporting:** hold `Alt` and click a spot.
 - **Zooming out:** double-click the map.
 
@@ -212,8 +228,10 @@ Admins with `zomberry.permissions.manage` get this tab, which edits groups, perm
 - **The menu doesn't open:**
   - Check that both client and server load ZomBerry, and that your ID is in a group in `ZomBerryPermissions.json`.
   - The server log shows "Auth respond to admin <name>" for admins. A chat message when you press `O` tells you about a version mismatch.
+  - A 0.6.x client on a 0.7 server (or the other way round) gets no answer at all, so update both sides.
   - If `ZomBerryPermissions.json` can't be read (broken JSON), the server says so in its ZomBerry log and nobody is an admin until it's fixed. ZomBerry never overwrites a broken file.
 - **A tab or function is missing:** the admin's group lacks the permission for it.
+- **A keybind does nothing:** keybinds don't run while chat, the inventory or any other menu is open.
 - **Logs:**
   - **Server:** `<profiles>/ZomBerry/ZomBerry_<date>.log`, and the server's script log.
   - **Client:** `ZomBerry/` in the game's profile folder (`%LocalAppData%/DayZ` by default).
@@ -330,6 +348,10 @@ The example mission registers `missionexample.vip_loadout` and gives members of 
 DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -window -noPause
 ```
 
+### Contributing
+
+[AGENTS.md](AGENTS.md) covers how the code is organised, the Enforce Script and DayZ UI pitfalls this project has run into, the rules for RPCs, permissions and config files, and how changes are tested. It's written for AI coding agents, and it's just as useful for people.
+
 ### Project layout
 
 | Path | Contents |
@@ -343,25 +365,16 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 
 ## Building from source
 
-Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\AT\scripts`, using DayZ Tools' FileBank or Addon Builder. Then sign it with your own key and ship the matching `.bikey`. The result goes into a mod folder laid out like `ZomBerry/`: `Addons/`, `Keys/` and `Config/`.
+Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\AT\scripts`, using DayZ Tools' FileBank or Addon Builder. Then sign it with your own key and ship the matching `.bikey`. The result goes into a mod folder laid out like `ZomBerry/`: `Addons/` with the PBO and its signature, and `Keys/` with the key.
 
 `5_Mission/core/ZBerryBuildInfo.c` describes the build. As committed, it describes a plain release build, and the admin menu header shows the version. Build tooling can fill in the commit hash and mark the build as a development build, so the header shows the commit instead and the logs show both.
 
-## Planned features
+## Roadmap
 
+Open ideas and known issues are tracked on [GitHub issues](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues). Among them:
 - Keybinds for functions with parameters
-- New functions in the default kit
+- New functions from the community's suggestions, such as FreeCam camera modes, teleporting a player to a map spot or flipping cars ([#42](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/42))
+- Translations ([#36](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/36))
+- Client-side functions registered by other mods ([#38](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/38))
 
-Done in 0.7.0:
-- A Permissions API, so other mods and missions can use ZomBerry's groups for their own features
-- Kicks and bans from the players panel, with reasons, durations and offline bans by ID
-- Permission groups with fine-grained, wildcard permissions and spawn rules, editable in JSON and in-game
-- A setup token for the first admin, replacing installation mode and manual file editing
-- No dependencies: ZomBerry's own RPC layer replaces Community Framework
-- The admin menu was rebuilt from self-contained UI components, and the map updates live
-- Server-side checks on every admin request, and more robust stock functions
-- Inventory spawning loads magazines into the weapon in hands and explains when an item doesn't fit
-- Function parameters can have named values (Partial heal shows No/Yes, Set date shows month names)
-
-Earlier:
-- The commands list is completely server-side, so it can be extended from missions and server-side mods
+What's done is in the [changelog](CHANGELOG.md).
