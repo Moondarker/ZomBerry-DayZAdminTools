@@ -38,6 +38,8 @@ static PlayerBase ZBGetPlayerById (int plyId) {
 		GetGame().GetPlayers(players);
 
 		for (int i = 0; i < players.Count(); i++) {
+			if (!players.Get(i).GetIdentity()) continue; //Connecting/disconnecting players have no identity
+
 			if (players.Get(i).GetIdentity().GetPlayerId() == plyId) {
 				result = PlayerBase.Cast(players.Get(i));
 			}

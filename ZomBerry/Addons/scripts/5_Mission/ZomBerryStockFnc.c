@@ -65,6 +65,8 @@ class ZomberryStockFunctions {
 	static void MessagePlayer(PlayerBase player, string msg) {
 		Param1<string> param = new Param1<string>( "[ZomBerry]: " + msg );
 		if (GetGame().IsMultiplayer()) {
+			if (!player || !player.GetIdentity()) return; //Admin disconnected meanwhile
+
 			GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, player.GetIdentity());
 		} else {
 			GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", msg, ""));
