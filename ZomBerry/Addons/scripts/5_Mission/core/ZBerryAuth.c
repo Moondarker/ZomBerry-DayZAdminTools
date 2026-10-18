@@ -386,7 +386,6 @@ class ZBerryAuth {
 		snapshot.Groups = m_Config.Groups;
 		snapshot.Admins = m_Config.Admins;
 		snapshot.KnownNodes.InsertAll(ZBerryPermissions.GetFixedNodes());
-		snapshot.KnownNodes.InsertAll(GetZomberryPermAPI().GetRegisteredNodes()); //Nodes of other mods and missions
 
 		ZBerryCategoryArray categories = GetZomberryCmdAPI().GetList();
 		foreach (ZBerryCategory category : categories) {
@@ -396,6 +395,9 @@ class ZBerryAuth {
 				if (snapshot.KnownNodes.Find(node) == -1) snapshot.KnownNodes.Insert(node);
 			}
 		}
+
+		//Nodes of other mods and missions last, after all of ZomBerry's own
+		snapshot.KnownNodes.InsertAll(GetZomberryPermAPI().GetRegisteredNodes());
 
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
