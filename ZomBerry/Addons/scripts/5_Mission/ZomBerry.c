@@ -373,6 +373,13 @@ class ZomberryBase {
 		return GetGame().ConfigIsExisting(CFG_VEHICLESPATH + " " + className) || GetGame().ConfigIsExisting(CFG_WEAPONSPATH + " " + className) || GetGame().ConfigIsExisting(CFG_MAGAZINESPATH + " " + className);
 	}
 
+	//Checked in config: many items (SaltyMix, helmets...) have no script class of their own to check instead
+	protected bool IsCarryableClass(string className) {
+		if (GetGame().ConfigIsExisting(CFG_WEAPONSPATH + " " + className) || GetGame().ConfigIsExisting(CFG_MAGAZINESPATH + " " + className)) return true;
+
+		return GetGame().IsKindOf(className, "Inventory_Base");
+	}
+
 	//Returns a log line describing what happened
 	protected string DoSpawn(string className, PlayerBase admin, vector position, bool insideInventory) {
 		if (!IsSpawnableClass(className)) return "tried to spawn unknown class " + className;
@@ -383,8 +390,7 @@ class ZomberryBase {
 			EntityAI entity = admin.GetInventory().CreateInInventory(className);
 			if (!entity) {
 				string reason = "it can't be carried";
-				typename classType = className.ToType();
-				if (classType && classType.IsInherited(InventoryItem)) reason = "no room in inventory";
+				if (IsCarryableClass(className)) reason = "no room in inventory";
 
 				ZomberryStockFunctions.MessagePlayer(admin, "Can't add " + className + " to inventory: " + reason);
 				return "couldn't add " + className + " to theirs inventory (" + reason + ")";
