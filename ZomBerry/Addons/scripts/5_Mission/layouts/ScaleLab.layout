@@ -1,0 +1,433 @@
+PanelWidgetClass ZBerryScaleLab {
+ visible 1
+ color 0.05 0.05 0.08 0.95
+ position 0 0
+ size 760 370
+ halign center_ref
+ valign center_ref
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ priority 900
+ style rover_sim_colorable
+ {
+  TextWidgetClass LabInfo {
+   position 10 6
+   size 740 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "..."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabList1Cap {
+   position 10 52
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "L1 Metron14, lines 500 (now)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextListboxWidgetClass LabList1 {
+   position 10 70
+   size 180 110
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.7843
+   style Editor
+   lines 500
+   font "gui/fonts/Metron14"
+  }
+  TextWidgetClass LabList2Cap {
+   position 197 52
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "L2 Metron14, lines 7"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextListboxWidgetClass LabList2 {
+   position 197 70
+   size 180 110
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.7843
+   style Editor
+   lines 7
+   font "gui/fonts/Metron14"
+  }
+  TextWidgetClass LabList3Cap {
+   position 384 52
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "L3 sdf24 exact 14, lines 500"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextListboxWidgetClass LabList3 {
+   position 384 70
+   size 180 110
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.7843
+   style Editor
+   lines 500
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabList4Cap {
+   position 571 52
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "L4 no font, lines 7"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextListboxWidgetClass LabList4 {
+   position 571 70
+   size 180 110
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.7843
+   style Editor
+   lines 7
+  }
+  TextWidgetClass LabEdit1Cap {
+   position 10 192
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "E1 Metron14 (now)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  EditBoxWidgetClass LabEdit1 {
+   position 10 210
+   size 180 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Editor
+   font "gui/fonts/Metron14"
+  }
+  TextWidgetClass LabEdit2Cap {
+   position 197 192
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "E2 sdf24, exact 0 (vanilla)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  EditBoxWidgetClass LabEdit2 {
+   position 197 210
+   size 180 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+  TextWidgetClass LabEdit3Cap {
+   position 384 192
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "E3 sdf24, exact 14"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  EditBoxWidgetClass LabEdit3 {
+   position 384 210
+   size 180 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabEdit4Cap {
+   position 571 192
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "E4 Metron14, exact 14"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  EditBoxWidgetClass LabEdit4 {
+   position 571 210
+   size 180 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Editor
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabButton1Cap {
+   position 10 246
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "B1 Metron16 (now)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  ButtonWidgetClass LabButton1 {
+   position 10 264
+   size 180 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Colorable
+   text "Spawn Menu"
+   font "gui/fonts/Metron16"
+  }
+  TextWidgetClass LabButton2Cap {
+   position 197 246
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "B2 Metron16, exact 16"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  ButtonWidgetClass LabButton2 {
+   position 197 264
+   size 180 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Colorable
+   text "Spawn Menu"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
+  }
+  TextWidgetClass LabButton3Cap {
+   position 384 246
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "B3 sdfBook24, exact 16"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  ButtonWidgetClass LabButton3 {
+   position 384 264
+   size 180 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Colorable
+   text "Spawn Menu"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 16
+  }
+  TextWidgetClass LabButton4Cap {
+   position 571 246
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "B4 Metron16, proportion .5"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  ButtonWidgetClass LabButton4 {
+   position 571 264
+   size 180 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.3255 0.3255 0.3255 0.7843
+   style Colorable
+   text "Spawn Menu"
+   font "gui/fonts/Metron16"
+   "exact text" 0
+   "text proportion" 0.5
+  }
+  TextWidgetClass LabText1Cap {
+   position 10 312
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "T1 Metron14, exact (now)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextWidgetClass LabText1 {
+   position 10 330
+   size 180 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Health: 100"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  TextWidgetClass LabText2Cap {
+   position 197 312
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "T2 Metron14, exact 14"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextWidgetClass LabText2 {
+   position 197 330
+   size 180 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Health: 100"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabText3Cap {
+   position 384 312
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "T3 sdfBook24, exact 14"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextWidgetClass LabText3 {
+   position 384 330
+   size 180 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Health: 100"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass LabText4Cap {
+   position 571 312
+   size 180 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "T4 default (FuncName now)"
+   font "gui/fonts/Metron12"
+   "exact text" 1
+   "exact text size" 12
+   color 1 0.85 0.4 1
+  }
+  TextWidgetClass LabText4 {
+   position 571 330
+   size 180 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Health: 100"
+   "exact text" 0
+  }
+ }
+}

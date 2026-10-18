@@ -8,6 +8,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUISpawnTab m_SpawnTab;
 	protected ref ZBerryUIMapTab m_MapTab;
 	protected ref ZBerryUIPermsTab m_PermsTab;
+	protected ref ZBerryUIScaleLab m_ScaleLab; //Dev builds only
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -46,6 +47,11 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
+
+		if (ZBERRY_BUILD_DEV) {
+			m_ScaleLab = new ZBerryUIScaleLab();
+			m_ScaleLab.Init(layoutRoot);
+		}
 
 		return layoutRoot;
 	}
@@ -141,6 +147,11 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	//Raw key presses forwarded from MissionGameplay while the menu is open (used for keybinding)
 	void OnBindKeyPress( int key ) {
+		if (key == KeyCode.KC_F9 && m_ScaleLab) {
+			m_ScaleLab.Toggle(layoutRoot);
+			return;
+		}
+
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnBindKeyPress(key);
 		}
