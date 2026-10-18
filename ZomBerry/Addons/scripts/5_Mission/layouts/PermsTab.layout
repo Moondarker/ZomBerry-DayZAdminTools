@@ -1,0 +1,391 @@
+PanelWidgetClass PermsWrapper {
+ visible 0
+ position 0 56
+ size 600 0.94
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  TextWidgetClass SelectedText {
+   position 10 0
+   size 370 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Double-click a player on the left"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "text valign" center
+   "exact text size" 16
+  }
+  ButtonWidgetClass GroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 0
+   size 210 36
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass GroupButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Group: none"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass GroupsTitle {
+   position 0 44
+   size 100 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Groups"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "text valign" center
+   "exact text size" 14
+  }
+  TextWidgetClass LevelTitle {
+   position 100 44
+   size 58 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Level"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "text halign" right
+   "text valign" center
+   "exact text size" 14
+  }
+  EditBoxWidgetClass LevelInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 165 44
+   size 50 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+  TextWidgetClass PermsTitle {
+   position 225 44
+   size 375 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Permissions (double-click: allow / deny / unset)"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "text valign" center
+   "exact text size" 14
+  }
+  TextListboxWidgetClass GroupsList {
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass GroupsList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass GroupsList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass GroupsList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass GroupsList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 100
+   font "gui/fonts/Metron28"
+  }
+  TextListboxWidgetClass PermsList {
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass PermsList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass PermsList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass PermsList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass PermsList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 501
+   font "gui/fonts/Metron28"
+  }
+  EditBoxWidgetClass GroupNameInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 848
+   size 105 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+  ButtonWidgetClass AddGroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 110 848
+   size 50 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass AddGroupButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Add"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass DeleteGroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 165 848
+   size 50 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass DeleteGroupButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Delete"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  EditBoxWidgetClass PermInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 225 848
+   size 315 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+  ButtonWidgetClass AddPermButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 848
+   size 55 24
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass AddPermButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Add"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass SpawnRulesTitle {
+   position 0 892
+   size 480 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Spawn rules (comma separated: class, base class, Mag_* wildcard, -deny)"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "text valign" center
+   "exact text size" 14
+  }
+  ButtonWidgetClass SpawnPreviewButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 892
+   size 110 22
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass SpawnPreviewButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Preview"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  EditBoxWidgetClass SpawnRulesInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 918
+   size 600 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+ }
+}

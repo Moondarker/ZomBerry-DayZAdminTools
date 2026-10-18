@@ -2,10 +2,6 @@ class ZomberryLogger {
 	private string file_path;
 	private bool defaultIO = true;
 
-	void ZomberryLogger() {
-		//FindFP();
-	}
-
 	void Log(string module, string txt) {
 		if (defaultIO) {
 			Print(GetDate() + " [" + module + "]: " + txt);
@@ -20,6 +16,11 @@ class ZomberryLogger {
 				Log(module, txt);
 			}
 		}
+	}
+
+	//True while Log() ends up in the script log anyway
+	bool IsUsingScriptLog() {
+		return defaultIO;
 	}
 
 	void DebugLog(int lvl, string module, string txt) {
@@ -58,7 +59,7 @@ class ZomberryLogger {
 			defaultIO = false;
 			file_path = tPath;
 			FPrintln(logFile, "---------------------------------------------");
-			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
+			FPrintln(logFile, "ZomBerry " + ZBerryVersion.GetFullVersion() + " log started at " + GetDate());
 			FPrintln(logFile, "");
 			CloseFile(logFile);
 		} else {

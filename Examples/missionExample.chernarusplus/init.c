@@ -11,6 +11,8 @@ class DayZSurvival: MissionServer
 		GetZomberryCmdAPI().AddCommand("Heal (all players)", "HealAll", this, "ServerCustomCategory", false, {
 			new ZBerryFuncParam("D-Size", {1, 5000, 1337,}),
 		});
+
+		GetZomberryPermAPI().RegisterNode("missionexample.vip_loadout"); //Listed in the Permissions tab, give it to a group there (see StartingEquipSetup)
 	}
 
 	void BloodBathFnc( string funcName, int adminId, int targetId, vector cursor ) { //Function name, admin and target session id, admin cursor pos
@@ -28,7 +30,7 @@ class DayZSurvival: MissionServer
 		} else SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Not enough mana!");
 	}
 
-	void HealAll( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void HealAll( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 		BleedingSourcesManagerServer BSMgr;
@@ -125,6 +127,10 @@ class DayZSurvival: MissionServer
 			itemEnt = player.GetInventory().CreateInInventory("Plum");
 
 		SetRandomHealth(itemEnt);
+
+		//ZomBerry example part 3: members of a group with this permission start with a map
+		if (GetZomberryPermAPI().HasPermission(player.GetIdentity(), "missionexample.vip_loadout"))
+			player.GetInventory().CreateInInventory("ChernarusMap");
 	}
 };
 

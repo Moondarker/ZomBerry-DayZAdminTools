@@ -1,0 +1,55 @@
+PanelWidgetClass MapWrapper {
+ visible 0
+ position 0 56
+ size 600 0.94
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  MapWidgetClass MapWidget {
+   position 0 0
+   size 1 0.95
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+  }
+  TextWidgetClass MapHint {
+   position 0 0.0118
+   size 480 24
+   halign center_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 0
+   hexactsize 1
+   vexactsize 1
+   text "Teleport using Alt+LMB"
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass MapText {
+   position 0 0.0118
+   size 480 24
+   halign center_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 0
+   hexactsize 1
+   vexactsize 1
+   text "X: ?  Y: ?"
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" right
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+ }
+}

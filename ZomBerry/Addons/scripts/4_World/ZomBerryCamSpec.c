@@ -1,9 +1,5 @@
 class ZomBerryCamSpec extends ZomBerryCamBase {
 
-	void ZomBerryCamSpec() {
-
-	}
-
 	override void OnUpdate(float timeSlice) {
 
 		Human targetBody = Human.Cast(camTarget);
