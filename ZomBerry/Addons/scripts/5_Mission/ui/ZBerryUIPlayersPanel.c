@@ -19,7 +19,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	}
 
 	static void RequestSync() {
-		GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncPlayersRequest", new Param1< int >( 0 ), true, NULL );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( 0 ), true, NULL );
 	}
 
 	//Returns false if nobody is selected (or selected player has left)

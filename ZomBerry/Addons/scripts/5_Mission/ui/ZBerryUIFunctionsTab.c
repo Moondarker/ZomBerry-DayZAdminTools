@@ -39,7 +39,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	}
 
 	override void OnMenuShow() {
-		GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncFunctionsRequest", new Param1< int >( 0 ), true, NULL );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncFunctionsRequest, new Param1< int >( 0 ), true, NULL );
 	}
 
 	override void OnMenuHide() {
@@ -214,6 +214,6 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 			targetId = adminId;
 		}
 
-		GetZBerryRPC().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, targetId, ZBerryUIUtils.GetCursorPos(), GetParamValues() ), true );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, targetId, ZBerryUIUtils.GetCursorPos(), GetParamValues() ), true );
 	}
 };
