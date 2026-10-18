@@ -89,6 +89,13 @@ class ZomberryStockFunctions {
 		return false;
 	}
 
+	//Players have no identity in singleplayer
+	static string GetPlayerName(PlayerBase player) {
+		if (!player || !player.GetIdentity()) return "Player";
+
+		return player.GetIdentity().GetName();
+	}
+
 	void TPForward( string funcName, int adminId, int targetId, vector cursor ) {
 		const int tpDist = 10;
 		vector currentPos, curToTgtDir, targetPos;
@@ -173,9 +180,14 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		string result_message = target.GetIdentity().GetName() + " has been ";
+		MessagePlayer(admin, GetPlayerName(target) + " has been " + HealPlayer(target, fValues[0] != 0, fValues[1] != 0, fValues[2] != 0));
+	}
 
-		if (fValues[0]) {
+	//Returns what was done, for the admin message
+	protected string HealPlayer(PlayerBase target, bool cure, bool heal, bool feed) {
+		string result_message = "";
+
+		if (cure) {
 			bool is_area_exposure, is_mask;
 
 			target.GetStomach().ClearContents();
@@ -197,7 +209,7 @@ class ZomberryStockFunctions {
 			result_message += "cured; ";
 		}
 
-		if (fValues[1]) {
+		if (heal) {
 			if (target.GetBleedingManagerServer())
 				target.GetBleedingManagerServer().RemoveAllSources();
 
@@ -221,7 +233,7 @@ class ZomberryStockFunctions {
 			result_message += "healed; ";
 		}
 
-		if (fValues[2]) {
+		if (feed) {
 			target.GetStatStamina().Set(target.GetStatStamina().GetMax());
 			target.GetStatWater().Set(target.GetStatWater().GetMax());
 			target.GetStatEnergy().Set(target.GetStatEnergy().GetMax());
@@ -232,7 +244,7 @@ class ZomberryStockFunctions {
 		PluginLifespan module_lifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
 		module_lifespan.UpdateBloodyHandsVisibilityEx(target, eBloodyHandsTypes.CLEAN);
 
-		MessagePlayer(admin, result_message);
+		return result_message;
 	}
 
 	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
@@ -247,14 +259,14 @@ class ZomberryStockFunctions {
 		if (target.ZBIsGod()) {
 			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
-			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + target.GetIdentity().GetName());
+			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + GetPlayerName(target));
 
 		} else {
-			HealTarget("HealTarget", -1, targetId, "0 0 0");
+			HealPlayer(target, true, true, true);
 
 			target.ZBSetGod(true);
 			MessagePlayer(target, "God mode activated");
-			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + target.GetIdentity().GetName());
+			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + GetPlayerName(target));
 		}
 	}
 
@@ -449,7 +461,12 @@ class ZomberryStockFunctions {
 		}
 
 		if (!target.GetCommand_Vehicle()) {
-			SymptomBase symptom = ZBGetPlayerById(targetId).GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
+			SymptomBase symptom = target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
+			if (!symptom) {
+				MessagePlayer(admin, "Target can't vomit right now (already sick?)");
+				return;
+			}
+
 			symptom.SetDuration(fValues[0]);
 			MessagePlayer(admin, "Target is gonna be sick for " + fValues[0] + " seconds");
 		} else {
