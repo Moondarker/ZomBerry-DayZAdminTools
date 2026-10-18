@@ -7,7 +7,7 @@ The big rewrite: own RPC layer and no dependencies, permission groups, kicks and
 ### Upgrading from 0.6.x
 
 - **Clients and servers both need 0.7.0.** A 0.6.x client gets no answer from a 0.7.0 server, and the other way round, so the menu doesn't open at all.
-- **Community Framework is no longer needed.** Remove it from `-mod=` unless another mod uses it.
+- **Community Framework is no longer needed.**
 - **`admins.cfg` is imported** on the first start, then renamed to `admins.cfg.imported`:
   - the first ID becomes `superadmin`;
   - the others go into an `admin` group (level 90).
