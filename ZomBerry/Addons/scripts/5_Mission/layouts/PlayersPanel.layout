@@ -9,11 +9,11 @@ FrameWidgetClass PlayersPanel {
   TextListboxWidgetClass PlayerList {
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.89
+   size 350 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 20
    font "gui/fonts/Metron14"
@@ -22,11 +22,11 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.89
+   size 350 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 20
    font "gui/fonts/Metron12"
@@ -35,11 +35,11 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.89
+   size 350 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 20
    font "gui/fonts/Metron16"
@@ -48,11 +48,11 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.89
+   size 350 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 20
    font "gui/fonts/Metron22"
@@ -61,24 +61,24 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.89
+   size 350 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 20
    font "gui/fonts/Metron28"
   }
   ButtonWidgetClass PlayersKick {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0
-   size 112 0.05
+   position 0 10
+   size 112 36
    valign bottom_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Colorable
    {
     TextWidgetClass PlayersKickLabel {
@@ -101,13 +101,13 @@ FrameWidgetClass PlayersPanel {
   ButtonWidgetClass PlayersUnban {
    visible 0
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0
-   size 112 0.05
+   position 0 10
+   size 112 36
    valign bottom_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Colorable
    {
     TextWidgetClass PlayersUnbanLabel {
@@ -129,13 +129,13 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBan {
    color 0.3255 0.3255 0.3255 0.7843
-   position 119 0
-   size 112 0.05
+   position 119 10
+   size 112 36
    valign bottom_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Colorable
    {
     TextWidgetClass PlayersBanLabel {
@@ -157,13 +157,13 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBans {
    color 0.3255 0.3255 0.3255 0.7843
-   position 238 0
-   size 112 0.05
+   position 238 10
+   size 112 36
    valign bottom_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Colorable
    {
     TextWidgetClass PlayersBansLabel {
@@ -184,13 +184,12 @@ FrameWidgetClass PlayersPanel {
    }
   }
   TextWidgetClass PlayerInfo {
-   position 0 0.05
-   size 350 0.04
-   valign bottom_ref
+   position 4 900
+   size 342 20
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    "text valign" center
    font "gui/fonts/Metron14"
    "exact text" 1

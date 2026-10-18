@@ -13,6 +13,8 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	protected TextWidget m_PlyInfo; //Health and blood, ban or admin details of the selected row
 	protected float m_RefreshTimer = 0;
+	protected float m_LaidOutHeight = -1;
+	protected bool m_LaidOutWithButtons;
 	protected ButtonWidget m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
 	protected ZBerryUIKickBanDialog m_Dialog;
 
@@ -100,6 +102,36 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		}
 	}
 
+	//Layouts can't pin a widget to both the top and the bottom of its parent, so the bottom is laid out here, bottom up:
+	//the button row (when any button is shown) 10 units above the bottom, the info line 8 above it, the list down to 8 above that
+	protected void LayoutRows() {
+		float screenWidth, screenHeight;
+		m_Root.GetScreenSize(screenWidth, screenHeight);
+		if (screenWidth <= 0 || screenHeight <= 0) return;
+
+		bool withButtons = m_KickButton.IsVisible() || m_BanButton.IsVisible() || m_UnbanButton.IsVisible() || m_BansButton.IsVisible();
+		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5 && withButtons == m_LaidOutWithButtons) return;
+		m_LaidOutHeight = screenHeight;
+		m_LaidOutWithButtons = withButtons;
+
+		//SetPos/SetSize take physical pixels, the offsets below are layout units: the panel is exactly 350 units wide
+		float u = screenWidth / 350;
+		float rowBottom = screenHeight - 10 * u;
+		if (withButtons) rowBottom -= (36 + 8) * u;
+		float infoY = rowBottom - 20 * u;
+		float listY = 10 * u;
+		float listHeight = Math.Max(60 * u, infoY - 8 * u - listY);
+
+		m_PlyInfo.SetPos(4 * u, infoY);
+
+		array<TextListboxWidget> lists = m_PlayersLists.GetAll();
+		foreach (TextListboxWidget list : lists) {
+			float width, oldHeight;
+			list.GetSize(width, oldHeight);
+			list.SetSize(width, listHeight);
+		}
+	}
+
 	void SetBansMode(bool bansMode) {
 		if (m_BansMode == bansMode) return;
 		m_BansMode = bansMode;
@@ -149,7 +181,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersList.SetItemColor(row, 0, COLOR_SELECTED);
 
 		ZBerryBanEntry ban = m_Bans[row];
-		m_PlyInfo.SetText("  " + ban.Reason + " (by " + ban.BannedBy + ")"); //Time left is in the row
+		m_PlyInfo.SetText(ban.Reason + " (by " + ban.BannedBy + ")"); //Time left is in the row
 	}
 
 	protected bool SelectBan() {
@@ -176,6 +208,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	//Called by the menu every frame while it's open. Permissions mode has no timer: the tab reloads it on open and after saving
 	void Update(float tDelta) {
+		LayoutRows();
 		if (m_PermsMode) return;
 
 		m_RefreshTimer += tDelta;
@@ -248,7 +281,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		if (m_PermsSnapshot) admin = m_PermsSnapshot.FindAdmin(m_EntryIds[row]);
 		if (admin) group = admin.Group;
 
-		m_PlyInfo.SetText("  Group: " + group + " | Id: " + m_EntryIds[row]);
+		m_PlyInfo.SetText("Group: " + group + " | Id: " + m_EntryIds[row]);
 	}
 
 	//Returns false if nobody is selected (or selected player has left). Kept while the ban list is shown
@@ -379,7 +412,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersList.GetItemData( row, 0, plyData );
 
 		m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED );
-		m_PlyInfo.SetText("  Health: " + plyData.param3.ToString() + " | Blood: " + plyData.param4.ToString());
+		m_PlyInfo.SetText("Health: " + plyData.param3.ToString() + " | Blood: " + plyData.param4.ToString());
 	}
 
 	protected bool SameRows(ZBerryPlayerArray players) {
