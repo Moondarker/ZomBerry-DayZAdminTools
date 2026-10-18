@@ -6,6 +6,7 @@ class ZomberryBase {
 	ref ZomberryStockFunctions m_ZomberryStockFunctions;
 	protected ref ZBerryAuth m_Auth;
 	protected ref ZBerryServerRPC m_ServerRPC;
+	protected ref ZBerryBans m_Bans = new ZBerryBans;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -19,7 +20,7 @@ class ZomberryBase {
 		}
 
 		m_Auth = new ZBerryAuth;
-		m_ServerRPC = new ZBerryServerRPC(m_Auth);
+		m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
 
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) {
 			m_ZomberryStockFunctions.Init();
@@ -68,6 +69,11 @@ class ZomberryBase {
 
 	void OnServerReady() {
 		m_Auth.LoadAdmins();
+		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
+	}
+
+	ZBerryBans GetBans() {
+		return m_Bans;
 	}
 
 	string GetRemoteVersion() {
@@ -102,6 +108,31 @@ modded class MissionServer {
 
 		GetZomberryBase().OnServerReady();
 	}
+
+	//Before the character is loaded: banned players never get into the world
+	override void OnClientPrepareEvent(PlayerIdentity identity, out bool useDB, out vector pos, out float yaw, out int preloadTimeout) {
+		super.OnClientPrepareEvent(identity, useDB, pos, yaw, preloadTimeout);
+
+		ZBerryBanEntry ban = FindZBerryBan(identity);
+		if (!ban) return;
+
+		ZomberryBase.Log( "ZomBerryBans", "INFO: Banned player " + identity.GetName() + " (" + identity.GetPlainId() + ") tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
+		GetGame().DisconnectPlayer(identity, identity.GetId());
+	}
+
+	//In case the engine still let the character in
+	override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity) {
+		super.InvokeOnConnect(player, identity);
+
+		ZBerryBanEntry ban = FindZBerryBan(identity);
+		if (ban) m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+	}
+
+	protected ZBerryBanEntry FindZBerryBan(PlayerIdentity identity) {
+		if (!m_ZomberryBase || !identity) return NULL;
+
+		return m_ZomberryBase.GetBans().FindActiveFor(identity);
+	}
 };
 
 modded class MissionGameplay {
@@ -129,6 +160,7 @@ modded class MissionGameplay {
 			m_ZomberryMenu.Init();
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncPlayers, "SyncPlayers", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctions, "SyncFunctions", m_ZomberryMenu, ZBerrySPExec.Client );
+			GetZBerryRPC().AddRPC( ZBerryRPCOp.BansData, "BansData", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryClientAuth().SetMenu(m_ZomberryMenu);
 		}
 
@@ -205,7 +237,9 @@ modded class MissionGameplay {
 		}
 
 		if (GetUApi().GetInputByName("UAUIBack").LocalPress()) {
-			if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
+			if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().CloseDialogs()) {
+				//Only the dialog
+			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
 				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
 				PlayerControlEnable(false);
 			}

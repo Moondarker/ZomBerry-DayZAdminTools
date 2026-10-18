@@ -8,6 +8,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUISpawnTab m_SpawnTab;
 	protected ref ZBerryUIMapTab m_MapTab;
 	protected ref ZBerryUIPermsTab m_PermsTab;
+	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -44,6 +45,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		AddTab(m_PermsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/PermsTab.layout", "PermsButton");
 		m_PermsTab.SetPlayersPanel(m_PlayersPanel);
 
+		m_KickBanDialog = new ZBerryUIKickBanDialog();
+		m_KickBanDialog.Init(layoutRoot); //Last: drawn above everything else
+		m_PlayersPanel.SetDialog(m_KickBanDialog);
+
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
 
@@ -65,6 +70,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnPermissionsChanged();
 		}
+		m_PlayersPanel.OnPermissionsChanged();
 	}
 
 	protected void ShowTabButton(ZBerryUITab tab, bool show) {
@@ -85,6 +91,14 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	void OnPermsData(ZBerryPermsSnapshot snapshot) {
 		if (m_PermsTab) m_PermsTab.SetSnapshot(snapshot);
+	}
+
+	//Esc: closes an open dialog first, returns false if there was none
+	bool CloseDialogs() {
+		if (!m_KickBanDialog || !m_KickBanDialog.IsVisible()) return false;
+
+		m_KickBanDialog.Close();
+		return true;
 	}
 
 	protected void SelectTab(ZBerryUITab tab) {
@@ -116,6 +130,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	override void OnHide() {
 		super.OnHide();
 		ShowQuickbar(true);
+		m_KickBanDialog.Close();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnMenuHide();
@@ -159,6 +174,8 @@ class ZomberryMenu extends UIScriptedMenu {
 	}
 
 	bool GetCloseClearance() {
+		if (m_KickBanDialog && m_KickBanDialog.IsVisible()) return false; //Typing a reason
+
 		foreach (ZBerryUITab tab : m_Tabs) {
 			if (tab.BlocksClose()) return false;
 		}
@@ -189,5 +206,14 @@ class ZomberryMenu extends UIScriptedMenu {
 		if ( !ctx.Read( catListS ) ) return;
 
 		m_FunctionsTab.SetFunctions(catListS.param1);
+	}
+
+	void BansData( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2<ref ZBerryBanEntryArray, int> bansS; //Bans, server time
+
+		if (type != ZBerryCallType.Client) return;
+		if ( !ctx.Read( bansS ) || !bansS.param1 ) return;
+
+		m_PlayersPanel.SetBans(bansS.param1, bansS.param2);
 	}
 }

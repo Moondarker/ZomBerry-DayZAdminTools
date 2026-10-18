@@ -1,0 +1,197 @@
+FrameWidgetClass KickBanDialog {
+ visible 0
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ priority 10
+ {
+  PanelWidgetClass KickBanShade {
+   color 0 0 0 0.5
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass KickBanBox {
+   color 0 0 0 0.9
+   size 480 270
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass KickBanTitle {
+     position 15 12
+     size 450 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Kick player"
+     "text valign" center
+     font "gui/fonts/Metron22"
+     "exact text" 1
+     "exact text size" 22
+    }
+    TextWidgetClass KickBanTarget {
+     position 15 48
+     size 450 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    EditBoxWidgetClass KickBanIdInput {
+     visible 0
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 72
+     size 450 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    TextWidgetClass KickBanReasonTitle {
+     position 15 110
+     size 450 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Reason:"
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    EditBoxWidgetClass KickBanReasonInput {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 134
+     size 450 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    TextWidgetClass KickBanDurationTitle {
+     position 15 172
+     size 100 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Duration:"
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    ButtonWidgetClass KickBanDuration {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 120 172
+     size 140 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass KickBanDurationLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "1 day"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass KickBanCancel {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass KickBanCancelLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Cancel"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass KickBanOk {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 165 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass KickBanOkLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "OK"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

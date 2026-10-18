@@ -17,7 +17,12 @@ enum ZBerryRPCOp {
 	SetupToken = 10, //Client -> server: first-startup token
 	PermsRequest = 11,
 	PermsData = 12, //Server -> client: groups, admins, known nodes, online players
-	PermsUpdate = 13 //Client -> server: new groups and admins
+	PermsUpdate = 13, //Client -> server: new groups and admins
+	Kick = 14, //Client -> server: session id, reason
+	Ban = 15, //Client -> server: session id (-1: offline), offline id, reason, duration in seconds (0: permanent)
+	Unban = 16, //Client -> server: Steam64 id or GUID
+	BansRequest = 17,
+	BansData = 18 //Server -> client: ban list, server time
 }
 
 //Which side received the call

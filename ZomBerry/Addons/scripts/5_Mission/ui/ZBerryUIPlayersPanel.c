@@ -1,5 +1,6 @@
-//Player list on the left side: selection (double click), health/blood readout and manual refresh.
-//In permissions mode (Permissions tab) it lists online players plus offline known admins instead
+//Player list on the left side: selection (double click), health/blood readout, manual refresh, kick and ban.
+//In permissions mode (Permissions tab) it lists online players plus offline known admins instead,
+//in bans mode (Bans button) the ban list
 class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	static const int COLOR_ADMIN = 0xFF47EB00;
 	static const int COLOR_SELECTED = 0xFFFF751A;
@@ -9,6 +10,8 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected ref ZBerryScaledList m_PlayersLists;
 	protected TextWidget m_PlyHealth, m_PlyBlood;
 	protected ButtonWidget m_RefreshButton;
+	protected ButtonWidget m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
+	protected ZBerryUIKickBanDialog m_Dialog;
 
 	protected int m_SelectedPlayerId = -1;
 	protected ref ZBerryPlayerArray m_LastPlayers;
@@ -21,6 +24,12 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected ref TIntArray m_EntryColors = new TIntArray;
 	protected string m_SelectedEntryId = "";
 
+	protected bool m_BansMode = false;
+	protected ref ZBerryBanEntryArray m_Bans;
+	protected int m_BansTime; //Server time the ban list was sent at
+	protected ref TStringArray m_BanIds = new TStringArray; //Bans mode: id of each row
+	protected string m_SelectedBanId = "";
+
 	void Init(Widget parent) {
 		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/PlayersPanel.layout", parent)) return;
 
@@ -28,6 +37,11 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersLists.Pick();
 		m_PlayersList = m_PlayersLists.GetActive();
 		m_RefreshButton = ButtonWidget.Cast( BindWidget("PlayersRefresh") );
+		m_KickButton = ButtonWidget.Cast( BindWidget("PlayersKick") );
+		m_BanButton = ButtonWidget.Cast( BindWidget("PlayersBan") );
+		m_UnbanButton = ButtonWidget.Cast( BindWidget("PlayersUnban") );
+		m_BansButton = ButtonWidget.Cast( BindWidget("PlayersBans") );
+		UpdateActionButtons();
 		m_PlyHealth = TextWidget.Cast( m_Root.FindAnyWidget("PlayerHealth") );
 		m_PlyBlood = TextWidget.Cast( m_Root.FindAnyWidget("PlayerBlood") );
 	}
@@ -39,6 +53,16 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( 0 ), true, NULL );
 	}
 
+	static void RequestBans() {
+		if (!GetGame().IsMultiplayer() || !GetZBerryClientAuth().Has(ZBerryPermissions.PLAYERS_UNBAN)) return;
+
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.BansRequest, new Param1< int >( 0 ), true, NULL );
+	}
+
+	void SetDialog(ZBerryUIKickBanDialog dialog) {
+		m_Dialog = dialog;
+	}
+
 	//Menu shown: the resolution may have changed since
 	void UpdateListScale() {
 		if (!m_PlayersLists.Pick()) return;
@@ -46,9 +70,122 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersList = m_PlayersLists.GetActive();
 		if (m_PermsMode) {
 			if (m_PermsSnapshot) SetPermsEntries(m_PermsSnapshot);
+		} else if (m_BansMode) {
+			if (m_Bans) SetBans(m_Bans, m_BansTime);
 		} else if (m_LastPlayers) {
 			SetPlayers(m_LastPlayers);
 		}
+	}
+
+	void OnPermissionsChanged() {
+		if (m_BansMode && !GetZBerryClientAuth().Has(ZBerryPermissions.PLAYERS_UNBAN)) SetBansMode(false);
+		UpdateActionButtons();
+	}
+
+	//Kick, ban and the ban list need a server and the matching right; none of them in permissions mode
+	protected void UpdateActionButtons() {
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		bool shown = GetGame().IsMultiplayer() && !m_PermsMode;
+
+		m_KickButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_KICK));
+		m_BanButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_BAN));
+		m_UnbanButton.Show(shown && m_BansMode);
+		m_BansButton.Show(shown && auth.Has(ZBerryPermissions.PLAYERS_UNBAN));
+
+		if (m_BansMode) {
+			ZBerryUIUtils.SetButtonText(m_BansButton, "Players");
+		} else {
+			ZBerryUIUtils.SetButtonText(m_BansButton, "Bans");
+		}
+
+		//Without any of the buttons the list takes their row too
+		bool anyShown = m_KickButton.IsVisible() || m_BanButton.IsVisible() || m_BansButton.IsVisible();
+		float listHeight = 0.9;
+		if (anyShown) listHeight = 0.84;
+
+		array<TextListboxWidget> lists = m_PlayersLists.GetAll();
+		foreach (TextListboxWidget list : lists) {
+			float width, height;
+			list.GetSize(width, height);
+			if (height > 0 && height <= 1) list.SetSize(width, listHeight); //Relative height: a fraction of the panel
+		}
+	}
+
+	void SetBansMode(bool bansMode) {
+		if (m_BansMode == bansMode) return;
+		m_BansMode = bansMode;
+
+		m_SelectedBanId = "";
+		m_PlyHealth.SetText("");
+		m_PlyBlood.SetText("");
+		m_PlayersList.ClearItems();
+		UpdateActionButtons();
+
+		if (m_BansMode) {
+			if (m_Bans) SetBans(m_Bans, m_BansTime);
+			RequestBans();
+		} else if (m_LastPlayers) {
+			SetPlayers(m_LastPlayers);
+		}
+	}
+
+	void SetBans(ZBerryBanEntryArray bans, int serverTime) {
+		m_Bans = bans;
+		m_BansTime = serverTime;
+		if (!m_BansMode || m_PermsMode) return;
+
+		m_PlayersList.ClearItems();
+		m_BanIds.Clear();
+
+		foreach (ZBerryBanEntry ban : bans) {
+			int row = m_PlayersList.AddItem(" " + ban.GetDisplayName() + " - " + DescribeRemaining(ban), NULL, 0);
+			m_PlayersList.SetItemColor(row, 0, ZBerryUIUtils.TEXT_DEFAULT);
+			m_BanIds.Insert(ban.GetDisplayId());
+		}
+
+		int selRow = m_BanIds.Find(m_SelectedBanId);
+		if (selRow == -1) {
+			m_SelectedBanId = "";
+			m_PlyHealth.SetText("");
+			m_PlyBlood.SetText("");
+		} else {
+			HighlightBan(selRow);
+		}
+	}
+
+	protected string DescribeRemaining(ZBerryBanEntry ban) {
+		if (ban.IsPermanent()) return "permanent";
+		return ZBerryTime.FormatDuration(ban.Until - m_BansTime) + " left";
+	}
+
+	protected void HighlightBan(int row) {
+		m_PlayersList.SetItemColor(row, 0, COLOR_SELECTED);
+
+		ZBerryBanEntry ban = m_Bans[row];
+		m_PlyHealth.SetText("  By " + ban.BannedBy + ", " + DescribeRemaining(ban));
+		m_PlyBlood.SetText("  Reason: " + ban.Reason);
+	}
+
+	protected bool SelectBan() {
+		int oldRow = m_BanIds.Find(m_SelectedBanId);
+		if (oldRow != -1) m_PlayersList.SetItemColor(oldRow, 0, ZBerryUIUtils.TEXT_DEFAULT);
+
+		int selRow = m_PlayersList.GetSelectedRow();
+		if (selRow == -1 || selRow >= m_BanIds.Count()) return true;
+
+		m_SelectedBanId = m_BanIds[selRow];
+		HighlightBan(selRow);
+		return true;
+	}
+
+	//Name shown in the list for this session id
+	protected string GetPlayerName(int playerId) {
+		if (!m_LastPlayers) return "";
+
+		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			if (ply.m_PlayerID == playerId) return ply.m_PlayerName;
+		}
+		return "";
 	}
 
 	void SetPermsListener(ZBerryUIPermsTab tab) {
@@ -57,12 +194,14 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	void SetPermsMode(bool permsMode) {
 		if (m_PermsMode == permsMode) return;
+		if (permsMode) SetBansMode(false);
 		m_PermsMode = permsMode;
 
 		m_SelectedEntryId = "";
 		m_PlyHealth.SetText("");
 		m_PlyBlood.SetText("");
 		m_PlayersList.ClearItems();
+		UpdateActionButtons();
 
 		if (!m_PermsMode && m_LastPlayers) SetPlayers(m_LastPlayers);
 	}
@@ -114,17 +253,22 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlyBlood.SetText("  Id: " + m_EntryIds[row]);
 	}
 
-	//Returns false if nobody is selected (or selected player has left)
+	//Returns false if nobody is selected (or selected player has left). Kept while the ban list is shown
 	bool GetSelectedPlayerId(out int playerId) {
-		if (m_PermsMode || FindPlayerRow(m_SelectedPlayerId) == -1) return false;
+		if (m_PermsMode || m_SelectedPlayerId < 0 || !m_LastPlayers) return false;
 
-		playerId = m_SelectedPlayerId;
-		return true;
+		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			if (ply.m_PlayerID != m_SelectedPlayerId) continue;
+
+			playerId = m_SelectedPlayerId;
+			return true;
+		}
+		return false;
 	}
 
 	void SetPlayers(ZBerryPlayerArray players) {
 		m_LastPlayers = players;
-		if (m_PermsMode) return;
+		if (m_PermsMode || m_BansMode) return;
 
 		m_PlayersList.ClearItems();
 		if (!GetZBerryClientAuth().Has(ZBerryPermissions.PLAYERS_LIST)) return; //Map markers only
@@ -143,17 +287,55 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		if (w == m_RefreshButton) {
 			if (m_PermsMode && m_PermsListener) {
 				m_PermsListener.RequestData();
+			} else if (m_BansMode) {
+				RequestBans();
 			} else {
 				RequestSync();
+			}
+			return true;
+		}
+		if (w == m_BansButton) {
+			SetBansMode(!m_BansMode);
+			return true;
+		}
+		if (w == m_KickButton || w == m_BanButton) {
+			OpenDialog(w == m_BanButton);
+			return true;
+		}
+		if (w == m_UnbanButton) {
+			if (m_SelectedBanId == "") {
+				ZBerryUIUtils.Message("Double-click a ban in the list first");
+			} else {
+				GetZBerryRPC().SendRPC( ZBerryRPCOp.Unban, new Param1<string>(m_SelectedBanId), true, NULL );
 			}
 			return true;
 		}
 		return false;
 	}
 
+	//Kick needs a selected player, ban without one asks for an id
+	protected void OpenDialog(bool ban) {
+		if (!m_Dialog) return;
+
+		int playerId;
+		bool selected = GetSelectedPlayerId(playerId);
+		if (ban) {
+			if (selected) {
+				m_Dialog.OpenBan(playerId, GetPlayerName(playerId));
+			} else {
+				m_Dialog.OpenBan(-1, "");
+			}
+		} else if (selected) {
+			m_Dialog.OpenKick(playerId, GetPlayerName(playerId));
+		} else {
+			ZBerryUIUtils.Message("Double-click a player in the list first");
+		}
+	}
+
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
 		if (w != m_PlayersList) return false;
 		if (m_PermsMode) return SelectEntry();
+		if (m_BansMode) return SelectBan();
 
 		int oldRow = FindPlayerRow(m_SelectedPlayerId);
 		if (oldRow != -1) ResetRowColor(oldRow);

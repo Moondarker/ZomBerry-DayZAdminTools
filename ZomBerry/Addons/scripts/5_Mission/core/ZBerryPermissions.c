@@ -8,6 +8,9 @@ class ZBerryPermissions {
 	static const string SPAWN_GROUND = "zomberry.spawn.ground"; //Cursor and Ground targets
 	static const string SPAWN_INVENTORY = "zomberry.spawn.inventory";
 	static const string PERMISSIONS_MANAGE = "zomberry.permissions.manage";
+	static const string PLAYERS_KICK = "zomberry.players.kick";
+	static const string PLAYERS_BAN = "zomberry.players.ban";
+	static const string PLAYERS_UNBAN = "zomberry.players.unban"; //Also shows the ban list
 	static const string FUNCTIONS_PREFIX = "zomberry.functions.";
 
 	static string FunctionNode(string funcName) {
@@ -16,7 +19,7 @@ class ZBerryPermissions {
 
 	//Every fixed node; function nodes are added from the registered commands
 	static TStringArray GetFixedNodes() {
-		return {PLAYERS_LIST, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE};
+		return {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE};
 	}
 
 	static bool Matches(string pattern, string node) {

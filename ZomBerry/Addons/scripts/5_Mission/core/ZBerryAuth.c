@@ -59,6 +59,7 @@ class ZBerryAuth {
 
 		ZBerryPermGroup moderator = new ZBerryPermGroup("moderator", 10);
 		moderator.Permissions.Insert(ZBerryPermissions.PLAYERS_LIST);
+		moderator.Permissions.Insert(ZBerryPermissions.PLAYERS_KICK);
 		moderator.Permissions.Insert("zomberry.map.*");
 		moderator.Permissions.Insert("zomberry.functions.TPToTarget");
 		moderator.Permissions.Insert("zomberry.functions.TPToAdmin");
@@ -193,6 +194,25 @@ class ZBerryAuth {
 		ZBerryPermGroup group = FindGroupOf(identity);
 		if (!group) return -1;
 		return group.Level;
+	}
+
+	//Rank of whoever has this id (Steam64 or GUID) in the config, -1 for non-admins
+	int GetLevelOfId(string id) {
+		if (id == "") return -1;
+
+		ZBerryAdminEntry admin = m_Config.FindAdmin(id);
+		if (!admin) return -1;
+
+		ZBerryPermGroup group = m_Config.FindGroup(admin.Group);
+		if (!group) return -1;
+		return group.Level;
+	}
+
+	//Kicks and bans: admins can only act on admins ranked below them, superadmins on everyone
+	static bool CanActOnLevel(int actorLevel, int targetLevel) {
+		if (targetLevel < 0) return true;
+
+		return actorLevel >= ZBerryPermGroup.SUPERADMIN_LEVEL || targetLevel < actorLevel;
 	}
 
 	//The patterns this identity has, empty for non-admins

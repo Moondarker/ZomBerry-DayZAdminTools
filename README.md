@@ -68,6 +68,9 @@ The `superadmin` group is always level 100, and level 100 may change everything,
 | Permission | Allows |
 |---|---|
 | `zomberry.players.list` | The player list, with health and blood |
+| `zomberry.players.kick` | Kicking players |
+| `zomberry.players.ban` | Banning players, also offline ones by ID |
+| `zomberry.players.unban` | The ban list, and unbanning |
 | `zomberry.map.view` | The Map tab |
 | `zomberry.map.player_markers` | Player markers on the map |
 | `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
@@ -112,6 +115,15 @@ The file is then renamed to `admins.cfg.imported` and isn't used anymore. Earlie
 
 For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every player `*`.
 
+### Kicks and bans
+
+Bans are ZomBerry's own list, stored in `<profiles>/ZomBerry/ZomBerryBans.json`. They don't touch BattlEye's `ban.txt`.
+- **Who can be kicked or banned:** levels apply here too. Admins can only kick or ban admins ranked **below** them, and superadmins can kick or ban everyone. Nobody can kick or ban themselves. This also applies to offline bans of an admin's ID.
+- **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect.
+- **Rejoining:** banned players are refused while they connect, before their character loads. The game can't show them a reason at that point, so they only see a disconnect. The server's ZomBerry log names them and the reason.
+- **Durations:** 1 hour, 1 day, 7 days, 30 days or permanent. Expired bans are removed on their own.
+- **The file:** entries have `Id` (Steam64), `Guid` (BattlEye GUID), `Name`, `Reason`, `BannedBy`, `Since` and `Until` (seconds since 1970, UTC; `0` means permanent). Either ID is enough for a ban to match. If the file can't be read, nobody is banned until it's fixed, and ZomBerry never overwrites it.
+
 ### ZomBerryConfig.json
 
 Created with default values on first start:
@@ -149,6 +161,8 @@ Open and close the menu with `O`, or close it with `Esc`. The `O` key can be cha
 The left panel lists everyone online. Admins are green, and the item in a player's hands or their vehicle is shown next to their name.
 - **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and their health and blood are shown below the list.
 - **Refreshing:** use the refresh button to update the list.
+- **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
+- **Bans:** switches the list to the ban list, showing time left. Double-click a ban to see who banned them and why, then press **Unban** to lift it. **Players** switches back.
 
 ### Functions
 
@@ -267,7 +281,7 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 |---|---|
 | `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
 | `4_World/` | God mode on `PlayerBase`, and the free and spectator cameras |
-| `5_Mission/core/` | Permissions (matching, groups, JSON), server and client auth, request handlers, spawning, version and build info |
+| `5_Mission/core/` | Permissions (matching, groups, JSON), server and client auth, request handlers, bans, spawning, version and build info |
 | `5_Mission/ui/` | Admin menu components, one class per tab or panel |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
 | `5_Mission/*.c` | Mission hooks, command API, stock functions, config, logger, keybinds |
@@ -284,6 +298,7 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 - New functions in the default kit
 
 Done in 0.7.0:
+- Kicks and bans from the players panel, with reasons, durations and offline bans by ID
 - Permission groups with fine-grained, wildcard permissions and spawn rules, editable in JSON and in-game
 - A setup token for the first admin, replacing installation mode and manual file editing
 - No dependencies: ZomBerry's own RPC layer replaces Community Framework
