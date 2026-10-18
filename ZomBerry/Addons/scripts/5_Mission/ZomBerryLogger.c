@@ -2,10 +2,6 @@ class ZomberryLogger {
 	private string file_path;
 	private bool defaultIO = true;
 
-	void ZomberryLogger() {
-		//FindFP();
-	}
-
 	void Log(string module, string txt) {
 		if (defaultIO) {
 			Print(GetDate() + " [" + module + "]: " + txt);

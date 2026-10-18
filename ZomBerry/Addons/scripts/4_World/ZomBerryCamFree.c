@@ -2,10 +2,6 @@ class ZomBerryCamFree extends ZomBerryCamBase {
 
 	private float speedMultiplier = 1.0;
 
-	void ZomBerryCamFree() {
-
-	}
-
 	override void OnUpdate(float timeSlice) {
 
 		Input input = GetGame().GetInput();

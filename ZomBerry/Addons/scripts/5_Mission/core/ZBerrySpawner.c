@@ -7,7 +7,7 @@ class ZBerrySpawner {
 		if (insideInventory) {
 			if (!admin) return "tried to add " + className + " to inventory, but has no character";
 
-			if (TryLoadMagazine(admin, className)) return "loaded " + className + " into the weapon in theirs hands";
+			if (TryLoadMagazine(admin, className)) return "loaded " + className + " into the weapon in their hands";
 
 			EntityAI entity = admin.GetInventory().CreateInInventory(className);
 			if (!entity) {
@@ -15,12 +15,12 @@ class ZBerrySpawner {
 				if (IsCarryableClass(className)) reason = "no room in inventory";
 
 				ZomberryStockFunctions.MessagePlayer(admin, "Can't add " + className + " to inventory: " + reason);
-				return "couldn't add " + className + " to theirs inventory (" + reason + ")";
+				return "couldn't add " + className + " to their inventory (" + reason + ")";
 			}
 
 			ItemBase item = ItemBase.Cast(entity);
 			if (item) item.SetQuantity(item.GetQuantityMax());
-			return "added " + className + " to theirs inventory";
+			return "added " + className + " to their inventory";
 		}
 
 		GetGame().CreateObject(className, position, false, true );

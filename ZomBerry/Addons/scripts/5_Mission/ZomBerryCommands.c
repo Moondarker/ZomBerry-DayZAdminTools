@@ -2,10 +2,6 @@ class ZomberryCmdAPI {
 	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
 	protected int m_lastFuncId = 0;
 
-	void ZomberryCmdAPI() {
-
-	}
-
 	void AddCategory(string catName, int funcColor) {
 		if (m_oCategoryList.Contains(catName)) {
 			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Cannot add category " + catName + ", category with same name already exists.");

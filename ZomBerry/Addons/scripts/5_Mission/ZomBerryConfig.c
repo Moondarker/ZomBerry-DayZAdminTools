@@ -15,7 +15,7 @@ class ZomberryConfig {
 
 			cfgPath = cfgPathServer;
 
-			if (!FileExist(cfgPath + "ZomBerry\\")) MakeDirectory(cfgPath + "\\ZomBerry\\");
+			if (!FileExist(cfgPath + "ZomBerry\\")) MakeDirectory(cfgPath + "ZomBerry\\");
 			if (FileExist(cfgPath + "ZomBerry\\")) {
 				cfgPath += "ZomBerry\\";
 			} else {

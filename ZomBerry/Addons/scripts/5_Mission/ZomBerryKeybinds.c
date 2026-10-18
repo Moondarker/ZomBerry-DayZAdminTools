@@ -8,7 +8,7 @@ class ZomberryKeybinds {
 		if (m_dKeyBindList.Find(key, funcId)) {
 			int adminId = ZBerryUIUtils.GetLocalPlayerId(); //Also without a character (dead, respawning)
 			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
-		};
+		}
 	}
 
 	void ClearFuncList() {

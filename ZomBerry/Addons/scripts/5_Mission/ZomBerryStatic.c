@@ -31,22 +31,16 @@ static ref ZomberryCmdAPI GetZomberryCmdAPI() {
 	@endcode
 */
 static PlayerBase ZBGetPlayerById (int plyId) {
+	if (!GetGame().IsMultiplayer()) return PlayerBase.Cast(GetGame().GetPlayer());
+
 	array<Man> players = new array<Man>;
-	PlayerBase result = NULL;
+	GetGame().GetPlayers(players);
 
-	if (GetGame().IsMultiplayer()) {
-		GetGame().GetPlayers(players);
+	foreach (Man player : players) {
+		if (!player.GetIdentity()) continue; //Connecting/disconnecting players have no identity
 
-		for (int i = 0; i < players.Count(); i++) {
-			if (!players.Get(i).GetIdentity()) continue; //Connecting/disconnecting players have no identity
-
-			if (players.Get(i).GetIdentity().GetPlayerId() == plyId) {
-				result = PlayerBase.Cast(players.Get(i));
-			}
-		}
-	} else {
-		result = PlayerBase.Cast(GetGame().GetPlayer());
+		if (player.GetIdentity().GetPlayerId() == plyId) return PlayerBase.Cast(player);
 	}
 
-	return result;
+	return NULL;
 }
