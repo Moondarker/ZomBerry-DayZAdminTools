@@ -9,7 +9,7 @@ FrameWidgetClass PlayersPanel {
   TextListboxWidgetClass PlayerList {
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.84
+   size 350 0.89
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -22,7 +22,7 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.84
+   size 350 0.89
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -35,7 +35,7 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.84
+   size 350 0.89
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -48,7 +48,7 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.84
+   size 350 0.89
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -61,7 +61,7 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0 0 0 0.7843
    position 0 10
-   size 350 0.84
+   size 350 0.89
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -72,7 +72,7 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersKick {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.095
+   position 0 0
    size 112 0.05
    valign bottom_ref
    hexactpos 1
@@ -101,7 +101,7 @@ FrameWidgetClass PlayersPanel {
   ButtonWidgetClass PlayersUnban {
    visible 0
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.095
+   position 0 0
    size 112 0.05
    valign bottom_ref
    hexactpos 1
@@ -129,7 +129,7 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBan {
    color 0.3255 0.3255 0.3255 0.7843
-   position 119 0.095
+   position 119 0
    size 112 0.05
    valign bottom_ref
    hexactpos 1
@@ -157,7 +157,7 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBans {
    color 0.3255 0.3255 0.3255 0.7843
-   position 238 0.095
+   position 238 0
    size 112 0.05
    valign bottom_ref
    hexactpos 1
@@ -183,9 +183,9 @@ FrameWidgetClass PlayersPanel {
     }
    }
   }
-  TextWidgetClass PlayerHealth {
-   position 0 0.045
-   size 260 0.045
+  TextWidgetClass PlayerInfo {
+   position 0 0.05
+   size 350 0.04
    valign bottom_ref
    hexactpos 1
    vexactpos 0
@@ -195,47 +195,6 @@ FrameWidgetClass PlayersPanel {
    font "gui/fonts/Metron14"
    "exact text" 1
    "exact text size" 14
-  }
-  TextWidgetClass PlayerBlood {
-   position 0 0
-   size 260 0.045
-   valign bottom_ref
-   hexactpos 1
-   vexactpos 1
-   hexactsize 1
-   vexactsize 0
-   "text valign" center
-   font "gui/fonts/Metron14"
-   "exact text" 1
-   "exact text size" 14
-  }
-  ButtonWidgetClass PlayersRefresh {
-   color 0.3255 0.3255 0.3255 0.7843
-   position 260 0
-   size 90 0.09
-   valign bottom_ref
-   hexactpos 1
-   vexactpos 0
-   hexactsize 1
-   vexactsize 0
-   style Colorable
-   {
-    TextWidgetClass PlayersRefreshLabel {
-     ignorepointer 1
-     position 0 0
-     size 1 1
-     hexactpos 1
-     vexactpos 1
-     hexactsize 0
-     vexactsize 0
-     text "Update"
-     font "gui/fonts/Metron16"
-     "exact text" 1
-     "exact text size" 16
-     "text halign" center
-     "text valign" center
-    }
-   }
   }
  }
 }

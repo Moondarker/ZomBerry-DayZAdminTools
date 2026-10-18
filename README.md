@@ -160,7 +160,7 @@ Open and close the menu with `O`, or close it with `Esc`. The `O` key can be cha
 
 The left panel lists everyone online. Admins are green, and the item in a player's hands or their vehicle is shown next to their name.
 - **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and their health and blood are shown below the list.
-- **Refreshing:** use the refresh button to update the list.
+- **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
 - **Bans:** switches the list to the ban list, showing time left. Double-click a ban to see who banned them and why, then press **Unban** to lift it. **Players** switches back.
 
