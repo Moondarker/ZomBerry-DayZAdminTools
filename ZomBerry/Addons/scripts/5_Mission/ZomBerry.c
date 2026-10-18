@@ -24,6 +24,7 @@ class ZomberryBase {
 			m_Auth = new ZBerryAuth;
 			m_Bans = new ZBerryBans;
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
+			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
 		}
 

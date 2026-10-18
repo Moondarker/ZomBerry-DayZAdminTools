@@ -22,6 +22,7 @@ class ZBerryClientAuth {
 			m_State = ZBerryAuthState.ADMIN;
 			m_Permissions = {"*"};
 			m_SpawnRules = {"*"};
+			GetZomberryPermAPI().OnLocalPermissionsChanged.Invoke();
 			return;
 		}
 
@@ -96,6 +97,7 @@ class ZBerryClientAuth {
 		}
 
 		if (m_Menu) m_Menu.OnPermissionsChanged();
+		GetZomberryPermAPI().OnLocalPermissionsChanged.Invoke();
 	}
 
 	void PermsData( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {

@@ -196,6 +196,15 @@ class ZBerryAuth {
 		return group.Level;
 	}
 
+	//Group name, "" for non-admins
+	string GetGroupName(PlayerIdentity identity) {
+		if (EveryoneIsAdmin()) return SUPERADMIN_GROUP;
+
+		ZBerryPermGroup group = FindGroupOf(identity);
+		if (!group) return "";
+		return group.Name;
+	}
+
 	//Rank of whoever has this id (Steam64 or GUID) in the config, -1 for non-admins
 	int GetLevelOfId(string id) {
 		if (id == "") return -1;
@@ -377,6 +386,7 @@ class ZBerryAuth {
 		snapshot.Groups = m_Config.Groups;
 		snapshot.Admins = m_Config.Admins;
 		snapshot.KnownNodes.InsertAll(ZBerryPermissions.GetFixedNodes());
+		snapshot.KnownNodes.InsertAll(GetZomberryPermAPI().GetRegisteredNodes()); //Nodes of other mods and missions
 
 		ZBerryCategoryArray categories = GetZomberryCmdAPI().GetList();
 		foreach (ZBerryCategory category : categories) {

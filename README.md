@@ -268,6 +268,61 @@ Helpers:
 
 Working examples are in [ZomBerryStockFnc.c](ZomBerry/Addons/scripts/5_Mission/ZomBerryStockFnc.c), with all stock commands, and [Examples/missionExample.chernarusplus/init.c](Examples/missionExample.chernarusplus/init.c), with commands added from a mission.
 
+Every command gets the permission node `zomberry.functions.<functionName>` by itself, so groups can be given it in the Permissions tab.
+
+### Permissions API
+
+Mods and missions can use ZomBerry's admin groups for their own features, so server owners manage everything in one place, instead of keeping a separate admin list per mod. `GetZomberryPermAPI()` works like `GetZomberryCmdAPI()`, and the code is in [ZBerryPermAPI.c](ZomBerry/Addons/scripts/5_Mission/core/ZBerryPermAPI.c).
+
+**Nodes** are dot-separated and lower case, with your mod's name first: `mymod.vip.teleport`.
+- **Registering:** `RegisterNode` makes a node show up in the Permissions tab, where it can be given to groups like any built-in one.
+- **Reserved prefix:** `zomberry.*` belongs to ZomBerry, so nodes starting with it are refused.
+- **Granting:** groups grant nodes with the usual patterns. `mymod.*` grants every node of your mod, superadmins' `*` grants everything, and `-mymod.vip.*` denies.
+
+```c
+//Server, at startup (the Permissions tab gets its node list from the server)
+GetZomberryPermAPI().RegisterNode("mymod.vip.teleport");
+```
+
+**Server side**, for requests from players (in singleplayer, the local player has every permission):
+
+| Method | Returns |
+|---|---|
+| `bool HasPermission(PlayerIdentity identity, string node)` | Whether the player's group grants the node |
+| `bool IsAdmin(PlayerIdentity identity)` | Whether the player is in any ZomBerry group |
+| `int GetLevel(PlayerIdentity identity)` | Group level, 0 to 100 (100 is superadmin), or -1 for players who aren't admins |
+| `string GetGroup(PlayerIdentity identity)` | Group name, or `""` |
+| `bool CanActOn(PlayerIdentity actor, PlayerIdentity target)` | ZomBerry's rank rule, the one kicks and bans use: admins can only act on lower-ranked admins, and superadmins on everyone. Players who aren't admins and the actor themselves are always allowed |
+| `bool CanSpawn(PlayerIdentity identity, string className)` | Whether the player's spawn rules allow the class |
+
+```c
+void MyModTeleportRequest(PlayerIdentity sender, vector position) {
+	if (!GetZomberryPermAPI().HasPermission(sender, "mymod.vip.teleport")) return;
+	...
+}
+```
+
+**Client side**, to show or hide your own UI. The server sends each client its own permissions, and these answer from that copy. They're only for the UI: always check again on the server.
+
+| Method | Returns |
+|---|---|
+| `bool HasLocalPermission(string node)` | Whether the local player's group grants the node |
+| `bool IsLocalAdmin()` | Whether the local player is a ZomBerry admin |
+| `ScriptInvoker OnLocalPermissionsChanged` | Called, without arguments, whenever the server sends the local player new rights (after joining, and when groups or permissions change) |
+
+```c
+void MyModInitUI() {
+	GetZomberryPermAPI().OnLocalPermissionsChanged.Insert(MyModUpdateButtons);
+	MyModUpdateButtons();
+}
+
+void MyModUpdateButtons() {
+	m_TeleportButton.Show(GetZomberryPermAPI().HasLocalPermission("mymod.vip.teleport"));
+}
+```
+
+The example mission registers `missionexample.vip_loadout` and gives members of a group with that permission a map on spawn.
+
 ### Testing without a server
 
 [Examples/offlineTest.chernarusplus](Examples/offlineTest.chernarusplus/init.c) is a minimal offline mission: a character on the map, no loot or infected. Copy it to the game's `Missions` folder and start `DayZ_x64.exe` directly (not through BattlEye):
@@ -281,7 +336,7 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 |---|---|
 | `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
 | `4_World/` | God mode on `PlayerBase`, and the free and spectator cameras |
-| `5_Mission/core/` | Permissions (matching, groups, JSON), server and client auth, request handlers, bans, spawning, version and build info |
+| `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, bans, spawning, version and build info |
 | `5_Mission/ui/` | Admin menu components, one class per tab or panel |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
 | `5_Mission/*.c` | Mission hooks, command API, stock functions, config, logger, keybinds |
@@ -298,6 +353,7 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 - New functions in the default kit
 
 Done in 0.7.0:
+- A Permissions API, so other mods and missions can use ZomBerry's groups for their own features
 - Kicks and bans from the players panel, with reasons, durations and offline bans by ID
 - Permission groups with fine-grained, wildcard permissions and spawn rules, editable in JSON and in-game
 - A setup token for the first admin, replacing installation mode and manual file editing
