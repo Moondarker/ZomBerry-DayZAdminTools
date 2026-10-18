@@ -23,6 +23,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected bool m_Dirty = false;
 	protected bool m_ConfirmDelete = false;
 	protected bool m_PreviewMode = false; //Right list shows what the spawn rules allow instead of permissions
+	protected float m_LaidOutHeight = -1;
 	protected int m_MouseOnInputs = 0; //Typing must not close the menu
 
 	protected override void OnInit() {
@@ -64,12 +65,67 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		return CanEdit(m_Snapshot.FindGroup(admin.Group));
 	}
 
+	//Layouts can't pin a widget to both the top and the bottom of its parent, so the vertical layout is set here:
+	//title row and lists at fixed offsets from the top, input rows at fixed offsets from the bottom, lists in between
+	protected void LayoutRows() {
+		float screenWidth, screenHeight;
+		m_Root.GetScreenSize(screenWidth, screenHeight);
+		if (screenWidth <= 0 || screenHeight <= 0) return;
+
+		//Exact layout units aren't always screen pixels (UI scale): the wrapper is exactly 600 units wide
+		float height = screenHeight * 600 / screenWidth;
+		if (Math.AbsFloat(height - m_LaidOutHeight) < 0.5) return;
+		m_LaidOutHeight = height;
+
+		const float LIST_TOP = 70;
+		float spawnInputY = height - 6 - 24;
+		float spawnTitleY = spawnInputY - 4 - 22;
+		float inputRowY = spawnTitleY - 10 - 24;
+		float listHeight = Math.Max(60, inputRowY - 4 - LIST_TOP);
+
+		SetRowY("GroupsList", LIST_TOP);
+		SetRowY("PermsList", LIST_TOP);
+		SetHeight("GroupsList", listHeight);
+		SetHeight("PermsList", listHeight);
+
+		TStringArray inputRow = {"GroupNameInput", "AddGroupButton", "DeleteGroupButton", "PermInput", "AddPermButton"};
+		foreach (string inputName : inputRow) SetRowY(inputName, inputRowY);
+
+		SetRowY("SpawnRulesTitle", spawnTitleY);
+		SetRowY("SpawnPreviewButton", spawnTitleY);
+		SetRowY("SpawnRulesInput", spawnInputY);
+	}
+
+	protected void SetRowY(string widgetName, float y) {
+		Widget w = m_Root.FindAnyWidget(widgetName);
+		if (!w) return;
+
+		float x, oldY;
+		w.GetPos(x, oldY);
+		w.SetPos(x, y);
+	}
+
+	protected void SetHeight(string widgetName, float height) {
+		Widget w = m_Root.FindAnyWidget(widgetName);
+		if (!w) return;
+
+		float width, oldHeight;
+		w.GetSize(width, oldHeight);
+		w.SetSize(width, height);
+	}
+
+	//The tab's height is only known once it is shown, and changes with the resolution
+	override void Update(float tDelta) {
+		if (IsVisible()) LayoutRows();
+	}
+
 	void SetPlayersPanel(ZBerryUIPlayersPanel panel) {
 		m_PlayersPanel = panel;
 		m_PlayersPanel.SetPermsListener(this);
 	}
 
 	protected override void OnActivate() {
+		LayoutRows();
 		m_PlayersPanel.SetPermsMode(true);
 		if (m_Snapshot) m_PlayersPanel.SetPermsEntries(m_Snapshot);
 		UpdateActionButton();

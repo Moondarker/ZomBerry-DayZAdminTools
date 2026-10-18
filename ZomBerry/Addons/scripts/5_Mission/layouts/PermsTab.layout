@@ -33,79 +33,83 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron16"
   }
   TextWidgetClass GroupsTitle {
-   position 0 0.07
-   size 110 20
+   position 0 44
+   size 100 22
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Groups"
    font "gui/fonts/Metron14"
    "exact text" 1
+   "text valign" center
   }
   TextWidgetClass LevelTitle {
-   position 115 0.07
-   size 45 20
+   position 100 44
+   size 58 22
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Level"
    font "gui/fonts/Metron14"
    "exact text" 1
+   "text halign" right
+   "text valign" center
   }
   EditBoxWidgetClass LevelInput {
    color 0.3255 0.3255 0.3255 0.7843
-   position 165 0.068
+   position 165 44
    size 50 22
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Editor
    font "gui/fonts/Metron14"
   }
   TextWidgetClass PermsTitle {
-   position 225 0.07
-   size 375 20
+   position 225 44
+   size 375 22
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Permissions (double-click: allow / deny / unset)"
    font "gui/fonts/Metron14"
    "exact text" 1
+   "text valign" center
   }
   TextListboxWidgetClass GroupsList {
    color 0 0 0 0.7843
-   position 0 0.11
-   size 215 0.67
+   position 0 70
+   size 215 774
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 100
    font "gui/fonts/Metron14"
   }
   TextListboxWidgetClass PermsList {
    color 0 0 0 0.7843
-   position 225 0.11
-   size 375 0.67
+   position 225 70
+   size 375 774
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
-   vexactsize 0
+   vexactsize 1
    style Editor
    lines 501
    font "gui/fonts/Metron14"
   }
   EditBoxWidgetClass GroupNameInput {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.79
+   position 0 848
    size 105 24
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Editor
@@ -113,10 +117,10 @@ PanelWidgetClass PermsWrapper {
   }
   ButtonWidgetClass AddGroupButton {
    color 0.3255 0.3255 0.3255 0.7843
-   position 110 0.79
+   position 110 848
    size 50 24
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Colorable
@@ -125,10 +129,10 @@ PanelWidgetClass PermsWrapper {
   }
   ButtonWidgetClass DeleteGroupButton {
    color 0.3255 0.3255 0.3255 0.7843
-   position 165 0.79
+   position 165 848
    size 50 24
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Colorable
@@ -137,10 +141,10 @@ PanelWidgetClass PermsWrapper {
   }
   EditBoxWidgetClass PermInput {
    color 0.3255 0.3255 0.3255 0.7843
-   position 225 0.79
+   position 225 848
    size 315 24
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Editor
@@ -148,11 +152,11 @@ PanelWidgetClass PermsWrapper {
   }
   ButtonWidgetClass AddPermButton {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.79
+   position 0 848
    size 55 24
    halign right_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Colorable
@@ -160,23 +164,24 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron14"
   }
   TextWidgetClass SpawnRulesTitle {
-   position 0 0.865
-   size 480 20
+   position 0 892
+   size 480 22
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Spawn rules (comma separated: class, base class, Mag_* wildcard, -deny)"
    font "gui/fonts/Metron14"
    "exact text" 1
+   "text valign" center
   }
   ButtonWidgetClass SpawnPreviewButton {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.86
-   size 110 24
+   position 0 892
+   size 110 22
    halign right_ref
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Colorable
@@ -185,10 +190,10 @@ PanelWidgetClass PermsWrapper {
   }
   EditBoxWidgetClass SpawnRulesInput {
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0.91
+   position 0 918
    size 600 24
    hexactpos 1
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    style Editor
