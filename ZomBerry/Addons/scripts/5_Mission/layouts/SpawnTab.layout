@@ -168,7 +168,7 @@ PanelWidgetClass SpawnWrapper {
     }
     TextWidgetClass SearchText {
      visible 1
-     position 195 10
+     position 195 18
      size 60 20
      valign bottom_ref
      hexactpos 1
@@ -179,10 +179,11 @@ PanelWidgetClass SpawnWrapper {
      font "gui/fonts/Metron14"
      "exact text" 1
      "exact text size" 14
+     "text valign" center
     }
     EditBoxWidgetClass SearchInput {
      color 0.3255 0.3255 0.3255 0.7843
-     position 10 10
+     position 10 18
      size 330 20
      halign right_ref
      valign bottom_ref
