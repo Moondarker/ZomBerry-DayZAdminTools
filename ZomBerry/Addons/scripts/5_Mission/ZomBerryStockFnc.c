@@ -74,6 +74,16 @@ class ZomberryStockFunctions {
 		}
 	}
 
+	//Looks both players up; tells the admin and returns false when the target is gone
+	protected bool GetTargets(int adminId, int targetId, out PlayerBase admin, out PlayerBase target) {
+		admin = ZBGetPlayerById(adminId);
+		target = ZBGetPlayerById(targetId);
+		if (target) return true;
+
+		MessagePlayer(admin, "Target not found (probably disconnected?)");
+		return false;
+	}
+
 	static vector GetPosSafe(PlayerBase target) {
 		if (!target.GetCommand_Vehicle()) {
 			return target.GetPosition();
@@ -121,13 +131,8 @@ class ZomberryStockFunctions {
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (SetPosSafe(target, cursor)) {
 			MessagePlayer(admin, "Target teleported");
@@ -137,13 +142,8 @@ class ZomberryStockFunctions {
 	}
 
 	void TPToTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (SetPosSafe(admin, GetPosSafe(target))) {
 			MessagePlayer(admin, "Teleported to target");
@@ -153,13 +153,8 @@ class ZomberryStockFunctions {
 	}
 
 	void TPToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (SetPosSafe(target, GetPosSafe(admin))) {
 			MessagePlayer(admin, "Target teleported");
@@ -173,13 +168,8 @@ class ZomberryStockFunctions {
 	}
 
 	void HealTargetPart( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		MessagePlayer(admin, GetPlayerName(target) + " has been " + HealPlayer(target, fValues[0] != 0, fValues[1] != 0, fValues[2] != 0));
 	}
@@ -249,13 +239,8 @@ class ZomberryStockFunctions {
 	}
 
 	void GodTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (target.ZBIsGod()) {
 			target.ZBSetGod(false);
@@ -272,13 +257,8 @@ class ZomberryStockFunctions {
 	}
 
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		InventoryItem target_item = target.GetItemInHands();
 
@@ -304,13 +284,8 @@ class ZomberryStockFunctions {
 	}
 
 	void RefuelAndRepair( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		ref array<Object> nearestObjects = new array<Object>;
 		ref array<CargoBase> proxyCargos = new array<CargoBase>;
@@ -321,7 +296,7 @@ class ZomberryStockFunctions {
 		foreach(Object nearObject: nearestObjects) {
 			if (nearObject.IsKindOf("CarScript")) RepairCar(Car.Cast(nearObject));
 		}
-		MessagePlayer(ZBGetPlayerById(adminId), "Refueled and repaired vehicles near to target");
+		MessagePlayer(admin, "Refueled and repaired vehicles near to target");
 	}
 
 	protected void RepairCar(Car carObject) {
@@ -416,26 +391,16 @@ class ZomberryStockFunctions {
 	}
 
 	void KillTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		target.SetHealth(0);
 		MessagePlayer(admin, "Killed target");
 	}
 
 	void BiteTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		BleedingSourcesManagerServer BSMgr = target.GetBleedingManagerServer();
 
@@ -448,26 +413,16 @@ class ZomberryStockFunctions {
 	}
 
 	void StripTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		target.RemoveAllItems();
 		MessagePlayer(admin, "Target was stripped");
 	}
 
 	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (!target.GetCommand_Vehicle()) {
 			SymptomBase symptom = target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
@@ -484,13 +439,8 @@ class ZomberryStockFunctions {
 	}
 
 	void PsycoTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (!target.GetCommand_Vehicle()) {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_LAUGHTER);
@@ -501,13 +451,8 @@ class ZomberryStockFunctions {
 	}
 
 	void SneezeTarget( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		if (!target.GetCommand_Vehicle()) {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_SNEEZE);
@@ -518,13 +463,8 @@ class ZomberryStockFunctions {
 	}
 
 	void SetHealthTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		target.SetHealth(fValues[0]);
 
@@ -532,13 +472,8 @@ class ZomberryStockFunctions {
 	}
 
 	void SetBloodTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		PlayerBase target = ZBGetPlayerById(targetId);
-		PlayerBase admin = ZBGetPlayerById(adminId);
-
-		if (!target) {
-			MessagePlayer(admin, "Target not found (probably disconnected?)");
-			return;
-		}
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		target.SetHealth("", "Blood", fValues[0]);
 
@@ -603,56 +538,33 @@ class ZomberryStockFunctions {
 	}
 
 	void SetWeather( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		int year, month, day, hour, minute;
-		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax; //Damn, a lot of variables...
 		Weather WMgr = GetGame().GetWeather();
 
-		WMgr.GetFog().GetForecastChangeLimits(fcMin, fcMax); //But why would I need to Ctrl+C - Ctrl+V so much code?
-		WMgr.GetFog().GetLimits(fnMin, fnMax);
-		WMgr.GetFog().GetForecastTimeLimits(ftMin, ftMax); //Because users are important, and they might have their own weather settings!
-
-		WMgr.GetFog().SetForecastChangeLimits(0, 1);
-		WMgr.GetFog().SetLimits(0, 1);
-		WMgr.GetFog().SetForecastTimeLimits(0, 3600);
-
-		WMgr.GetFog().Set((fValues[0]/100), 1, 360);
-		WMgr.GetFog().SetNextChange(0.01);
-		WMgr.GetFog().SetForecastChangeLimits(fcMin, fcMax);
-		WMgr.GetFog().SetLimits(fnMin, fnMax);
-		WMgr.GetFog().SetForecastTimeLimits(ftMin, ftMax);
-
-
-		WMgr.GetOvercast().GetForecastChangeLimits(fcMin, fcMax);
-		WMgr.GetOvercast().GetLimits(fnMin, fnMax);
-		WMgr.GetOvercast().GetForecastTimeLimits(ftMin, ftMax);
-
-		WMgr.GetOvercast().SetForecastChangeLimits(0, 1);
-		WMgr.GetOvercast().SetLimits(0, 1);
-		WMgr.GetOvercast().SetForecastTimeLimits(0, 3600);
-
-		WMgr.GetOvercast().Set((fValues[1]/100), 1, 360);
-		WMgr.GetOvercast().SetNextChange(0.01);
-		WMgr.GetOvercast().SetForecastChangeLimits(fcMin, fcMax);
-		WMgr.GetOvercast().SetLimits(fnMin, fnMax);
-		WMgr.GetOvercast().SetForecastTimeLimits(ftMin, ftMax);
-
-
-		WMgr.GetRain().GetForecastChangeLimits(fcMin, fcMax);
-		WMgr.GetRain().GetLimits(fnMin, fnMax);
-		WMgr.GetRain().GetForecastTimeLimits(ftMin, ftMax);
-
-		WMgr.GetRain().SetForecastChangeLimits(0, 1);
-		WMgr.GetRain().SetLimits(0, 1);
-		WMgr.GetRain().SetForecastTimeLimits(0, 3600);
-
-		WMgr.GetRain().Set((fValues[2]/100), 1, 360);
-		WMgr.GetRain().SetNextChange(0.01);
+		SetWeatherPhenomenon(WMgr.GetFog(), fValues[0] / 100.0);
+		SetWeatherPhenomenon(WMgr.GetOvercast(), fValues[1] / 100.0);
+		SetWeatherPhenomenon(WMgr.GetRain(), fValues[2] / 100.0);
 		WMgr.SetStorm((fValues[1]*fValues[2])/10000, 0.7, 3600/((fValues[2]/2)+0.1));
-		WMgr.GetRain().SetForecastChangeLimits(fcMin, fcMax);
-		WMgr.GetRain().SetLimits(fnMin, fnMax);
-		WMgr.GetRain().SetForecastTimeLimits(ftMin, ftMax);
 
 		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+	}
+
+	//Sets a weather phenomenon right away, then restores the server's own limits so its weather settings keep working
+	protected void SetWeatherPhenomenon(WeatherPhenomenon phenomenon, float value) {
+		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax;
+		phenomenon.GetForecastChangeLimits(fcMin, fcMax);
+		phenomenon.GetLimits(fnMin, fnMax);
+		phenomenon.GetForecastTimeLimits(ftMin, ftMax);
+
+		phenomenon.SetForecastChangeLimits(0, 1);
+		phenomenon.SetLimits(0, 1);
+		phenomenon.SetForecastTimeLimits(0, 3600);
+
+		phenomenon.Set(value, 1, 360);
+		phenomenon.SetNextChange(0.01);
+
+		phenomenon.SetForecastChangeLimits(fcMin, fcMax);
+		phenomenon.SetLimits(fnMin, fnMax);
+		phenomenon.SetForecastTimeLimits(ftMin, ftMax);
 	}
 
 	void DeleteObj( string funcName, int adminId, int targetId, vector cursor ) {

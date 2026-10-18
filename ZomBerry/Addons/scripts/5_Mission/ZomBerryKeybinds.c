@@ -3,21 +3,6 @@ class ZomberryKeybinds {
 	protected autoptr TIntIntMap m_dKeyBindList = new TIntIntMap;
 	protected autoptr TIntStringMap m_funcIdNameMap = new TIntStringMap;
 
-	void ZomBerryKeybinds() {
-		//m_assocList =
-	}
-
-	vector GetCursorPos() { //<3 Arkensor and CO
-		if ( !GetGame().GetPlayer() ) { return "0 0 0"; }
-
-		vector rayStart = GetGame().GetCurrentCameraPosition();
-		vector rayEnd = rayStart + GetGame().GetCurrentCameraDirection() * 10000;
-		vector hitPos; vector hitNormal; int hitComponentIndex;
-		DayZPhysics.RaycastRV(rayStart, rayEnd, hitPos, hitNormal, hitComponentIndex, NULL, NULL, GetGame().GetPlayer());
-
-		return hitPos;
-	}
-
 	void OnKeyPress( int key ) {
 		int funcId, adminId;
 		if (m_dKeyBindList.Find(key, funcId)) {
@@ -26,7 +11,7 @@ class ZomberryKeybinds {
 			} else {
 				adminId = 0;
 			}
-			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, GetCursorPos(), {0, 0, 0} ), true );
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
 		};
 	}
 

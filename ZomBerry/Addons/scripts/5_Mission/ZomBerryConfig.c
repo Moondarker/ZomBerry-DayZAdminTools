@@ -90,14 +90,6 @@ class ZomberryConfig {
 		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) ConfigureKeybinds();
 
 		ConfigureMain();
-
-		/*UAInput zbryMenu = GetUApi().GetInputByName( "UAZomberryOpenMenu" );  //UApi is not ready yet
-		if (zbryMenu.BindingCount() == 0) {
-		GetUApi().DeRegisterInput( "UAZomberryOpenMenu" );
-		zbryMenu = GetUApi().RegisterInput( "UAZomberryOpenMenu", "STR_USRACT_OPEN_ZBRY_MENU", "infantry" );
-		zbryMenu.BindCombo( "kK" );
-		GetUApi().Export();
-		Print ("[ZomBerryDbg] KeyBind not found, created new one.");*/
 	}
 
 	private void ConfigureMain() {
