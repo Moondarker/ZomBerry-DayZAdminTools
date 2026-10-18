@@ -25,11 +25,13 @@ PanelWidgetClass MapWrapper {
    hexactsize 1
    vexactsize 1
    text "Teleport using Alt+LMB"
-   "exact text" 0
    "size to text h" 0
    "size to text v" 0
    "text halign" left
    "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   TextWidgetClass MapText {
    position 0 0.0118
@@ -41,11 +43,13 @@ PanelWidgetClass MapWrapper {
    hexactsize 1
    vexactsize 1
    text "X: ?  Y: ?"
-   "exact text" 0
    "size to text h" 0
    "size to text v" 0
    "text halign" right
    "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
  }
 }

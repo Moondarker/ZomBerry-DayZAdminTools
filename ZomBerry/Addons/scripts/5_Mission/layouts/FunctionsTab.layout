@@ -66,10 +66,23 @@ PanelWidgetClass FunctionsWrapper {
      hexactsize 1
      vexactsize 1
      style Colorable
-     text "Execute"
-     font "gui/fonts/Metron16"
-     "exact text" 1
-     "exact text size" 16
+     {
+      TextWidgetClass SecondaryExecButtonLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Execute"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
     }
     TextWidgetClass FuncName {
      position 198.90799 0.059
@@ -81,11 +94,13 @@ PanelWidgetClass FunctionsWrapper {
      hexactsize 1
      vexactsize 1
      text "FunctionNamePHolder"
-     "exact text" 0
      "size to text h" 0
      "size to text v" 0
      "text halign" right
      "text valign" center
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
     }
    }
   }

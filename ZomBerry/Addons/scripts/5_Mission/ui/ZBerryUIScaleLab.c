@@ -22,11 +22,11 @@ class ZBerryUIScaleLab extends ZBerryUIComponent {
 
 	void Toggle(Widget menuRoot) {
 		Show(!IsVisible());
-		if (IsVisible()) UpdateInfo(menuRoot);
+		if (IsVisible()) UpdateInfo(menuRoot, true);
 	}
 
-	//What the engine does with exact units: the menu is 970 units wide
-	protected void UpdateInfo(Widget menuRoot) {
+	//What the engine does with exact units: the menu is 970 units wide. Called every frame while shown
+	void UpdateInfo(Widget menuRoot, bool log = false) {
 		int screenWidth, screenHeight;
 		GetScreenSize(screenWidth, screenHeight);
 
@@ -35,6 +35,6 @@ class ZBerryUIScaleLab extends ZBerryUIComponent {
 
 		string info = "Screen " + screenWidth + "x" + screenHeight + " | menu 970 units = " + menuWidth + " px, engine scale " + (menuWidth / 970) + " | height/1080 = " + (screenHeight / 1080.0);
 		TextWidget.Cast( m_Root.FindAnyWidget("LabInfo") ).SetText(info);
-		ZomberryBase.Log( "ZomBerryUI", "Scale lab: " + info );
+		if (log) ZomberryBase.Log( "ZomBerryUI", "Scale lab: " + info );
 	}
 };

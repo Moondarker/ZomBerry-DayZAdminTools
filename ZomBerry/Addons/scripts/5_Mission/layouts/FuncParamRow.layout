@@ -15,11 +15,13 @@ FrameWidgetClass FuncParamRow {
    hexactsize 1
    vexactsize 1
    text "Param"
-   "exact text" 0
    "size to text h" 0
    "size to text v" 0
    "text halign" right
    "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   SliderWidgetClass ParamSlider {
    color 0.6667 0.6667 0.6667 0.8431
@@ -42,6 +44,8 @@ FrameWidgetClass FuncParamRow {
    hexactsize 1
    vexactsize 1
    style ServerBrowser
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
   }
  }
 }

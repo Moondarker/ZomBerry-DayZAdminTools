@@ -55,7 +55,8 @@ PanelWidgetClass ZBerryTokenDialog {
    hexactsize 1
    vexactsize 1
    style Editor
-   font "gui/fonts/Metron16"
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
   }
   ButtonWidgetClass TokenCancel {
    color 0.3255 0.3255 0.3255 0.7843
@@ -68,10 +69,23 @@ PanelWidgetClass ZBerryTokenDialog {
    hexactsize 1
    vexactsize 1
    style Colorable
-   text "Cancel"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass TokenCancelLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Cancel"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   ButtonWidgetClass TokenOk {
    color 0.3255 0.3255 0.3255 0.7843
@@ -84,10 +98,23 @@ PanelWidgetClass ZBerryTokenDialog {
    hexactsize 1
    vexactsize 1
    style Colorable
-   text "OK"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass TokenOkLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "OK"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
  }
 }

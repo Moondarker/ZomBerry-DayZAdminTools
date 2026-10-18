@@ -47,9 +47,39 @@ class ZBerryUIUtils {
 		if (!btn) return;
 
 		if (active) {
-			btn.SetTextColor(COLOR_GREEN);
+			SetButtonTextColor(btn, COLOR_GREEN);
 		} else {
-			btn.SetTextColor(TEXT_DEFAULT);
+			SetButtonTextColor(btn, TEXT_DEFAULT);
+		}
+	}
+
+	//Button captions are child TextWidgets: a button's own text keeps its pixel size on every resolution,
+	//a TextWidget with an exact text size scales with the menu
+	static TextWidget GetButtonLabel(ButtonWidget btn) {
+		Widget child = btn.GetChildren();
+		while (child) {
+			TextWidget label = TextWidget.Cast(child);
+			if (label) return label;
+			child = child.GetSibling();
+		}
+		return NULL;
+	}
+
+	static void SetButtonText(ButtonWidget btn, string text) {
+		TextWidget label = GetButtonLabel(btn);
+		if (label) {
+			label.SetText(text);
+		} else {
+			btn.SetText(text);
+		}
+	}
+
+	static void SetButtonTextColor(ButtonWidget btn, int color) {
+		TextWidget label = GetButtonLabel(btn);
+		if (label) {
+			label.SetColor(color);
+		} else {
+			btn.SetTextColor(color);
 		}
 	}
 

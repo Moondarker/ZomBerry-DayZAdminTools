@@ -17,10 +17,23 @@ PanelWidgetClass SpawnWrapper {
    hexactsize 1
    vexactsize 1
    style Colorable
-   text "Items"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass ItemsButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Items"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   ButtonWidgetClass ObjectsButton {
    visible 1
@@ -33,10 +46,23 @@ PanelWidgetClass SpawnWrapper {
    hexactsize 1
    vexactsize 1
    style Colorable
-   text "Objects"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass ObjectsButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Objects"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   ButtonWidgetClass AIButton {
    visible 1
@@ -49,10 +75,23 @@ PanelWidgetClass SpawnWrapper {
    hexactsize 1
    vexactsize 1
    style Colorable
-   text "AI"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass AIButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "AI"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   PanelWidgetClass SContentWrapper {
    position 0 46
@@ -86,6 +125,8 @@ PanelWidgetClass SpawnWrapper {
      vexactsize 1
      text "Search"
      font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
     }
     EditBoxWidgetClass SearchInput {
      color 0.3255 0.3255 0.3255 0.7843
@@ -98,7 +139,8 @@ PanelWidgetClass SpawnWrapper {
      hexactsize 1
      vexactsize 1
      style Editor
-     font "gui/fonts/Metron14"
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
     }
     ButtonWidgetClass TargetButton {
      color 0.3255 0.3255 0.3255 0.7843
@@ -110,10 +152,23 @@ PanelWidgetClass SpawnWrapper {
      hexactsize 1
      vexactsize 1
      style Colorable
-     text "Cursor"
-     font "gui/fonts/Metron16"
-     "exact text" 1
-     "exact text size" 16
+     {
+      TextWidgetClass TargetButtonLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Cursor"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
     }
    }
   }

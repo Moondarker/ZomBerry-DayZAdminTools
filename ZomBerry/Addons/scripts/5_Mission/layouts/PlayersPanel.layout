@@ -27,6 +27,9 @@ FrameWidgetClass PlayersPanel {
    hexactsize 1
    vexactsize 0
    "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   TextWidgetClass PlayerBlood {
    position 0 0
@@ -37,6 +40,9 @@ FrameWidgetClass PlayersPanel {
    hexactsize 1
    vexactsize 0
    "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   ButtonWidgetClass PlayersRefresh {
    color 0.3255 0.3255 0.3255 0.7843
@@ -48,10 +54,23 @@ FrameWidgetClass PlayersPanel {
    hexactsize 1
    vexactsize 0
    style Colorable
-   text "Update"
-   font "gui/fonts/Metron16"
-   "exact text" 1
-   "exact text size" 16
+   {
+    TextWidgetClass PlayersRefreshLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Update"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
  }
 }

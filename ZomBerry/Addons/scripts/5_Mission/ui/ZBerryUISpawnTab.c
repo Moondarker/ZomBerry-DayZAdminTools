@@ -37,14 +37,14 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		for (int i = 0; i < m_FilterButtons.Count(); ++i) {
 			if (i < m_SpawnMenuGroups.Count()) {
-				m_FilterButtons[i].SetText(m_SpawnMenuGroups[i].CategoryName);
+				ZBerryUIUtils.SetButtonText(m_FilterButtons[i], m_SpawnMenuGroups[i].CategoryName);
 				m_FilterButtons[i].Show(true);
 			} else {
 				m_FilterButtons[i].Show(false);
 			}
 		}
 
-		m_TargetButton.SetText(m_ObjTarget);
+		ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
 
 		//Config list is huge, so only rebuild it when the tab is actually visible
 		m_ListDirty = true;
@@ -73,7 +73,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		if (w == m_TargetButton) {
 			m_ObjTarget = NextAllowedTarget(m_ObjTarget);
-			m_TargetButton.SetText(m_ObjTarget);
+			ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
 			return true;
 		}
 		return false;
@@ -100,7 +100,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 	override void OnPermissionsChanged() {
 		if (!IsTargetAllowed(m_ObjTarget)) m_ObjTarget = NextAllowedTarget(m_ObjTarget);
-		m_TargetButton.SetText(m_ObjTarget);
+		ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
 
 		m_ListDirty = true;
 		if (IsVisible()) UpdateObjList();

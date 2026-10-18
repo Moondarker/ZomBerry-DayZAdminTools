@@ -127,6 +127,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void Update(float timeslice) {
 		if (m_ActiveTab) m_ActiveTab.Update(timeslice);
+		if (m_ScaleLab && m_ScaleLab.IsVisible()) m_ScaleLab.UpdateInfo(layoutRoot);
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {

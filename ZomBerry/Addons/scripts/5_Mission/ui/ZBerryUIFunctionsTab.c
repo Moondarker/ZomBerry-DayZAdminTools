@@ -107,17 +107,17 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
 
 		if (m_BindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
-			m_ActionButton.SetText("CLRALL?");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "CLRALL?");
 			m_BindMode = -1;
 		} else if (m_BindMode == 0) {
-			m_ActionButton.SetText("[...]");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "[...]");
 			m_BindMode = 1;
 		} else if (m_BindMode == -1) {
-			m_ActionButton.SetText("Bind");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 			if (KeyState(KeyCode.KC_A) & 0x00000001) ZomberryBase.GetKeyBindsMgr().SetFuncKey(-2, -1);
 			m_BindMode = 0;
 		} else {
-			m_ActionButton.SetText("Bind");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 			ZomberryBase.GetKeyBindsMgr().SetFuncKey(-1, oldKey);
 			m_BindMode = 0;
 		}
@@ -131,7 +131,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_FunctionsList.GetItemData( m_LastSelFunc, 0, funcData );
 		ZomberryBase.GetKeyBindsMgr().SetFuncKey(funcData.param1, key);
 
-		m_ActionButton.SetText(ZBerryUIUtils.FormatKeyName(key));
+		ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(key));
 		m_BindMode = 0;
 	}
 
@@ -157,11 +157,11 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		int fKeyBind = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcId);
 
 		if (m_BindMode == 1) {
-			m_ActionButton.SetText("[...]");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "[...]");
 		} else if (fKeyBind) {
-			m_ActionButton.SetText(ZBerryUIUtils.FormatKeyName(fKeyBind));
+			ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(fKeyBind));
 		} else {
-			m_ActionButton.SetText("Bind");
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 		}
 	}
 

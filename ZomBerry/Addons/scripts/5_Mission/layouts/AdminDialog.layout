@@ -72,10 +72,23 @@ PanelWidgetClass AdminMenu {
          hexactsize 1
          vexactsize 1
          style Colorable
-         text "Functions"
-         font "gui/fonts/Metron16"
-         "exact text" 1
-         "exact text size" 16
+         {
+          TextWidgetClass FunctionsButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Functions"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
         }
         ButtonWidgetClass SpawnButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -86,10 +99,23 @@ PanelWidgetClass AdminMenu {
          hexactsize 1
          vexactsize 1
          style Colorable
-         text "Spawn Menu"
-         font "gui/fonts/Metron16"
-         "exact text" 1
-         "exact text size" 16
+         {
+          TextWidgetClass SpawnButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Spawn Menu"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
         }
         ButtonWidgetClass MapButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -100,10 +126,23 @@ PanelWidgetClass AdminMenu {
          hexactsize 1
          vexactsize 1
          style Colorable
-         text "Map"
-         font "gui/fonts/Metron16"
-         "exact text" 1
-         "exact text size" 16
+         {
+          TextWidgetClass MapButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Map"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
         }
         ButtonWidgetClass PermsButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -114,10 +153,23 @@ PanelWidgetClass AdminMenu {
          hexactsize 1
          vexactsize 1
          style Colorable
-         text "Permissions"
-         font "gui/fonts/Metron16"
-         "exact text" 1
-         "exact text size" 16
+         {
+          TextWidgetClass PermsButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Permissions"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
         }
         ButtonWidgetClass BindButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -129,10 +181,23 @@ PanelWidgetClass AdminMenu {
          hexactsize 1
          vexactsize 1
          style Colorable
-         text "Bind"
-         font "gui/fonts/Metron16"
-         "exact text" 1
-         "exact text size" 16
+         {
+          TextWidgetClass BindButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Bind"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
         }
        }
       }

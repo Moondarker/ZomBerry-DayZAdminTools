@@ -30,8 +30,8 @@ class ZBerryUITab extends ZBerryUIComponent {
 	}
 
 	protected void SetActionButton(string text, int color) {
-		m_ActionButton.SetText(text);
-		m_ActionButton.SetTextColor(color);
+		ZBerryUIUtils.SetButtonText(m_ActionButton, text);
+		ZBerryUIUtils.SetButtonTextColor(m_ActionButton, color);
 	}
 
 	protected void OnInit() {}

@@ -228,9 +228,9 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		ZBerryAdminEntry admin = m_Snapshot.FindAdmin(m_SelectedId);
 		if (admin) {
-			m_GroupButton.SetText("Group: " + admin.Group);
+			ZBerryUIUtils.SetButtonText(m_GroupButton, "Group: " + admin.Group);
 		} else {
-			m_GroupButton.SetText("Group: none");
+			ZBerryUIUtils.SetButtonText(m_GroupButton, "Group: none");
 		}
 	}
 
@@ -260,9 +260,9 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected void SetPreviewMode(bool previewMode) {
 		m_PreviewMode = previewMode;
 		if (m_PreviewMode) {
-			m_SpawnPreviewButton.SetText("Permissions");
+			ZBerryUIUtils.SetButtonText(m_SpawnPreviewButton, "Permissions");
 		} else {
-			m_SpawnPreviewButton.SetText("Preview");
+			ZBerryUIUtils.SetButtonText(m_SpawnPreviewButton, "Preview");
 		}
 		RefreshPerms();
 	}
@@ -419,7 +419,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		if (!m_ConfirmDelete) {
 			m_ConfirmDelete = true;
-			m_DeleteGroupButton.SetText("Sure?");
+			ZBerryUIUtils.SetButtonText(m_DeleteGroupButton, "Sure?");
 			return;
 		}
 
@@ -438,7 +438,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	protected void ResetDeleteConfirm() {
 		m_ConfirmDelete = false;
-		m_DeleteGroupButton.SetText("Delete");
+		ZBerryUIUtils.SetButtonText(m_DeleteGroupButton, "Delete");
 	}
 
 	//none -> first group -> ... -> last group -> none, only through groups the editor may assign
