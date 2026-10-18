@@ -196,11 +196,9 @@ modded class MissionGameplay {
 	override void OnKeyPress(int key) {
 		super.OnKeyPress(key);
 
-		if (IsTokenDialogOpen()) return; //Typing the token
-
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
 			GetZomberryMenu().OnBindKeyPress(key);
-		} else if (m_ZomberryBase.IsAdmin()) {
+		} else if (!GetUIManager().GetMenu() && m_ZomberryBase.IsAdmin()) { //Not while typing in chat or the token dialog, nor in the inventory or pause menu
 			ZomberryBase.GetKeyBindsMgr().OnKeyPress(key);
 		}
 	}
