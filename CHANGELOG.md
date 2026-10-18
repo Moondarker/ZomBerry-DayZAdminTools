@@ -72,6 +72,7 @@ The big rewrite: own RPC layer and no dependencies, permission groups, kicks and
 
 ### Fixed
 
+- **The menu couldn't be closed** on current DayZ versions: the menu key and `Esc` stopped working while it was open, so players had to Alt+F4. The menu took extra input focus on top of the focus DayZ menus already take.
 - **Function keybinds ran while typing in chat.** With the default `Delete` bind, that could delete the object at your cursor. They also ran in other menus.
 - **Script errors when an admin without a character** (dead or respawning) used keybinds, FreeCam or teleports.
 - **Stock functions:**
