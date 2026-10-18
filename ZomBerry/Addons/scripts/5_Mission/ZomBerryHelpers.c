@@ -213,7 +213,6 @@ class ZBerryFuncParam {
 class ZBerryJsonConfig {
 	int DebugLevel;
 	bool UseScriptLog;
-	string MenuKey;
 	ref ZBerryJsonSpawnMenuGroupArray SpawnMenuSorting;
 	ref ZBerryJsonPermissionsGroupArray PermissionGroups;
 };

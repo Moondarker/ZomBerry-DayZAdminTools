@@ -3,7 +3,6 @@ class ZomberryConfig {
 	const private string cfgPathServer = "$profile:";
 	protected string realProfilesPath = "";
 
-	protected int menuKey = KeyCode.KC_M;
 	protected int zbryDebug = 0;
 	protected bool defaultIOFlag = false;
 	protected autoptr TStringIntMap m_keyBindList = new TStringIntMap;
@@ -18,9 +17,7 @@ class ZomberryConfig {
 
 			if (!FileExist(cfgPath + "ZomBerry\\")) MakeDirectory(cfgPath + "\\ZomBerry\\");
 			if (FileExist(cfgPath + "ZomBerry\\")) {
-				if (FileExist(cfgPath + "ZomBerry.cfg")) CopyFile(cfgPath + "ZomBerry.cfg", cfgPath + "ZomBerry\\ZomBerry.cfg");
 				if (FileExist(cfgPath + "ZomBerryConfig.json")) CopyFile(cfgPath + "ZomBerryConfig.json", cfgPath + "ZomBerry\\ZomBerryConfig.json");
-				DeleteFile(cfgPath + "ZomBerry.cfg");
 				DeleteFile(cfgPath + "ZomBerryConfig.json");
 
 				cfgPath += "ZomBerry\\";
@@ -33,10 +30,6 @@ class ZomberryConfig {
 		if (realProfilesPath != "") ZomberryBase.Log( "ZomBerryConfig", "INFO: Config files will be loaded from: " + realProfilesPath );
 			else ZomberryBase.Log( "ZomBerryConfig", "INFO: Config files will be loaded from: " + cfgPath );
 		Configure();
-	}
-
-	int GetMenuKey() {
-		return menuKey;
 	}
 
 	int GetDebugLvl() {
@@ -92,8 +85,6 @@ class ZomberryConfig {
 
 	private void Configure() { //TODO: JSONize this
 
-		if (FileExist(cfgPath + "ZomBerry.cfg") && !FileExist(cfgPath + "ZomBerryConfig.json")) ReadOldConfig(); //Read an old config, new one will be created with old params
-
 		CreateNew(cfgPath);
 
 		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) ConfigureKeybinds();
@@ -114,7 +105,7 @@ class ZomberryConfig {
 
 		JsonFileLoader<ZBerryJsonConfig>.JsonLoadFile(cfgPath + "ZomBerryConfig.json", newConfigData);
 		if (!newConfigData) {
-			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Unable to find config file, will continue with default settings (MenuKey is M, debug disabled, separate log files)" );
+			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Unable to find config file, will continue with default settings (debug disabled, separate log files)" );
 			m_spawnMenuGroups = {
 				new ZBerryJsonSpawnMenuGroup("Items","Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"),
 				new ZBerryJsonSpawnMenuGroup("Objects","Transport,House"),
@@ -129,21 +120,7 @@ class ZomberryConfig {
 		if (zbryDebug != 0) ZomberryBase.Log( "ZomBerryConfig", "INFO: Debug level " + zbryDebug );
 		if (defaultIOFlag) ZomberryBase.Log( "ZomBerryConfig", "INFO: Will use script log files..." );
 
-		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) { //TO BE CHANGED v0.6 - GUI CFG
-			string tempKeyCode;
-
-			for (int i = 0; i < 126; ++i) {
-				tempKeyCode = typename.EnumToString(KeyCode, i);
-				if (newConfigData.MenuKey == tempKeyCode) {
-					menuKey = i;
-					ZomberryBase.Log( "ZomBerryConfig", "INFO: Menu key set to " + tempKeyCode );
-					break;
-				}
-			}
-
-			if ((menuKey == KeyCode.KC_M) && (newConfigData.MenuKey != "KC_M"))
-				ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + newConfigData.MenuKey + " - unknown keycode" );
-
+		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) {
 			m_spawnMenuGroups = newConfigData.SpawnMenuSorting;
 		}
 	}
@@ -161,56 +138,6 @@ class ZomberryConfig {
 			for (idx = 0; idx < m_keyBindList.Count(); idx++) {
 				ZomberryBase.Log( "ZomBerryConfig", "INFO: Key " + typename.EnumToString(KeyCode, m_keyBindList.GetElement(idx)) + " - " + m_keyBindList.GetKey(idx));
 			}
-		}
-	}
-
-	private void ReadOldConfig() {
-		FileHandle configFile = OpenFile(cfgPath + "ZomBerry.cfg", FileMode.READ);
-		int idx = 0;
-
-		ZomberryBase.Log( "ZomBerryConfig", "INFO: Seems like we found an old config file, will try to convert into JSON format (use ZomBerryConfig.json from now on!)" );
-
-		if (configFile != 0) {
-			string sLine = "";
-			TStringArray sParams = new TStringArray;
-
-			while ( FGets(configFile,sLine) > 0 ) {
-				++idx;
-				sLine.Replace(" ", ""); sLine.Replace(";", "");
-				sLine.Split("=", sParams);
-				if (sParams.Count() != 2) {
-					ZomberryBase.Log( "ZomBerryConfig", "WARN: config line " + idx.ToString() + " (param " + sParams[0] + ") - parse error (not key = value), " + sParams.Count() + " tokens" );
-					sParams = {};
-					continue;
-				}
-
-				switch (sParams[0]) {
-					case "debug":
-					if (sParams[1].ToInt() > 0 && sParams[1].ToInt() < 3) {
-						zbryDebug = sParams[1].ToInt();
-						ZomberryBase.Log( "ZomBerryConfig", "INFO: Debug level: " + sParams[1] );
-					}
-					break;
-
-					case "menuKey":
-					string tempKeyCode;
-					if (GetGame().IsMultiplayer() && GetGame().IsServer()) continue;
-					for (int i = 0; i < 126; ++i) {
-						tempKeyCode = typename.EnumToString(KeyCode, i);
-						if (sParams[1] == tempKeyCode) {
-							menuKey = i;
-							ZomberryBase.Log( "ZomBerryConfig", "INFO: Menu key set to " + tempKeyCode );
-							break;
-						}
-					}
-					if (sParams[1] != tempKeyCode)
-						ZomberryBase.Log( "ZomBerryConfig", "WARN: Cannot set menu key to " + sParams[1] + " - unknown keycode" );
-					break;
-				}
-				sParams = {};
-			}
-			CloseFile(configFile);
-			DeleteFile(cfgPath + "ZomBerry.cfg");
 		}
 	}
 
@@ -246,13 +173,9 @@ class ZomberryConfig {
 	}
 
 	private string FindAdmins(bool doLogs = true) {
-		string temp_path = "$CurrentDir:\\" + g_Game.GetMissionPath();
+		string temp_path;
 
-		temp_path.Replace("mission.c", "");
-
-		if (FileExist(temp_path + "admins.cfg")) {
-			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "WARN !!!: Using admins.cfg from MISSION directory, this directory WON'T BE USED after v0.6 release!");
-		} else if (FileExist("$profile:ZomBerry\\admins.cfg")) {
+		if (FileExist("$profile:ZomBerry\\admins.cfg")) {
 			temp_path = "$profile:ZomBerry\\";
 			if (doLogs) ZomberryBase.Log( "ZomBerryConfig", "INFO: Using admins.cfg from Profile directory");
 		} else if (FileExist("$CurrentDir:admins.cfg")) {
@@ -288,7 +211,6 @@ class ZomberryConfig {
 
 			newConfigData.DebugLevel = zbryDebug;
 			newConfigData.UseScriptLog = false;
-			newConfigData.MenuKey = typename.EnumToString(KeyCode, menuKey);
 			newConfigData.SpawnMenuSorting = {
 												new ZBerryJsonSpawnMenuGroup("Items","Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"),
 												new ZBerryJsonSpawnMenuGroup("Objects","Transport,House"),
