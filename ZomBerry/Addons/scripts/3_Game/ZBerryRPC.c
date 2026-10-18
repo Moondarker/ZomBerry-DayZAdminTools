@@ -12,7 +12,12 @@ enum ZBerryRPCOp {
 	SyncFunctions = 5,
 	ExecuteCommand = 6,
 	SpawnObject = 7,
-	MapTeleport = 8
+	MapTeleport = 8,
+	AuthState = 9, //Server -> client: version, state, own permissions and spawn rules
+	SetupToken = 10, //Client -> server: first-startup token
+	PermsRequest = 11,
+	PermsData = 12, //Server -> client: groups, admins, known nodes, online players
+	PermsUpdate = 13 //Client -> server: new groups and admins
 }
 
 //Which side received the call

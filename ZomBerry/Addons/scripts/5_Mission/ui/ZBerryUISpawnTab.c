@@ -72,17 +72,38 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		}
 
 		if (w == m_TargetButton) {
-			if (m_ObjTarget == "Ground") {
-				m_ObjTarget = "Cursor";
-			} else if (m_ObjTarget == "Cursor") {
-				m_ObjTarget = "Inventory";
-			} else {
-				m_ObjTarget = "Ground";
-			}
+			m_ObjTarget = NextAllowedTarget(m_ObjTarget);
 			m_TargetButton.SetText(m_ObjTarget);
 			return true;
 		}
 		return false;
+	}
+
+	//Ground -> Cursor -> Inventory -> Ground, skipping targets the admin may not use
+	protected string NextAllowedTarget(string current) {
+		TStringArray order = {"Ground", "Cursor", "Inventory"};
+		int index = order.Find(current);
+
+		for (int step = 1; step <= order.Count(); ++step) {
+			string candidate = order[(index + step) % order.Count()];
+			if (IsTargetAllowed(candidate)) return candidate;
+		}
+
+		return current;
+	}
+
+	protected bool IsTargetAllowed(string objTarget) {
+		if (objTarget == "Inventory") return GetZBerryClientAuth().Has(ZBerryPermissions.SPAWN_INVENTORY);
+
+		return GetZBerryClientAuth().Has(ZBerryPermissions.SPAWN_GROUND);
+	}
+
+	override void OnPermissionsChanged() {
+		if (!IsTargetAllowed(m_ObjTarget)) m_ObjTarget = NextAllowedTarget(m_ObjTarget);
+		m_TargetButton.SetText(m_ObjTarget);
+
+		m_ListDirty = true;
+		if (IsVisible()) UpdateObjList();
 	}
 
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
@@ -166,6 +187,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_ObjectsList.ClearItems();
 
 		TStringArray configs = { CFG_VEHICLESPATH, CFG_WEAPONSPATH, CFG_MAGAZINESPATH };
+		ZBerryClientAuth clientAuth = GetZBerryClientAuth();
 
 		map<string, int> categoryIndex = new map<string, int>;
 		TStringArray splitFilters = new TStringArray;
@@ -201,6 +223,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 				int scope = g_Game.ConfigGetInt( strConfigPath + " " + strName + " scope" );
 				if ( scope == 0 ) continue;
+				if ( !clientAuth.CanSpawn(strName) ) continue; //Not allowed for this admin's group
 
 				string displayName;
 				g_Game.ConfigGetText( strConfigPath + " " + strName + " displayName", displayName );

@@ -65,7 +65,7 @@ PanelWidgetClass AdminMenu {
         ButtonWidgetClass FunctionsButton {
          color 0.3255 0.3255 0.3255 0.7843
          position 10 10
-         size 150 36
+         size 115 36
          hexactpos 1
          vexactpos 1
          hexactsize 1
@@ -76,8 +76,8 @@ PanelWidgetClass AdminMenu {
         }
         ButtonWidgetClass SpawnButton {
          color 0.3255 0.3255 0.3255 0.7843
-         position 170 10
-         size 150 36
+         position 130 10
+         size 115 36
          hexactpos 1
          vexactpos 1
          hexactsize 1
@@ -88,14 +88,26 @@ PanelWidgetClass AdminMenu {
         }
         ButtonWidgetClass MapButton {
          color 0.3255 0.3255 0.3255 0.7843
-         position 330 10
-         size 150 36
+         position 250 10
+         size 115 36
          hexactpos 1
          vexactpos 1
          hexactsize 1
          vexactsize 1
          style Colorable
          text "Map"
+         font "gui/fonts/Metron16"
+        }
+        ButtonWidgetClass PermsButton {
+         color 0.3255 0.3255 0.3255 0.7843
+         position 370 10
+         size 115 36
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Colorable
+         text "Permissions"
          font "gui/fonts/Metron16"
         }
         ButtonWidgetClass BindButton {

@@ -7,6 +7,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIFunctionsTab m_FunctionsTab;
 	protected ref ZBerryUISpawnTab m_SpawnTab;
 	protected ref ZBerryUIMapTab m_MapTab;
+	protected ref ZBerryUIPermsTab m_PermsTab;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -39,7 +40,12 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_MapTab = new ZBerryUIMapTab();
 		AddTab(m_MapTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/MapTab.layout", "MapButton");
 
+		m_PermsTab = new ZBerryUIPermsTab();
+		AddTab(m_PermsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/PermsTab.layout", "PermsButton");
+		m_PermsTab.SetPlayersPanel(m_PlayersPanel);
+
 		SelectTab(m_FunctionsTab);
+		ApplyPermissions();
 
 		return layoutRoot;
 	}
@@ -47,6 +53,38 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected void AddTab(ZBerryUITab tab, Widget parent, string layoutPath, string tabButtonName) {
 		tab.InitTab(parent, layoutPath, ButtonWidget.Cast( layoutRoot.FindAnyWidget(tabButtonName) ), m_ActionButton);
 		m_Tabs.Insert(tab);
+	}
+
+	//Tabs the admin may not use are hidden, the server refuses their requests anyway
+	protected void ApplyPermissions() {
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		ShowTabButton(m_SpawnTab, auth.HasAny({ZBerryPermissions.SPAWN_GROUND, ZBerryPermissions.SPAWN_INVENTORY}));
+		ShowTabButton(m_MapTab, auth.Has(ZBerryPermissions.MAP_VIEW));
+		ShowTabButton(m_PermsTab, auth.CanManagePermissions());
+
+		foreach (ZBerryUITab tab : m_Tabs) {
+			tab.OnPermissionsChanged();
+		}
+	}
+
+	protected void ShowTabButton(ZBerryUITab tab, bool show) {
+		if (tab.GetTabButton()) tab.GetTabButton().Show(show);
+		if (!show && tab == m_ActiveTab) SelectTab(m_FunctionsTab);
+	}
+
+	//The server sent new rights: refresh what depends on them
+	void OnPermissionsChanged() {
+		if (!layoutRoot) return;
+
+		ApplyPermissions();
+		if (layoutRoot.IsVisible()) {
+			ZBerryUIPlayersPanel.RequestSync();
+			m_FunctionsTab.OnMenuShow(); //Asks for the (filtered) function list again
+		}
+	}
+
+	void OnPermsData(ZBerryPermsSnapshot snapshot) {
+		if (m_PermsTab) m_PermsTab.SetSnapshot(snapshot);
 	}
 
 	protected void SelectTab(ZBerryUITab tab) {
@@ -65,6 +103,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		super.OnShow();
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker" );
+		ApplyPermissions();
 		ZBerryUIPlayersPanel.RequestSync();
 
 		foreach (ZBerryUITab tab : m_Tabs) {

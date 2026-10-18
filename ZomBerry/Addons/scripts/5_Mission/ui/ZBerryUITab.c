@@ -26,6 +26,7 @@ class ZBerryUITab extends ZBerryUIComponent {
 	void Deactivate() {
 		Show(false);
 		ZBerryUIUtils.SetButtonActive(m_TabButton, false);
+		OnDeactivate();
 	}
 
 	protected void SetActionButton(string text, int color) {
@@ -35,12 +36,14 @@ class ZBerryUITab extends ZBerryUIComponent {
 
 	protected void OnInit() {}
 	protected void OnActivate() {}
+	protected void OnDeactivate() {}
 
 	void OnActionButtonClick() {}
 	void OnMenuShow() {}
 	void OnMenuHide() {}
 	void OnBindKeyPress(int key) {}
 	void Update(float tDelta) {}
+	void OnPermissionsChanged() {} //Rights from the server changed (see GetZBerryClientAuth())
 
 	//True while the tab needs keyboard input, so the menu hotkey must not close the menu
 	bool BlocksClose() {

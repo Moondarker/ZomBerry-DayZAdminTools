@@ -35,12 +35,17 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		ZBerryUIPlayersPanel.RequestSync();
 	}
 
+	override void OnPermissionsChanged() {
+		if (!GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) m_MapWidget.ClearUserMarks();
+	}
+
 	override void OnMenuHide() {
 		m_MapDiff = false;
 	}
 
 	void SetPlayers(ZBerryPlayerArray players) {
 		m_MapWidget.ClearUserMarks();
+		if (!GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) return;
 
 		for ( int i = 0; i < players.Count(); ++i ) {
 			ZBerryPlayer ply = players.Get(i);
@@ -78,7 +83,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		m_MapText.SetText("X: " + mapXZY[0] + "  Y: " + mapXZY[2]);
 
 		if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
-			if (m_TeleportAllowed) {
+			if (m_TeleportAllowed && GetZBerryClientAuth().Has(ZBerryPermissions.MAP_TELEPORT)) {
 				m_TeleportAllowed = false;
 				GetZBerryRPC().SendRPC( ZBerryRPCOp.MapTeleport, new Param1< vector >( mapXZY ), true );
 			}

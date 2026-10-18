@@ -1,0 +1,170 @@
+PanelWidgetClass PermsWrapper {
+ visible 0
+ position 0 56
+ size 600 0.94
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  TextWidgetClass SelectedText {
+   position 10 0
+   size 370 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Double-click a player on the left"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "text valign" center
+  }
+  ButtonWidgetClass GroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 0
+   size 210 36
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "Group: none"
+   font "gui/fonts/Metron16"
+  }
+  TextWidgetClass GroupsTitle {
+   position 0 46
+   size 215 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Groups"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  TextWidgetClass PermsTitle {
+   position 225 46
+   size 375 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Permissions (double-click: allow / deny / unset)"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  TextListboxWidgetClass GroupsList {
+   color 0 0 0 0.7843
+   position 0 70
+   size 215 0.62
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 100
+   font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass PermsList {
+   color 0 0 0 0.7843
+   position 225 70
+   size 375 0.62
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 0
+   style Editor
+   lines 500
+   font "gui/fonts/Metron14"
+  }
+  EditBoxWidgetClass GroupNameInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 76
+   size 105 24
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/Metron14"
+  }
+  ButtonWidgetClass AddGroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 110 76
+   size 50 24
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "Add"
+   font "gui/fonts/Metron14"
+  }
+  ButtonWidgetClass DeleteGroupButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 165 76
+   size 50 24
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "Delete"
+   font "gui/fonts/Metron14"
+  }
+  EditBoxWidgetClass PermInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 225 76
+   size 315 24
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/Metron14"
+  }
+  ButtonWidgetClass AddPermButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 76
+   size 55 24
+   halign right_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "Add"
+   font "gui/fonts/Metron14"
+  }
+  TextWidgetClass SpawnRulesTitle {
+   position 0 42
+   size 600 20
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Spawn rules (comma separated: class, base class, Mag_* wildcard, -deny)"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  EditBoxWidgetClass SpawnRulesInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 12
+   size 600 24
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/Metron14"
+  }
+ }
+}

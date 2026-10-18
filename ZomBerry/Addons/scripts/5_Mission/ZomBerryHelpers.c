@@ -4,7 +4,6 @@ typedef array<ref ZBerryFunction> ZBerryFunctionArray;
 
 typedef array<ref ZBerryJsonSpawnMenuGroup> ZBerryJsonSpawnMenuGroupArray;
 
-typedef array<ref ZBerryJsonPermissionsGroup> ZBerryJsonPermissionsGroupArray;
 
 class ZBerryPlayer {
 	int m_PlayerID;
@@ -261,7 +260,6 @@ class ZBerryJsonConfig {
 	int DebugLevel;
 	bool UseScriptLog;
 	ref ZBerryJsonSpawnMenuGroupArray SpawnMenuSorting;
-	ref ZBerryJsonPermissionsGroupArray PermissionGroups;
 };
 
 class ZBerryJsonSpawnMenuGroup {
@@ -272,9 +270,4 @@ class ZBerryJsonSpawnMenuGroup {
 		CategoryName = name;
 		BaseClassNames = classes;
 	}
-};
-
-class ZBerryJsonPermissionsGroup {
-	string GroupName;
-	ref TStringArray AllowedFunctions;
 };

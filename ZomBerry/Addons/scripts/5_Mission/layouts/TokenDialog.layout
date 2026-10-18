@@ -1,0 +1,86 @@
+PanelWidgetClass ZBerryTokenDialog {
+ visible 0
+ color 0 0 0 0.85
+ size 480 200
+ halign center_ref
+ valign center_ref
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ style rover_sim_colorable
+ {
+  TextWidgetClass TokenTitle {
+   position 15 12
+   size 450 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "ZomBerry setup"
+   font "gui/fonts/Metron22"
+   "exact text" 1
+  }
+  TextWidgetClass TokenHint1 {
+   position 15 48
+   size 450 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "This server has no ZomBerry admins yet."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  TextWidgetClass TokenHint2 {
+   position 15 70
+   size 450 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Enter the setup token from the server's log to become superadmin:"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  EditBoxWidgetClass TokenInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 15 100
+   size 450 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/Metron16"
+  }
+  ButtonWidgetClass TokenCancel {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 15 15
+   size 140 36
+   halign right_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "Cancel"
+   font "gui/fonts/Metron16"
+  }
+  ButtonWidgetClass TokenOk {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 165 15
+   size 140 36
+   halign right_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   text "OK"
+   font "gui/fonts/Metron16"
+  }
+ }
+}
