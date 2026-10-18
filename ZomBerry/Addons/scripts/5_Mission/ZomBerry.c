@@ -380,12 +380,33 @@ class ZomberryBase {
 		return GetGame().IsKindOf(className, "Inventory_Base");
 	}
 
+	//Attachments already land on the weapon by themselves (CreateInInventory picks free attachment slots),
+	//magazines need the weapon to load them: do it when the weapon in hands takes this magazine and has none
+	protected Magazine TryLoadMagazine(PlayerBase admin, string className) {
+		Weapon_Base weapon = Weapon_Base.Cast(admin.GetHumanInventory().GetEntityInHands());
+		if (!weapon || weapon.GetMagazine(weapon.GetCurrentMuzzle())) return NULL;
+
+		TStringArray magazines = new TStringArray;
+		GetGame().ConfigGetTextArray(CFG_WEAPONSPATH + " " + weapon.GetType() + " magazines", magazines);
+
+		string classNameLower = className;
+		classNameLower.ToLower();
+		foreach (string magazine : magazines) {
+			magazine.ToLower();
+			if (magazine == classNameLower) return weapon.SpawnAttachedMagazine(className, WeaponWithAmmoFlags.NONE);
+		}
+
+		return NULL;
+	}
+
 	//Returns a log line describing what happened
 	protected string DoSpawn(string className, PlayerBase admin, vector position, bool insideInventory) {
 		if (!IsSpawnableClass(className)) return "tried to spawn unknown class " + className;
 
 		if (insideInventory) {
 			if (!admin) return "tried to add " + className + " to inventory, but has no character";
+
+			if (TryLoadMagazine(admin, className)) return "loaded " + className + " into the weapon in theirs hands";
 
 			EntityAI entity = admin.GetInventory().CreateInInventory(className);
 			if (!entity) {
