@@ -18,7 +18,15 @@ class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 
 	protected Widget LoadLayout(string layoutName, Widget parent) {
 		m_Root = GetGame().GetWorkspace().CreateWidgets(ZB_LAYOUT_DIR + layoutName, parent);
-		if (!m_Root) ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + layoutName );
+		if (!m_Root) {
+			ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + layoutName );
+			return NULL;
+		}
+
+		//Once seen in testing (not reproduced since): the returned root belonged to another component's layout
+		if (parent && m_Root.GetParent() != parent) {
+			ZomberryBase.Log( "ZomBerryUI", "ERROR: " + layoutName + " returned root " + m_Root.GetName() + " which is not a child of " + parent.GetName() );
+		}
 
 		return m_Root;
 	}

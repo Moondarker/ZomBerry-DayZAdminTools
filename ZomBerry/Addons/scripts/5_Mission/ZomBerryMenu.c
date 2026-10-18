@@ -58,9 +58,11 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_ActiveTab.Activate();
 	}
 
+	//Input focus is taken and released by UIScriptedMenu itself (LockControls/UnlockControls in super.OnShow/OnHide).
+	//Taking extra game focus here froze the input API while the menu was open: the menu key stayed "held"
+	//from the frame the menu opened and UAUIBack never fired, so the menu couldn't be closed
 	override void OnShow() {
 		super.OnShow();
-		GetGame().GetInput().ChangeGameFocus( 1 );
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
 		ZBerryUIPlayersPanel.RequestSync();
@@ -72,7 +74,6 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void OnHide() {
 		super.OnHide();
-		GetGame().GetInput().ResetGameFocus();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnMenuHide();

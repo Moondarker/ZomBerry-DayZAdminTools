@@ -3,6 +3,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	static const int COLOR_MARK_ADMIN = 0xFF47EB00;
 	static const int COLOR_MARK_PLAYER = 0xFF55AAFF;
 	static const string MARK_ICON = "\\dz\\gear\\navigation\\data\\map_tree_ca.paa";
+	static const float PLAYERS_SYNC_INTERVAL = 2.0; //Seconds between player position refreshes while the map is open
 
 	protected MapWidget m_MapWidget;
 	protected TextWidget m_MapText;
@@ -12,6 +13,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	protected bool m_MapDiff;
 	protected bool m_MouseOnMap = false;
 	protected bool m_TeleportAllowed = true;
+	protected float m_SyncTimer = 0;
 
 	protected override string GetLayoutName() {
 		return "MapTab.layout";
@@ -32,6 +34,9 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		}
 
 		SetActionButton("WIP", ZBerryUIUtils.TEXT_DEFAULT);
+
+		m_SyncTimer = 0;
+		ZBerryUIPlayersPanel.RequestSync();
 	}
 
 	override void OnMenuHide() {
@@ -54,6 +59,12 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 	override void Update(float tDelta) {
 		if (!IsVisible()) return;
+
+		m_SyncTimer += tDelta;
+		if (m_SyncTimer >= PLAYERS_SYNC_INTERVAL) {
+			m_SyncTimer = 0;
+			ZBerryUIPlayersPanel.RequestSync();
+		}
 
 		//Map widget resets its position after being hidden, so restore the last one
 		if (!m_MapDiff && m_MapPos && m_MapPos != m_MapWidget.GetMapPos()) {
