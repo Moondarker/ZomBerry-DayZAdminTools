@@ -9,7 +9,7 @@ class ZBerryUIFuncParamRow extends ZBerryUIComponent {
 	protected int m_Value = 0;
 
 	void Init(Widget parent) {
-		if (!LoadLayout("FuncParamRow.layout", parent)) return;
+		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/FuncParamRow.layout", parent)) return;
 
 		m_Name = TextWidget.Cast( m_Root.FindAnyWidget("ParamName") );
 		m_Slider = SliderWidget.Cast( BindWidget("ParamSlider") );

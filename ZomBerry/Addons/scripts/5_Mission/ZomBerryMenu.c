@@ -14,7 +14,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	override Widget Init() {
 		if (layoutRoot) return layoutRoot;
 
-		layoutRoot = GetGame().GetWorkspace().CreateWidgets( ZB_LAYOUT_DIR + "AdminDialog.layout" );
+		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "ZomBerry/AT/scripts/5_Mission/layouts/AdminDialog.layout" );
 		if (!layoutRoot) {
 			ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load AdminDialog.layout" );
 			return NULL;
@@ -31,21 +31,21 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_FunctionsTab = new ZBerryUIFunctionsTab();
 		m_FunctionsTab.SetPlayersPanel(m_PlayersPanel);
-		AddTab(m_FunctionsTab, sectionWrapper, "FunctionsTab.layout", "FunctionsButton");
+		AddTab(m_FunctionsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/FunctionsTab.layout", "FunctionsButton");
 
 		m_SpawnTab = new ZBerryUISpawnTab();
-		AddTab(m_SpawnTab, sectionWrapper, "SpawnTab.layout", "SpawnButton");
+		AddTab(m_SpawnTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/SpawnTab.layout", "SpawnButton");
 
 		m_MapTab = new ZBerryUIMapTab();
-		AddTab(m_MapTab, sectionWrapper, "MapTab.layout", "MapButton");
+		AddTab(m_MapTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/MapTab.layout", "MapButton");
 
 		SelectTab(m_FunctionsTab);
 
 		return layoutRoot;
 	}
 
-	protected void AddTab(ZBerryUITab tab, Widget parent, string layoutName, string tabButtonName) {
-		tab.InitTab(parent, layoutName, ButtonWidget.Cast( layoutRoot.FindAnyWidget(tabButtonName) ), m_ActionButton);
+	protected void AddTab(ZBerryUITab tab, Widget parent, string layoutPath, string tabButtonName) {
+		tab.InitTab(parent, layoutPath, ButtonWidget.Cast( layoutRoot.FindAnyWidget(tabButtonName) ), m_ActionButton);
 		m_Tabs.Insert(tab);
 	}
 

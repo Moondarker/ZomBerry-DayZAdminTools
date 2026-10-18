@@ -4,13 +4,12 @@ class ZBerryUITab extends ZBerryUIComponent {
 	protected ButtonWidget m_TabButton;
 	protected ButtonWidget m_ActionButton;
 
-	//The layout name is passed in by the menu on purpose: with a virtual GetLayoutName() the Spawn tab
-	//intermittently created a second FunctionsTab.layout in-game (never reproduced on the server)
-	void InitTab(Widget parent, string layoutName, ButtonWidget tabButton, ButtonWidget actionButton) {
+	//The layout path is passed in by the menu (see LoadLayout for why it is a full literal path)
+	void InitTab(Widget parent, string layoutPath, ButtonWidget tabButton, ButtonWidget actionButton) {
 		m_TabButton = tabButton;
 		m_ActionButton = actionButton;
 
-		if (!LoadLayout(layoutName, parent)) return;
+		if (!LoadLayout(layoutPath, parent)) return;
 		OnInit();
 	}
 

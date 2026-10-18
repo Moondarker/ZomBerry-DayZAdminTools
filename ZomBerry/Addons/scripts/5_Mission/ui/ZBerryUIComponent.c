@@ -1,9 +1,7 @@
-const string ZB_LAYOUT_DIR = "ZomBerry/AT/scripts/5_Mission/layouts/";
-
 //Base for every self-contained piece of the admin menu: owns a sub-layout and handles events of its own widgets only
 class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 	protected Widget m_Root;
-	protected string m_LayoutName; //As requested, kept for error messages
+	protected string m_LayoutPath; //As requested, kept for error messages
 
 	Widget GetRoot() {
 		return m_Root;
@@ -17,10 +15,12 @@ class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 		return m_Root && m_Root.IsVisible();
 	}
 
-	protected Widget LoadLayout(string layoutName, Widget parent) {
-		m_LayoutName = layoutName;
-		m_Root = GetGame().GetWorkspace().CreateWidgets(ZB_LAYOUT_DIR + m_LayoutName, parent);
-		if (!m_Root) ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + m_LayoutName );
+	//Full literal paths on purpose: with the path built at runtime (dir constant + file name) in this call, the engine
+	//consistently returned a FunctionsTab.layout tree for SpawnTab.layout in-game, although the right name was requested
+	protected Widget LoadLayout(string layoutPath, Widget parent) {
+		m_LayoutPath = layoutPath;
+		m_Root = GetGame().GetWorkspace().CreateWidgets(layoutPath, parent);
+		if (!m_Root) ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + layoutPath );
 
 		return m_Root;
 	}
@@ -31,7 +31,7 @@ class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 
 		Widget w = m_Root.FindAnyWidget(widgetName);
 		if (!w) {
-			ZomberryBase.Log( "ZomBerryUI", "ERROR: Widget " + widgetName + " not found in " + m_Root.GetName() + " (" + ClassName() + " requested " + m_LayoutName + ")" );
+			ZomberryBase.Log( "ZomBerryUI", "ERROR: Widget " + widgetName + " not found in " + m_Root.GetName() + " (" + ClassName() + " requested " + m_LayoutPath + ")" );
 			return NULL;
 		}
 

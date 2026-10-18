@@ -10,7 +10,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected int m_SelectedPlayerId = -1;
 
 	void Init(Widget parent) {
-		if (!LoadLayout("PlayersPanel.layout", parent)) return;
+		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/PlayersPanel.layout", parent)) return;
 
 		m_PlayersList = TextListboxWidget.Cast( BindWidget("PlayerList") );
 		m_RefreshButton = ButtonWidget.Cast( BindWidget("PlayersRefresh") );
