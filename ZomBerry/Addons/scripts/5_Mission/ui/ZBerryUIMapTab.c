@@ -80,7 +80,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
 			if (m_TeleportAllowed) {
 				m_TeleportAllowed = false;
-				GetRPCManager().SendRPC( "ZomBerryAT", "MapTeleport", new Param1< vector >( mapXZY ), true );
+				GetZBerryRPC().SendRPC( "ZomBerryAT", "MapTeleport", new Param1< vector >( mapXZY ), true );
 			}
 		} else {
 			m_TeleportAllowed = true;

@@ -26,7 +26,7 @@ class ZomberryKeybinds {
 			} else {
 				adminId = 0;
 			}
-			GetRPCManager().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, GetCursorPos(), {0, 0, 0} ), true );
+			GetZBerryRPC().SendRPC( "ZomBerryAT", "ExecuteCommand", new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, GetCursorPos(), {0, 0, 0} ), true );
 		};
 	}
 

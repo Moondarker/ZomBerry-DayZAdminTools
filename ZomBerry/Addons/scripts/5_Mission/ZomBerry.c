@@ -36,13 +36,13 @@ class ZomberryBase {
 			GetZomberryCmdAPI().Debug();
 		}
 
-		GetRPCManager().AddRPC( "ZomBerryAT", "AdminAuth", this, SingeplayerExecutionType.Client );
-		GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayersRequest", this, SingeplayerExecutionType.Client );
-		GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctionsRequest", this, SingeplayerExecutionType.Client );
-		GetRPCManager().AddRPC( "ZomBerryAT", "ExecuteCommand", this, SingeplayerExecutionType.Client );
-		GetRPCManager().AddRPC( "ZomBerryAT", "SpawnObject", this, SingeplayerExecutionType.Client );
-		GetRPCManager().AddRPC( "ZomBerryAT", "MapTeleport", this, SingeplayerExecutionType.Client );
-		//GetRPCManager().AddRPC( "ZomBerryAT", "MiscFunctionData", this, SingeplayerExecutionType.Server );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "AdminAuth", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "SyncPlayersRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "SyncFunctionsRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "ExecuteCommand", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "SpawnObject", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( "ZomBerryAT", "MapTeleport", this, ZBerrySPExec.Client );
+		//GetZBerryRPC().AddRPC( "ZomBerryAT", "MiscFunctionData", this, ZBerrySPExec.Server );
 	}
 
 	static ref ZomberryConfig GetConfig() {
@@ -80,7 +80,7 @@ class ZomberryBase {
 	void OnClientReady() {
 		Log( "ZomBerryDbg", "Auth Request sent" );
 
-		GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( true, g_zbryVer ), true, NULL );
+		GetZBerryRPC().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( true, g_zbryVer ), true, NULL );
 	}
 
 	void OnServerReady() {
@@ -138,7 +138,7 @@ class ZomberryBase {
 						++instStage;
 					}
 					++instStage;
-					SyncFunctionsRequest( CallType.Server, NULL, adminPly.GetIdentity(), NULL );
+					SyncFunctionsRequest( ZBerryCallType.Server, NULL, adminPly.GetIdentity(), NULL );
 				}
 				break;
 
@@ -151,7 +151,7 @@ class ZomberryBase {
 						new ZBerryFuncParam("Step", {3, 3, 3,}),
 					});
 					++instStage;
-					SyncFunctionsRequest( CallType.Server, NULL, adminPly.GetIdentity(), NULL );
+					SyncFunctionsRequest( ZBerryCallType.Server, NULL, adminPly.GetIdentity(), NULL );
 				}
 				break;
 
@@ -170,22 +170,22 @@ class ZomberryBase {
 		}
 	}
 
-	void AdminAuth( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void AdminAuth( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param2< bool, string > authInfo; //direction (true = to server), version (only in client dir)
 		if ( !ctx.Read( authInfo ) ) {
 			Log( "ZomBerryAT", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") - Auth error, please update client to latest version (v" + g_zbryVer + "+)!");
 			return;
 		}
 
-		if ( type == CallType.Server ) {
+		if ( type == ZBerryCallType.Server ) {
 			if (IsAdmin(sender)) {
-				GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer ), true, sender );
+				GetZBerryRPC().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer ), true, sender );
 				Log( "ZomBerryDbg", "Auth respond to admin " + sender.GetName() + " (" + sender.GetId() + ")");
 				if (authInfo.param2 != g_zbryVer) {
 					Log( "ZomBerryAT", "WARN: Admin " + sender.GetName() + " (" + sender.GetId() + ") ZomBerry version mismatch! S: v" + g_zbryVer + ", C: v" + authInfo.param2 + ", clientside may not start!");
 				}
 			} else {
-				if (adminList.Count() <= 1) GetRPCManager().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer + "CFGFailed" ), true, sender );
+				if (adminList.Count() <= 1) GetZBerryRPC().SendRPC( "ZomBerryAT", "AdminAuth", new Param2< bool, string >( false, g_zbryVer + "CFGFailed" ), true, sender );
 				Log( "ZomBerryDbg", "Auth Request ignored (not an admin) " + sender.GetName() + " (" + sender.GetId() + ")" );
 			}
 		} else {
@@ -206,7 +206,7 @@ class ZomberryBase {
 		}
 	}
 
-	void SyncPlayersRequest( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void SyncPlayersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		ref ZBerryPlayer plyData;
 		ref ZBerryPlayerArray playerListS = new ZBerryPlayerArray;
 		array<Man> players = new array<Man>;
@@ -215,7 +215,7 @@ class ZomberryBase {
 		string plyName;
 		bool plyAdmin;
 
-		if ( type == CallType.Server && GetGame().IsServer() ) {
+		if ( type == ZBerryCallType.Server && GetGame().IsServer() ) {
 			if (IsAdmin(sender)) {
 				if (GetCLIParam("zbryInstallMode", plyName)) {
 					if (plyName == "true") {
@@ -223,7 +223,7 @@ class ZomberryBase {
 						playerListS.Insert(new ZBerryPlayer(3, "Installation Mode", false, Vector(0,0,0), 0, 0));
 						playerListS.Insert(new ZBerryPlayer(3, "Active", true, Vector(0,0,0), 0, 0));
 						playerListS.Insert(new ZBerryPlayer(3, "No real players displayed!", false, Vector(0,0,0), 0, 0));
-						GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
+						GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
 
 						return;
 					}
@@ -246,7 +246,7 @@ class ZomberryBase {
 					playerListS.Insert(plyData);
 				}
 
-				GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
+				GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, sender );
 				DebugLog( 1, "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - player list sync"); //Every 2 seconds while the map is open
 
 			} else {
@@ -259,19 +259,19 @@ class ZomberryBase {
 			plyData = new ZBerryPlayer(0, "Player" + plyName, true, player.GetPosition(), player.GetHealth(), player.GetHealth("", "Blood"));
 
 			playerListS.Insert(plyData);
-			GetRPCManager().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, NULL );
+			GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncPlayers", new Param2<ref ZBerryPlayerArray, int> (playerListS, GetGame().GetTime()), true, NULL );
 			Log( "ZomBerryDbg", "Player list sync singleplayer");
 		}
 	}
 
-	void SyncFunctionsRequest( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void SyncFunctionsRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		ref ZBerryCategoryArray catList;
 
-		if ( type == CallType.Server && GetGame().IsServer() ) {
+		if ( type == ZBerryCallType.Server && GetGame().IsServer() ) {
 			if (IsAdmin(sender)) {
 				catList = GetZomberryCmdAPI().GetList();
 
-				GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, sender );
+				GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, sender );
 				Log( "ZomBerryDbg", "" + sender.GetName() + " (" + sender.GetId() + ") - function list sync");
 
 			} else {
@@ -280,12 +280,12 @@ class ZomberryBase {
 		} else {
 			catList = GetZomberryCmdAPI().GetList();
 
-			GetRPCManager().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, NULL );
+			GetZBerryRPC().SendRPC( "ZomBerryAT", "SyncFunctions", new Param1<ref ZBerryCategoryArray> (catList), true, NULL );
 			Log( "ZomBerryDbg", "Function list sync singleplayer");
 		}
 	}
 
-	void ExecuteCommand( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void ExecuteCommand( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param5< int, int, int, vector, autoptr TIntArray > funcParam; //Function id, Admin Id, Target Id, Admin cursor, Function params
 		if ( !ctx.Read( funcParam ) ) return;
 
@@ -294,7 +294,7 @@ class ZomberryBase {
 		int adminId = 0;
 		int targetId = funcParam.param3;
 
-		if ( type == CallType.Server && GetGame().IsServer() ) {
+		if ( type == ZBerryCallType.Server && GetGame().IsServer() ) {
 			if (!IsAdmin(sender)) {
 				Log( "ZomBerryAdmin", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") tried to execute function #" + funcParam.param1 + " but IS NOT ADMIN");
 				return;
@@ -339,7 +339,7 @@ class ZomberryBase {
 		return result;
 	}
 
-	void SpawnObject( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void SpawnObject( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		//string objName, int adminId, vector targetPlace, bool insideInventory
 		Param4< string, int, vector, bool > tgtParam;
 		string tmpStr = "";
@@ -350,7 +350,7 @@ class ZomberryBase {
 
 		if ( !ctx.Read( tgtParam ) ) return;
 
-		if ( type == CallType.Server && GetGame().IsServer() ) {
+		if ( type == ZBerryCallType.Server && GetGame().IsServer() ) {
 			if (!IsAdmin(sender)) {
 				Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to spawn " + tgtParam.param1 + " (NOT AN ADMIN)");
 				return;
@@ -426,7 +426,7 @@ class ZomberryBase {
 		return "spawned " + className + " at " + position;
 	}
 
-	void MapTeleport( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param1< vector > teleParam;
 
 		if ( !ctx.Read( teleParam ) ) return;
@@ -437,7 +437,7 @@ class ZomberryBase {
 		if (GetGame().IsMultiplayer()) adminId = sender.GetPlayerId();
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
 
-		if ( type == CallType.Server && GetGame().IsServer() ) {
+		if ( type == ZBerryCallType.Server && GetGame().IsServer() ) {
 			if (IsAdmin(sender)) {
 				if (!adminPly) {
 					Log( "ZomBerryAdmin", "" + sender.GetName() + " (" + sender.GetId() + ") tried to teleport, but has no character");
@@ -506,8 +506,8 @@ modded class MissionGameplay {
 		if ( !m_ZomberryMenu ) {
 			m_ZomberryMenu = new ZomberryMenu;
 			m_ZomberryMenu.Init();
-			GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayers", m_ZomberryMenu, SingeplayerExecutionType.Client );
-			GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctions", m_ZomberryMenu, SingeplayerExecutionType.Client );
+			GetZBerryRPC().AddRPC( "ZomBerryAT", "SyncPlayers", m_ZomberryMenu, ZBerrySPExec.Client );
+			GetZBerryRPC().AddRPC( "ZomBerryAT", "SyncFunctions", m_ZomberryMenu, ZBerrySPExec.Client );
 		}
 
 		return m_ZomberryMenu;

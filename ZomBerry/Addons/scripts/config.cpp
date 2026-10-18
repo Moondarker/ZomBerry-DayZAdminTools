@@ -7,8 +7,7 @@ class CfgPatches
 		requiredVersion=0.1;
 		requiredAddons[]=
 		{
-			"DZ_Scripts",
-			"RPC_Scripts"
+			"DZ_Scripts"
 		};
 	};
 };
@@ -31,13 +30,21 @@ class CfgMods
 		extra = 0;
 		type = "mod";
 
-		dependencies[] = {"World", "Mission"};
+		dependencies[] = {"Game", "World", "Mission"};
 
 		class defs
 		{
 			class imageSets
 			{
 				files[] = {"ZomBerry/AT/scripts/imagesets/zomberry_images.imageset"};
+			};
+			class gameScriptModule
+			{
+				value = "";
+				files[] = {
+					"ZomBerry/AT/scripts/Common",
+					"ZomBerry/AT/scripts/3_Game"
+				};
 			};
 			class worldScriptModule
 			{

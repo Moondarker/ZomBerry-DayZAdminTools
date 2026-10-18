@@ -114,10 +114,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		return true;
 	}
 
-	void SyncPlayers( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void SyncPlayers( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param2<ref ZBerryPlayerArray, int> playerListS;
 
-		if ( !(type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
+		if ( !(type == ZBerryCallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
 		if ( !ctx.Read( playerListS ) ) {
 			ZBerryUIUtils.Message("Player sync data read error - possible version mismatch");
 			return;
@@ -131,10 +131,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_MapTab.SetPlayers(players);
 	}
 
-	void SyncFunctions( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+	void SyncFunctions( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param1<ref ZBerryCategoryArray> catListS;
 
-		if ( !(type == CallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
+		if ( !(type == ZBerryCallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
 		if ( !ctx.Read( catListS ) ) return;
 
 		m_FunctionsTab.SetFunctions(catListS.param1);
