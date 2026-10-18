@@ -3,6 +3,7 @@ const string ZB_LAYOUT_DIR = "ZomBerry/AT/scripts/5_Mission/layouts/";
 //Base for every self-contained piece of the admin menu: owns a sub-layout and handles events of its own widgets only
 class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 	protected Widget m_Root;
+	protected string m_LayoutName; //As requested, kept for error messages
 
 	Widget GetRoot() {
 		return m_Root;
@@ -17,16 +18,9 @@ class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 	}
 
 	protected Widget LoadLayout(string layoutName, Widget parent) {
-		m_Root = GetGame().GetWorkspace().CreateWidgets(ZB_LAYOUT_DIR + layoutName, parent);
-		if (!m_Root) {
-			ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + layoutName );
-			return NULL;
-		}
-
-		//Once seen in testing (not reproduced since): the returned root belonged to another component's layout
-		if (parent && m_Root.GetParent() != parent) {
-			ZomberryBase.Log( "ZomBerryUI", "ERROR: " + layoutName + " returned root " + m_Root.GetName() + " which is not a child of " + parent.GetName() );
-		}
+		m_LayoutName = layoutName;
+		m_Root = GetGame().GetWorkspace().CreateWidgets(ZB_LAYOUT_DIR + m_LayoutName, parent);
+		if (!m_Root) ZomberryBase.Log( "ZomBerryUI", "ERROR: Can't load layout " + m_LayoutName );
 
 		return m_Root;
 	}
@@ -37,7 +31,7 @@ class ZBerryUIComponent extends ScriptedWidgetEventHandler {
 
 		Widget w = m_Root.FindAnyWidget(widgetName);
 		if (!w) {
-			ZomberryBase.Log( "ZomBerryUI", "ERROR: Widget " + widgetName + " not found in " + m_Root.GetName() );
+			ZomberryBase.Log( "ZomBerryUI", "ERROR: Widget " + widgetName + " not found in " + m_Root.GetName() + " (" + ClassName() + " requested " + m_LayoutName + ")" );
 			return NULL;
 		}
 

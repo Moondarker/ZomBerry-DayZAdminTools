@@ -17,10 +17,6 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_PlayersPanel = playersPanel;
 	}
 
-	protected override string GetLayoutName() {
-		return "FunctionsTab.layout";
-	}
-
 	protected override void OnInit() {
 		m_FunctionsList = TextListboxWidget.Cast( BindWidget("FunctionsList") );
 		m_ExecButton = ButtonWidget.Cast( BindWidget("SecondaryExecButton") );

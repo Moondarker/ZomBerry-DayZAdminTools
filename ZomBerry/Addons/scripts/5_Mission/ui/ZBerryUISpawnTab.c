@@ -17,10 +17,6 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected bool m_MouseOnSearch = false;
 	protected bool m_ListDirty = true;
 
-	protected override string GetLayoutName() {
-		return "SpawnTab.layout";
-	}
-
 	protected override void OnInit() {
 		m_ObjectsList = TextListboxWidget.Cast( BindWidget("ObjectsList") );
 		m_SearchInput = EditBoxWidget.Cast( BindWidget("SearchInput") );

@@ -15,10 +15,6 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	protected bool m_TeleportAllowed = true;
 	protected float m_SyncTimer = 0;
 
-	protected override string GetLayoutName() {
-		return "MapTab.layout";
-	}
-
 	protected override void OnInit() {
 		m_MapWidget = MapWidget.Cast( BindWidget("MapWidget") );
 		m_MapText = TextWidget.Cast( m_Root.FindAnyWidget("MapText") );

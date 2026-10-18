@@ -31,21 +31,21 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_FunctionsTab = new ZBerryUIFunctionsTab();
 		m_FunctionsTab.SetPlayersPanel(m_PlayersPanel);
-		AddTab(m_FunctionsTab, sectionWrapper, "FunctionsButton");
+		AddTab(m_FunctionsTab, sectionWrapper, "FunctionsTab.layout", "FunctionsButton");
 
 		m_SpawnTab = new ZBerryUISpawnTab();
-		AddTab(m_SpawnTab, sectionWrapper, "SpawnButton");
+		AddTab(m_SpawnTab, sectionWrapper, "SpawnTab.layout", "SpawnButton");
 
 		m_MapTab = new ZBerryUIMapTab();
-		AddTab(m_MapTab, sectionWrapper, "MapButton");
+		AddTab(m_MapTab, sectionWrapper, "MapTab.layout", "MapButton");
 
 		SelectTab(m_FunctionsTab);
 
 		return layoutRoot;
 	}
 
-	protected void AddTab(ZBerryUITab tab, Widget parent, string tabButtonName) {
-		tab.InitTab(parent, ButtonWidget.Cast( layoutRoot.FindAnyWidget(tabButtonName) ), m_ActionButton);
+	protected void AddTab(ZBerryUITab tab, Widget parent, string layoutName, string tabButtonName) {
+		tab.InitTab(parent, layoutName, ButtonWidget.Cast( layoutRoot.FindAnyWidget(tabButtonName) ), m_ActionButton);
 		m_Tabs.Insert(tab);
 	}
 
