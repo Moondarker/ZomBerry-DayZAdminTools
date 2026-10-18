@@ -287,7 +287,6 @@ class ZomberryBase {
 
 	void ExecuteCommand( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param5< int, int, int, vector, autoptr TIntArray > funcParam; //Function id, Admin Id, Target Id, Admin cursor, Function params
-		Param5< string, int, int, vector, autoptr TIntArray > oldFuncParam; //Backwards compatibility
 		if ( !ctx.Read( funcParam ) ) return;
 
 		//Everything in funcParam comes from the client: check the sender first, then validate before use
@@ -306,8 +305,7 @@ class ZomberryBase {
 			}
 
 			adminId = sender.GetPlayerId(); //Never trust the admin id sent by the client
-			oldFuncParam = new Param5< string, int, int, vector, autoptr TIntArray >(cmdFunc.GetName(), adminId, targetId, funcParam.param4, PadFuncValues(funcParam.param5));
-			GetGame().GameScript.CallFunctionParams( cmdFunc.GetInstance(), cmdFunc.GetName(), NULL, oldFuncParam );
+			RunFunction(cmdFunc, adminId, targetId, funcParam.param4, funcParam.param5);
 
 			PlayerBase targetPly = ZBGetPlayerById(targetId);
 			if (targetId != adminId && targetPly) {
@@ -318,10 +316,18 @@ class ZomberryBase {
 		} else {
 			if (!GetGame().IsMultiplayer() && cmdFunc) {
 				Log( "ZomBerryAdmin", "Executed " + cmdFunc.GetName() + " (singleplayer)");
-				oldFuncParam = new Param5< string, int, int, vector, autoptr TIntArray >(cmdFunc.GetName(), adminId, targetId, funcParam.param4, PadFuncValues(funcParam.param5));
-				GetGame().GameScript.CallFunctionParams( cmdFunc.GetInstance(), cmdFunc.GetName(), NULL, oldFuncParam );
+				RunFunction(cmdFunc, adminId, targetId, funcParam.param4, funcParam.param5);
 			}
 		}
+	}
+
+	//Calls the function with the (funcName, adminId, targetId, cursor, values) signature
+	protected void RunFunction(ZBerryFunction cmdFunc, int adminId, int targetId, vector cursor, TIntArray values) {
+		//Keep the array in a local: a temporary passed straight into the Param5 was gone by the time the function ran
+		TIntArray callValues = PadFuncValues(values);
+		Param5< string, int, int, vector, autoptr TIntArray > callParams = new Param5< string, int, int, vector, autoptr TIntArray >(cmdFunc.GetName(), adminId, targetId, cursor, callValues);
+
+		GetGame().GameScript.CallFunctionParams( cmdFunc.GetInstance(), cmdFunc.GetName(), NULL, callParams );
 	}
 
 	//Functions index up to 3 values, a short or missing array would throw inside them
