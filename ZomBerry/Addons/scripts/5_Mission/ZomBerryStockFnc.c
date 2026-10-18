@@ -162,7 +162,7 @@ class ZomberryStockFunctions {
 		HealTargetPart(funcName, adminId, targetId, cursor, {1, 1, 1});
 	}
 
-	void HealTargetPart( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void HealTargetPart( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -405,7 +405,7 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Killed target");
 	}
 
-	void BiteTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void BiteTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -437,7 +437,7 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Target was stripped");
 	}
 
-	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void RejectBellyTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -489,7 +489,7 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	void SetHealthTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void SetHealthTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -503,7 +503,7 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Target health level was set to " + fValues[0]);
 	}
 
-	void SetBloodTarget( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void SetBloodTarget( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		PlayerBase target = ZBGetPlayerById(targetId);
 		PlayerBase admin = ZBGetPlayerById(adminId);
 
@@ -546,14 +546,14 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	void SetTime( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void SetTime( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		int year, month, day, hour, minute;
 		GetGame().GetWorld().GetDate(year, month, day, hour, minute);
 		GetGame().GetWorld().SetDate(year, month, day, fValues[0], fValues[1]);
 		MessagePlayer(ZBGetPlayerById(adminId), "Time set to: " + fValues[0].ToString() + ":" + fValues[1].ToString() + " (it may take some time to effect!)");
 	}
 
-	void SetDate( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void SetDate( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		int year, month, day, hour, minute;
 		GetGame().GetWorld().GetDate(year, month, day, hour, minute);
 		GetGame().GetWorld().SetDate(fValues[2], fValues[1], fValues[0], hour, minute);
@@ -574,7 +574,7 @@ class ZomberryStockFunctions {
 		MessagePlayer(ZBGetPlayerById(adminId), "Time set to: 23:00 (it may take some time to effect!)");
 	}
 
-	void SetWeather( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void SetWeather( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		int year, month, day, hour, minute;
 		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax; //Damn, a lot of variables...
 		Weather WMgr = GetGame().GetWeather();

@@ -14,7 +14,7 @@ static ref ZomberryCmdAPI g_ZomberryCmdAPI;
 */
 static ref ZomberryCmdAPI GetZomberryCmdAPI() {
     if ( !g_ZomberryCmdAPI ) {
-        g_ZomberryCmdAPI = new ref ZomberryCmdAPI;
+        g_ZomberryCmdAPI = new ZomberryCmdAPI;
     }
 
     return g_ZomberryCmdAPI;

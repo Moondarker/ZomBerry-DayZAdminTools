@@ -28,7 +28,7 @@ class DayZSurvival: MissionServer
 		} else SendMsg(ZBGetPlayerById(adminId), "[ZBerryCustom] Not enough mana!");
 	}
 
-	void HealAll( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void HealAll( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 		BleedingSourcesManagerServer BSMgr;

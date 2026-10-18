@@ -41,13 +41,13 @@ class ZBerryCategoryArray: array<ref ZBerryCategory> {
 }
 
 class ZBerryFuncParamArray: array<ref ZBerryFuncParam> {
-	void Clone(ref ZBerryFuncParamArray original) {
+	void Clone(ZBerryFuncParamArray original) {
 		for (int idx = 0; idx < original.Count(); ++idx) {
 			Insert(new ZBerryFuncParam(original.Get(idx).name, original.Get(idx).values));
 		}
 	}
 
-	void Debug() {
+	override void Debug() {
 		for (int idx = 0; idx < Count(); ++idx) {
 			PrintString( "   [" + idx.ToString() + "]: " + Get(idx).Debug());
 		}
@@ -73,7 +73,7 @@ class ZBerryCategory {
 		return m_CategoryColor;
 	}
 
-	void Insert(ref ZBerryFunction newFunc) {
+	void Insert(ZBerryFunction newFunc) {
 		m_FunctionArray.Insert(newFunc);
 	}
 
@@ -133,7 +133,7 @@ class ZBerryFunction {
 	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ref ZBerryFuncParamArray fParam ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam ) {
 		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
@@ -199,7 +199,7 @@ class ZBerryFuncParam {
 	string name;
 	ref TIntArray values;
 
-	void ZBerryFuncParam( string pName, ref TIntArray pValues ) {
+	void ZBerryFuncParam( string pName, TIntArray pValues ) {
 		name = pName;
 		values = new TIntArray;
 		values.InsertAll(pValues);

@@ -11,7 +11,7 @@ class ZomberryBase {
 	static ref ZomberryKeybinds m_ZomberryKeybinds;
 
 	void ZomberryBase() {
-		m_ZomberryStockFunctions = new ref ZomberryStockFunctions;
+		m_ZomberryStockFunctions = new ZomberryStockFunctions;
 		string tmpStr = "";
 
 		if (!GetConfig().IsDefaultIO()) {
@@ -47,7 +47,7 @@ class ZomberryBase {
 
 	static ref ZomberryConfig GetConfig() {
 		if ( !m_ZomberryConfig ) {
-			m_ZomberryConfig = new ref ZomberryConfig;
+			m_ZomberryConfig = new ZomberryConfig;
 		}
 
 		return m_ZomberryConfig;
@@ -55,7 +55,7 @@ class ZomberryBase {
 
 	static ref ZomberryLogger GetLogger() {
 		if ( !m_ZomberryLogger ) {
-			m_ZomberryLogger = new ref ZomberryLogger;
+			m_ZomberryLogger = new ZomberryLogger;
 		}
 
 		return m_ZomberryLogger;
@@ -63,7 +63,7 @@ class ZomberryBase {
 
 	static ref ZomberryKeybinds GetKeyBindsMgr() {
 		if ( !m_ZomberryKeybinds ) {
-			m_ZomberryKeybinds = new ref ZomberryKeybinds;
+			m_ZomberryKeybinds = new ZomberryKeybinds;
 		}
 
 		return m_ZomberryKeybinds;
@@ -102,7 +102,7 @@ class ZomberryBase {
 		return false;
 	}
 
-	void InstMode( string funcName, int adminId, int targetId, vector cursor, autoptr TIntArray fValues ) {
+	void InstMode( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		int step = fValues[0];
 		string admPath = "";
 		TStringArray outMessages = {};
@@ -170,7 +170,7 @@ class ZomberryBase {
 		}
 	}
 
-	void AdminAuth( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void AdminAuth( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param2< bool, string > authInfo; //direction (true = to server), version (only in client dir)
 		if ( !ctx.Read( authInfo ) ) {
 			Log( "ZomBerryAT", "WARN: " + sender.GetName() + " (" + sender.GetId() + ") - Auth error, please update client to latest version (v" + g_zbryVer + "+)!");
@@ -206,7 +206,7 @@ class ZomberryBase {
 		}
 	}
 
-	void SyncPlayersRequest( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void SyncPlayersRequest( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		ref ZBerryPlayer plyData;
 		ref ZBerryPlayerArray playerListS = new ZBerryPlayerArray;
 		array<Man> players = new array<Man>;
@@ -262,7 +262,7 @@ class ZomberryBase {
 		}
 	}
 
-	void SyncFunctionsRequest( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void SyncFunctionsRequest( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		ref ZBerryCategoryArray catList;
 
 		if ( type == CallType.Server && GetGame().IsServer() ) {
@@ -283,7 +283,7 @@ class ZomberryBase {
 		}
 	}
 
-	void ExecuteCommand( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void ExecuteCommand( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param5< int, int, int, vector, autoptr TIntArray > funcParam; //Function id, Admin Id, Target Id, Admin cursor, Function params
 		Param5< string, int, int, vector, autoptr TIntArray > oldFuncParam; //Backwards compatibility
 		if ( !ctx.Read( funcParam ) ) return;
@@ -311,7 +311,7 @@ class ZomberryBase {
 		}
 	}
 
-	void SpawnObject( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void SpawnObject( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		//string objName, int adminId, vector targetPlace, bool insideInventory
 		Param4< string, int, vector, bool > tgtParam;
 		ItemBase item;
@@ -350,7 +350,7 @@ class ZomberryBase {
 		}
 	}
 
-	void MapTeleport( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target ) {
+	void MapTeleport( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param1< vector > teleParam;
 
 		if ( !ctx.Read( teleParam ) ) return;
@@ -394,7 +394,7 @@ modded class MissionServer {
 
 	private ref ZomberryBase GetZomberryBase() {
 		if ( !m_ZomberryBase ) {
-			m_ZomberryBase = new ref ZomberryBase;
+			m_ZomberryBase = new ZomberryBase;
 		}
 
 		return m_ZomberryBase;
@@ -413,7 +413,7 @@ modded class MissionGameplay {
 	ref ZomberryMenu m_ZomberryMenu;
 
 	void MissionGameplay() {
-		m_ZomberryBase = new ref ZomberryBase;
+		m_ZomberryBase = new ZomberryBase;
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
 	}
@@ -426,7 +426,7 @@ modded class MissionGameplay {
 
 	private ref ZomberryMenu GetZomberryMenu() {
 		if ( !m_ZomberryMenu ) {
-			m_ZomberryMenu = new ref ZomberryMenu;
+			m_ZomberryMenu = new ZomberryMenu;
 			m_ZomberryMenu.Init();
 			GetRPCManager().AddRPC( "ZomBerryAT", "SyncPlayers", m_ZomberryMenu, SingeplayerExecutionType.Client );
 			GetRPCManager().AddRPC( "ZomBerryAT", "SyncFunctions", m_ZomberryMenu, SingeplayerExecutionType.Client );
