@@ -32,7 +32,7 @@ Admin rights are permission groups stored in `<profiles>/ZomBerry/ZomBerryPermis
 
 #### First start
 
-With no admins configured, the server prints a **setup token** like `ABCD-EFGH-JKLM` to its script log and to `<profiles>/ZomBerry/ZomBerry_<date>.log`. Join the server and press `O`. A dialog asks for the token, and the first player to enter it becomes a `superadmin`.
+With no admins configured, the server prints a large **SETUP TOKEN** banner with a token like `ABCD-EFGH-JKLM` to its script log and to `<profiles>/ZomBerry/ZomBerry_<date>.log`. Join the server and press `O`. A dialog asks for the token, and the first player to enter it becomes a `superadmin`.
 - **Attempts:** each player has 5 tries, and every attempt is logged.
 - **After use:** the token stops working once it has been used.
 
@@ -89,7 +89,7 @@ How patterns match:
 - **A wildcard** (`Mag_*`).
 - **A deny** (`-Mag_STANAG*`), which always wins.
 
-The Spawn tab only lists the classes the admin may spawn.
+The Spawn tab only lists the classes the admin may spawn. When rules hide anything, the end of the list says how many classes are allowed.
 
 #### In-game editor
 
@@ -98,7 +98,7 @@ The **Permissions** tab needs `zomberry.permissions.manage`. While it's open:
 - **Assigning a group:** double-click an entry, then press the **Group** button to cycle through the groups or "none".
 - **Editing a group:** pick it on the left. Double-click a permission to switch it between allowed `[x]`, denied `[-]` and unset `[ ]`; `(x)` means a wildcard already grants it.
   - **Your own patterns:** add them, such as `zomberry.functions.TP*`, with the field below the list.
-  - **Spawn rules:** go in the bottom field, comma-separated.
+  - **Spawn rules:** go in the bottom field, comma-separated. **Preview** swaps the permission list for the classes those rules allow, with a count. Press it again, or double-click the list, to go back.
 - **Groups:** create or delete them with the buttons below the groups list. The level of the edited group is in the field next to "Groups". New groups start one level below your own, and groups you can't change are greyed out.
 - **Saving:** press **Save** in the header. Nothing changes on the server before that. The server refuses changes that would leave no admin able to manage permissions.
 

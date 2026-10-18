@@ -22,6 +22,11 @@ class ZomberryLogger {
 		}
 	}
 
+	//True while Log() ends up in the script log anyway
+	bool IsUsingScriptLog() {
+		return defaultIO;
+	}
+
 	void DebugLog(int lvl, string module, string txt) {
 		if (ZomberryBase.GetConfig().GetDebugLvl() >= lvl) {
 			Log(module, txt);

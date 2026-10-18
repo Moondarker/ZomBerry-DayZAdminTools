@@ -155,9 +155,20 @@ class ZBerryAuth {
 			m_SetupToken += alphabet.Get(Math.RandomInt(0, alphabet.Length()));
 		}
 
-		string notice = "No ZomBerry admins configured. Join the server, press the admin menu key (O) and enter this setup token to become superadmin: " + m_SetupToken;
-		Print("[ZomBerryAuth] " + notice);
-		ZomberryBase.Log( "ZomBerryAuth", "WARN: " + notice );
+		//Hard to miss in both logs: banner, instructions, the token, a closing line
+		TStringArray banner = {" _____                 ____                       ", "|__  /___  _ __ ___   | __ )  ___ _ __ _ __ _   _ ", "  / // _ \\| '_ ` _ \\  |  _ \\ / _ \\ '__| '__| | | |", " / /| (_) | | | | | | | |_) |  __/ |  | |  | |_| |", "/____\\___/|_| |_| |_| |____/ \\___|_|  |_|   \\__, |", "                                            |___/ "};
+		banner.Insert("");
+		banner.Insert("No ZomBerry admins are configured yet. Join the server, press the admin menu key (O)");
+		banner.Insert("and enter this setup token to become superadmin:");
+		banner.Insert("");
+		banner.Insert("        SETUP TOKEN:   " + m_SetupToken);
+		banner.Insert("==================================================================================");
+
+		bool scriptLogToo = !ZomberryBase.GetLogger().IsUsingScriptLog();
+		foreach (string line : banner) {
+			if (scriptLogToo) Print("[ZomBerryAuth] " + line);
+			ZomberryBase.Log( "ZomBerryAuth", line );
+		}
 	}
 
 	protected ZBerryAdminEntry FindAdmin(PlayerIdentity identity) {
@@ -289,7 +300,7 @@ class ZBerryAuth {
 		if (IsAdmin(sender)) {
 			ZomberryBase.Log( "ZomBerryDbg", "Auth respond to admin " + Who(sender) );
 		} else if (m_SetupToken != "") {
-			ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " joined while setup is pending, the setup token is in the server script log" );
+			ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " joined while setup is pending, look for the SETUP TOKEN banner in the server's logs" );
 		}
 
 		PushAuthState(sender);

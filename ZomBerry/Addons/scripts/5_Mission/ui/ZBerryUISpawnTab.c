@@ -188,6 +188,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		TStringArray configs = { CFG_VEHICLESPATH, CFG_WEAPONSPATH, CFG_MAGAZINESPATH };
 		ZBerryClientAuth clientAuth = GetZBerryClientAuth();
+		int classCount = 0;
+		int deniedCount = 0;
 
 		map<string, int> categoryIndex = new map<string, int>;
 		TStringArray splitFilters = new TStringArray;
@@ -223,7 +225,11 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 				int scope = g_Game.ConfigGetInt( strConfigPath + " " + strName + " scope" );
 				if ( scope == 0 ) continue;
-				if ( !clientAuth.CanSpawn(strName) ) continue; //Not allowed for this admin's group
+				++classCount;
+				if ( !clientAuth.CanSpawn(strName) ) { //Not allowed for this admin's group
+					++deniedCount;
+					continue;
+				}
 
 				string displayName;
 				g_Game.ConfigGetText( strConfigPath + " " + strName + " displayName", displayName );
@@ -250,6 +256,12 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 					}
 				}
 			}
+		}
+
+		//Make restrictions visible instead of silently missing entries
+		if (deniedCount > 0) {
+			int infoRow = m_ObjectsList.AddItem(" (" + (classCount - deniedCount) + " of " + classCount + " classes allowed by your group's spawn rules)", new Param2<string, string>("Info", ""), 0);
+			m_ObjectsList.SetItemColor(infoRow, 0, COLOR_CATEGORY_HIDDEN);
 		}
 	}
 };

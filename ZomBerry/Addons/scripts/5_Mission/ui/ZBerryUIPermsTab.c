@@ -7,9 +7,11 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	static const int COLOR_WILDCARD = 0xFFA0D890; //Granted by a wildcard pattern
 	static const int COLOR_SELECTED = 0xFFFF751A;
 	static const int COLOR_LOCKED = 0xFF909090;
+	static const int PREVIEW_ROWS = 500;
+	static const string PERMS_TITLE = "Permissions (double-click: allow / deny / unset)";
 
-	protected TextWidget m_SelectedText;
-	protected ButtonWidget m_GroupButton, m_AddGroupButton, m_DeleteGroupButton, m_AddPermButton;
+	protected TextWidget m_SelectedText, m_PermsTitle;
+	protected ButtonWidget m_GroupButton, m_AddGroupButton, m_DeleteGroupButton, m_AddPermButton, m_SpawnPreviewButton;
 	protected TextListboxWidget m_GroupsList, m_PermsList;
 	protected EditBoxWidget m_GroupNameInput, m_PermInput, m_SpawnRulesInput, m_LevelInput;
 
@@ -20,10 +22,13 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected string m_SelectedName = "";
 	protected bool m_Dirty = false;
 	protected bool m_ConfirmDelete = false;
+	protected bool m_PreviewMode = false; //Right list shows what the spawn rules allow instead of permissions
 	protected int m_MouseOnInputs = 0; //Typing must not close the menu
 
 	protected override void OnInit() {
 		m_SelectedText = TextWidget.Cast( m_Root.FindAnyWidget("SelectedText") );
+		m_PermsTitle = TextWidget.Cast( m_Root.FindAnyWidget("PermsTitle") );
+		m_SpawnPreviewButton = ButtonWidget.Cast( BindWidget("SpawnPreviewButton") );
 		m_GroupButton = ButtonWidget.Cast( BindWidget("GroupButton") );
 		m_AddGroupButton = ButtonWidget.Cast( BindWidget("AddGroupButton") );
 		m_DeleteGroupButton = ButtonWidget.Cast( BindWidget("DeleteGroupButton") );
@@ -196,8 +201,63 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		return count;
 	}
 
+	protected void SetPreviewMode(bool previewMode) {
+		m_PreviewMode = previewMode;
+		if (m_PreviewMode) {
+			m_SpawnPreviewButton.SetText("Permissions");
+		} else {
+			m_SpawnPreviewButton.SetText("Preview");
+		}
+		RefreshPerms();
+	}
+
+	//The classes the edited group's spawn rules allow, from the same configs the Spawn tab lists
+	protected void RefreshPreview() {
+		m_PermsList.ClearItems();
+
+		ZBerryPermGroup group;
+		if (m_Snapshot) group = m_Snapshot.FindGroup(m_EditGroup);
+		if (!group) {
+			m_PermsTitle.SetText("Spawn preview: select a group");
+			return;
+		}
+
+		TStringArray configs = { CFG_VEHICLESPATH, CFG_WEAPONSPATH, CFG_MAGAZINESPATH };
+		TStringArray allowed = new TStringArray;
+		int total = 0;
+
+		foreach (string configPath : configs) {
+			int classCount = GetGame().ConfigGetChildrenCount(configPath);
+			for (int i = 0; i < classCount; ++i) {
+				string className;
+				GetGame().ConfigGetChildName(configPath, i, className);
+				if (GetGame().ConfigGetInt(configPath + " " + className + " scope") == 0) continue;
+
+				++total;
+				if (ZBerryPermissions.IsSpawnAllowed(group.SpawnAllowed, className)) allowed.Insert(className);
+			}
+		}
+
+		allowed.Sort();
+		m_PermsTitle.SetText("Spawn preview of " + group.Name + ": " + allowed.Count() + " of " + total + " allowed");
+
+		int shown = Math.Min(allowed.Count(), PREVIEW_ROWS);
+		for (int row = 0; row < shown; ++row) {
+			int index = m_PermsList.AddItem(" " + allowed[row], new Param1<string>(""), 0);
+			m_PermsList.SetItemColor(index, 0, COLOR_ALLOWED);
+		}
+		if (allowed.Count() > shown) m_PermsList.AddItem(" ... and " + (allowed.Count() - shown) + " more", new Param1<string>(""), 0);
+		if (allowed.Count() == 0) m_PermsList.AddItem(" Nothing: this group can't spawn anything", new Param1<string>(""), 0);
+	}
+
 	//Known nodes first, then the group's own patterns (wildcards, custom nodes)
 	protected void RefreshPerms() {
+		if (m_PreviewMode) {
+			RefreshPreview();
+			return;
+		}
+
+		m_PermsTitle.SetText(PERMS_TITLE);
 		m_PermsList.ClearItems();
 		if (!m_Snapshot) return;
 
@@ -389,7 +449,12 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			return true;
 		}
 		if (w == m_AddPermButton) {
+			if (m_PreviewMode) SetPreviewMode(false);
 			AddPattern();
+			return true;
+		}
+		if (w == m_SpawnPreviewButton) {
+			SetPreviewMode(!m_PreviewMode);
 			return true;
 		}
 		return false;
@@ -397,6 +462,10 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
 		if (!m_Snapshot || w != m_PermsList) return false;
+		if (m_PreviewMode) { //Back to the permissions
+			SetPreviewMode(false);
+			return true;
+		}
 
 		int row = m_PermsList.GetSelectedRow();
 		if (row == -1) return true;
@@ -415,6 +484,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			if (group) {
 				group.SpawnAllowed = ZBerryPermissions.SplitList(m_SpawnRulesInput.GetText());
 				MarkDirty();
+				if (finished && m_PreviewMode) RefreshPreview(); //Rescanning the config on every key would stutter
 			} else {
 				RefreshSpawnRules();
 			}
@@ -457,6 +527,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y) {
 		if (w == m_SpawnRulesInput || w == m_PermInput || w == m_GroupNameInput || w == m_LevelInput) {
 			m_MouseOnInputs = Math.Max(0, m_MouseOnInputs - 1);
+			if (w == m_SpawnRulesInput && m_PreviewMode) RefreshPreview();
 			return true;
 		}
 		return false;
