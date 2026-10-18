@@ -50,6 +50,8 @@ FrameWidgetClass PlayersPanel {
    style Colorable
    text "Update"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
  }
 }

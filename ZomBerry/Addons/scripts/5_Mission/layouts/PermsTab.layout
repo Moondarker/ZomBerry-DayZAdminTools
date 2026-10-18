@@ -18,6 +18,7 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron16"
    "exact text" 1
    "text valign" center
+   "exact text size" 16
   }
   ButtonWidgetClass GroupButton {
    color 0.3255 0.3255 0.3255 0.7843
@@ -31,6 +32,8 @@ PanelWidgetClass PermsWrapper {
    style Colorable
    text "Group: none"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
   TextWidgetClass GroupsTitle {
    position 0 44
@@ -43,6 +46,7 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron14"
    "exact text" 1
    "text valign" center
+   "exact text size" 14
   }
   TextWidgetClass LevelTitle {
    position 100 44
@@ -56,6 +60,7 @@ PanelWidgetClass PermsWrapper {
    "exact text" 1
    "text halign" right
    "text valign" center
+   "exact text size" 14
   }
   EditBoxWidgetClass LevelInput {
    color 0.3255 0.3255 0.3255 0.7843
@@ -79,6 +84,7 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron14"
    "exact text" 1
    "text valign" center
+   "exact text size" 14
   }
   TextListboxWidgetClass GroupsList {
    color 0 0 0 0.7843
@@ -126,6 +132,8 @@ PanelWidgetClass PermsWrapper {
    style Colorable
    text "Add"
    font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   ButtonWidgetClass DeleteGroupButton {
    color 0.3255 0.3255 0.3255 0.7843
@@ -138,6 +146,8 @@ PanelWidgetClass PermsWrapper {
    style Colorable
    text "Delete"
    font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   EditBoxWidgetClass PermInput {
    color 0.3255 0.3255 0.3255 0.7843
@@ -162,6 +172,8 @@ PanelWidgetClass PermsWrapper {
    style Colorable
    text "Add"
    font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   TextWidgetClass SpawnRulesTitle {
    position 0 892
@@ -174,6 +186,7 @@ PanelWidgetClass PermsWrapper {
    font "gui/fonts/Metron14"
    "exact text" 1
    "text valign" center
+   "exact text size" 14
   }
   ButtonWidgetClass SpawnPreviewButton {
    color 0.3255 0.3255 0.3255 0.7843
@@ -187,6 +200,8 @@ PanelWidgetClass PermsWrapper {
    style Colorable
    text "Preview"
    font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
   }
   EditBoxWidgetClass SpawnRulesInput {
    color 0.3255 0.3255 0.3255 0.7843

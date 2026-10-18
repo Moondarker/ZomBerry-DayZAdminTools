@@ -20,6 +20,7 @@ PanelWidgetClass ZBerryTokenDialog {
    text "ZomBerry setup"
    font "gui/fonts/Metron22"
    "exact text" 1
+   "exact text size" 22
   }
   TextWidgetClass TokenHint1 {
    position 15 48
@@ -31,6 +32,7 @@ PanelWidgetClass ZBerryTokenDialog {
    text "This server has no ZomBerry admins yet."
    font "gui/fonts/Metron14"
    "exact text" 1
+   "exact text size" 14
   }
   TextWidgetClass TokenHint2 {
    position 15 70
@@ -42,6 +44,7 @@ PanelWidgetClass ZBerryTokenDialog {
    text "Enter the setup token from the server's log to become superadmin:"
    font "gui/fonts/Metron14"
    "exact text" 1
+   "exact text size" 14
   }
   EditBoxWidgetClass TokenInput {
    color 0.3255 0.3255 0.3255 0.7843
@@ -67,6 +70,8 @@ PanelWidgetClass ZBerryTokenDialog {
    style Colorable
    text "Cancel"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
   ButtonWidgetClass TokenOk {
    color 0.3255 0.3255 0.3255 0.7843
@@ -81,6 +86,8 @@ PanelWidgetClass ZBerryTokenDialog {
    style Colorable
    text "OK"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
  }
 }

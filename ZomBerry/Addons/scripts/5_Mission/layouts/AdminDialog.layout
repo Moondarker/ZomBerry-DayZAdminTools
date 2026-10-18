@@ -40,6 +40,7 @@ PanelWidgetClass AdminMenu {
        font "gui/fonts/Metron22"
        "exact text" 1
        "text valign" center
+       "exact text size" 22
       }
      }
     }
@@ -73,6 +74,8 @@ PanelWidgetClass AdminMenu {
          style Colorable
          text "Functions"
          font "gui/fonts/Metron16"
+         "exact text" 1
+         "exact text size" 16
         }
         ButtonWidgetClass SpawnButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -85,6 +88,8 @@ PanelWidgetClass AdminMenu {
          style Colorable
          text "Spawn Menu"
          font "gui/fonts/Metron16"
+         "exact text" 1
+         "exact text size" 16
         }
         ButtonWidgetClass MapButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -97,6 +102,8 @@ PanelWidgetClass AdminMenu {
          style Colorable
          text "Map"
          font "gui/fonts/Metron16"
+         "exact text" 1
+         "exact text size" 16
         }
         ButtonWidgetClass PermsButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -109,6 +116,8 @@ PanelWidgetClass AdminMenu {
          style Colorable
          text "Permissions"
          font "gui/fonts/Metron16"
+         "exact text" 1
+         "exact text size" 16
         }
         ButtonWidgetClass BindButton {
          color 0.3255 0.3255 0.3255 0.7843
@@ -122,6 +131,8 @@ PanelWidgetClass AdminMenu {
          style Colorable
          text "Bind"
          font "gui/fonts/Metron16"
+         "exact text" 1
+         "exact text size" 16
         }
        }
       }

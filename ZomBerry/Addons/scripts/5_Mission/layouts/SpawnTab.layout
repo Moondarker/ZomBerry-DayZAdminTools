@@ -19,6 +19,8 @@ PanelWidgetClass SpawnWrapper {
    style Colorable
    text "Items"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
   ButtonWidgetClass ObjectsButton {
    visible 1
@@ -33,6 +35,8 @@ PanelWidgetClass SpawnWrapper {
    style Colorable
    text "Objects"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
   ButtonWidgetClass AIButton {
    visible 1
@@ -47,6 +51,8 @@ PanelWidgetClass SpawnWrapper {
    style Colorable
    text "AI"
    font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
   }
   PanelWidgetClass SContentWrapper {
    position 0 46
@@ -106,6 +112,8 @@ PanelWidgetClass SpawnWrapper {
      style Colorable
      text "Cursor"
      font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
     }
    }
   }

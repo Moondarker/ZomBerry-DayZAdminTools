@@ -68,6 +68,8 @@ PanelWidgetClass FunctionsWrapper {
      style Colorable
      text "Execute"
      font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
     }
     TextWidgetClass FuncName {
      position 198.90799 0.059
