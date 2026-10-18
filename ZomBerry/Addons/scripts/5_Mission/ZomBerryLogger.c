@@ -58,7 +58,7 @@ class ZomberryLogger {
 			defaultIO = false;
 			file_path = tPath;
 			FPrintln(logFile, "---------------------------------------------");
-			FPrintln(logFile, "ZomBerry v" + g_zbryVer + " log started at " + GetDate());
+			FPrintln(logFile, "ZomBerry " + ZBerryVersion.GetFullVersion() + " log started at " + GetDate());
 			FPrintln(logFile, "");
 			CloseFile(logFile);
 		} else {

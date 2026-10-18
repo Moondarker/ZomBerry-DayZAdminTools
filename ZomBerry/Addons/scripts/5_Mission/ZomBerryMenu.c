@@ -64,7 +64,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	override void OnShow() {
 		super.OnShow();
 
-		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker" );
+		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker" );
 		ZBerryUIPlayersPanel.RequestSync();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
@@ -126,7 +126,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		ZBerryPlayerArray players = playerListS.param1;
 		int sUpTime = Math.Round(playerListS.param2 / 1000);
 
-		m_TxtTitle.SetText( "Players in game: " + players.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools v" + g_zbryVer + " by Vaker");
+		m_TxtTitle.SetText( "Players in game: " + players.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker");
 		m_PlayersPanel.SetPlayers(players);
 		m_MapTab.SetPlayers(players);
 	}

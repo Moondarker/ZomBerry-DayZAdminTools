@@ -26,7 +26,7 @@ class CfgMods
 		credits = "Vaker";
 		author = "Vaker";
 		authorID = "0";
-		version = "0.6.4";
+		version = "0.7.0";
 		extra = 0;
 		type = "mod";
 

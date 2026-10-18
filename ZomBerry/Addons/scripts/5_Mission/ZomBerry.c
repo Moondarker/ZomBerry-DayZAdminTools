@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.6.4";
+static string g_zbryVer = "0.7.0";
 
 //Wires ZomBerry together on both sides (server: MissionServer, client and singleplayer: MissionGameplay)
 //and keeps the shared config/logger/keybinds. The actual work lives in core/: auth, request handlers, installation mode
@@ -87,7 +87,7 @@ modded class MissionServer {
 	ref ZomberryBase m_ZomberryBase;
 
 	void MissionServer() {
-		ZomberryBase.Log( "ZomBerry", "Starting Server side v" + g_zbryVer );
+		ZomberryBase.Log( "ZomBerry", "Starting Server side " + ZBerryVersion.GetFullVersion() );
 	}
 
 	private ref ZomberryBase GetZomberryBase() {
@@ -113,7 +113,7 @@ modded class MissionGameplay {
 	void MissionGameplay() {
 		m_ZomberryBase = new ZomberryBase;
 
-		ZomberryBase.Log( "ZomBerry", "Starting Client side v" + g_zbryVer );
+		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}
 
 	void ~MissionGameplay() {
