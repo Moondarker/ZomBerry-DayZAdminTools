@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 (in development)
+
+Nothing yet.
+
 ## 0.7.0
 
 The big rewrite: own RPC layer and no dependencies, permission groups, kicks and bans, a rebuilt admin menu that scales with the resolution, and APIs for other mods.

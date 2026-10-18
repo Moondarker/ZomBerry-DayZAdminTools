@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.7.0";
+static string g_zbryVer = "0.7.1";
 
 //Wires ZomBerry together on both sides (server: MissionServer, client and singleplayer: MissionGameplay)
 //and keeps the shared config/logger/keybinds. The actual work lives in core/: server auth and permissions, client auth, request handlers
