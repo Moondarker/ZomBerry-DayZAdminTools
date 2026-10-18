@@ -101,6 +101,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	//from the frame the menu opened and UAUIBack never fired, so the menu couldn't be closed
 	override void OnShow() {
 		super.OnShow();
+		ShowQuickbar(false); //It draws above menus and covered the menu's bottom row
 
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker" );
 		ApplyPermissions();
@@ -114,10 +115,19 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void OnHide() {
 		super.OnHide();
+		ShowQuickbar(true);
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnMenuHide();
 		}
+	}
+
+	//Like vanilla's in-game menu: hidden while the menu is open, back afterwards if the player's options show it
+	protected void ShowQuickbar(bool show) {
+		if (!GetGame().GetMission()) return;
+
+		IngameHud hud = IngameHud.Cast(GetGame().GetMission().GetHud());
+		if (hud) hud.ShowQuickbarUI(show && GetGame().GetProfileOption(EDayZProfilesOptions.QUICKBAR));
 	}
 
 	override void Update(float timeslice) {
