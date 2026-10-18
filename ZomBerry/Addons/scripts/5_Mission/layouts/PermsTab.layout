@@ -34,7 +34,7 @@ PanelWidgetClass PermsWrapper {
   }
   TextWidgetClass GroupsTitle {
    position 0 46
-   size 215 20
+   size 110 20
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -42,6 +42,28 @@ PanelWidgetClass PermsWrapper {
    text "Groups"
    font "gui/fonts/Metron14"
    "exact text" 1
+  }
+  TextWidgetClass LevelTitle {
+   position 115 46
+   size 45 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Level"
+   font "gui/fonts/Metron14"
+   "exact text" 1
+  }
+  EditBoxWidgetClass LevelInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 165 44
+   size 50 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/Metron14"
   }
   TextWidgetClass PermsTitle {
    position 225 46

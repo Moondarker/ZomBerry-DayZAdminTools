@@ -3,6 +3,8 @@
 class ZBerryAuth {
 	static const string CONFIG_FILE = "ZomBerryPermissions.json";
 	static const string SUPERADMIN_GROUP = "superadmin";
+	static const string ADMIN_GROUP = "admin"; //Further ids of a legacy admins.cfg
+	static const int ADMIN_LEVEL = 90;
 	static const int MAX_TOKEN_ATTEMPTS = 5;
 
 	protected ref ZBerryPermsConfig m_Config = new ZBerryPermsConfig;
@@ -36,6 +38,9 @@ class ZBerryAuth {
 
 			m_Config = loaded;
 			m_Config.Sanitize();
+
+			ZBerryPermGroup superadmin = m_Config.FindGroup(SUPERADMIN_GROUP);
+			if (superadmin) superadmin.Level = ZBerryPermGroup.SUPERADMIN_LEVEL; //Always the top, also in files without levels
 			ZomberryBase.Log( "ZomBerryAuth", "INFO: Loaded " + m_Config.Groups.Count() + " groups and " + m_Config.Admins.Count() + " admins from " + CONFIG_FILE );
 		} else {
 			CreateDefaultConfig();
@@ -50,12 +55,9 @@ class ZBerryAuth {
 
 	//First start: example groups, plus admins imported from a legacy admins.cfg if there is one
 	protected void CreateDefaultConfig() {
-		ZBerryPermGroup superadmin = new ZBerryPermGroup(SUPERADMIN_GROUP);
-		superadmin.Permissions.Insert("*");
-		superadmin.SpawnAllowed.Insert("*");
-		m_Config.Groups.Insert(superadmin);
+		m_Config.Groups.Insert(NewFullGroup(SUPERADMIN_GROUP, ZBerryPermGroup.SUPERADMIN_LEVEL));
 
-		ZBerryPermGroup moderator = new ZBerryPermGroup("moderator");
+		ZBerryPermGroup moderator = new ZBerryPermGroup("moderator", 10);
 		moderator.Permissions.Insert(ZBerryPermissions.PLAYERS_LIST);
 		moderator.Permissions.Insert("zomberry.map.*");
 		moderator.Permissions.Insert("zomberry.functions.TPToTarget");
@@ -63,22 +65,52 @@ class ZBerryAuth {
 		moderator.Permissions.Insert("zomberry.functions.HealTarget");
 		m_Config.Groups.Insert(moderator);
 
-		TStringArray legacyIds = ReadLegacyAdmins();
-		foreach (string legacyId : legacyIds) {
-			if (!m_Config.FindAdmin(legacyId)) m_Config.Admins.Insert(new ZBerryAdminEntry(legacyId, "", SUPERADMIN_GROUP));
-		}
-		if (m_Config.Admins.Count() > 0) ZomberryBase.Log( "ZomBerryAuth", "INFO: Imported " + m_Config.Admins.Count() + " admins from admins.cfg into the " + SUPERADMIN_GROUP + " group" );
+		string legacyPath;
+		TStringArray legacyIds = ReadLegacyAdmins(legacyPath);
+		ImportLegacyAdmins(legacyIds);
 
-		SaveConfig();
+		if (!SaveConfig()) return;
 		ZomberryBase.Log( "ZomBerryAuth", "INFO: Created " + CONFIG_FILE );
+
+		//Imported once: keep the old file around, but out of the way
+		if (legacyPath != "" && CopyFile(legacyPath, legacyPath + ".imported")) {
+			DeleteFile(legacyPath);
+			ZomberryBase.Log( "ZomBerryAuth", "INFO: Renamed " + legacyPath + " to admins.cfg.imported, " + CONFIG_FILE + " is used from now on" );
+		}
+	}
+
+	protected ZBerryPermGroup NewFullGroup(string name, int level) {
+		ZBerryPermGroup group = new ZBerryPermGroup(name, level);
+		group.Permissions.Insert("*");
+		group.SpawnAllowed.Insert("*");
+		return group;
+	}
+
+	//The first id becomes superadmin, the others admins with every permission. Admins can't change the
+	//superadmin or their own group: the admin group ranks below superadmin and not below itself
+	protected void ImportLegacyAdmins(TStringArray ids) {
+		for (int i = 0; i < ids.Count(); ++i) {
+			if (m_Config.FindAdmin(ids[i])) continue;
+
+			string groupName = SUPERADMIN_GROUP;
+			if (i > 0) {
+				groupName = ADMIN_GROUP;
+				if (!m_Config.FindGroup(ADMIN_GROUP)) m_Config.Groups.Insert(NewFullGroup(ADMIN_GROUP, ADMIN_LEVEL));
+			}
+
+			m_Config.Admins.Insert(new ZBerryAdminEntry(ids[i], "", groupName));
+		}
+
+		if (ids.Count() > 0) ZomberryBase.Log( "ZomBerryAuth", "INFO: Imported " + m_Config.Admins.Count() + " admins from admins.cfg: the first into " + SUPERADMIN_GROUP + ", the others into " + ADMIN_GROUP );
 	}
 
 	//admins.cfg of earlier versions: one id per line. The ids those versions wrote into a new file by themselves
 	//(the author's own, as an example) are skipped, so nobody becomes admin on a server that never chose them
-	protected TStringArray ReadLegacyAdmins() {
+	protected TStringArray ReadLegacyAdmins(out string foundPath) {
 		TStringArray ids = new TStringArray;
 		TStringArray seededIds = {"76561198038543835", "YWrRTYsUNXUHr2ALuJGiTQ7nvnae8XcTxe3XvJ3Ay54="};
 		TStringArray paths = {"$profile:ZomBerry\\admins.cfg", "$CurrentDir:admins.cfg"};
+		foundPath = "";
 
 		foreach (string path : paths) {
 			if (!FileExist(path)) continue;
@@ -91,12 +123,13 @@ class ZBerryAuth {
 				line = line.Trim();
 				if (seededIds.Find(line) != -1) {
 					ZomberryBase.Log( "ZomBerryAuth", "INFO: Skipped the example id earlier versions wrote into " + path + " by default" );
-				} else if (line != "" && line.IndexOf("//") != 0) {
+				} else if (line != "" && line.IndexOf("//") != 0 && ids.Find(line) == -1) {
 					ids.Insert(line);
 				}
 				line = "";
 			}
 			CloseFile(file);
+			foundPath = path;
 			ZomberryBase.Log( "ZomBerryAuth", "INFO: Found legacy admins file " + path );
 			break;
 		}
@@ -104,11 +137,12 @@ class ZBerryAuth {
 		return ids;
 	}
 
-	protected void SaveConfig() {
+	protected bool SaveConfig() {
 		string saveError;
-		if (!JsonFileLoader<ZBerryPermsConfig>.SaveFile(m_ConfigPath, m_Config, saveError)) {
-			ZomberryBase.Log( "ZomBerryAuth", "ERROR: Can't save " + CONFIG_FILE + ": " + saveError );
-		}
+		if (JsonFileLoader<ZBerryPermsConfig>.SaveFile(m_ConfigPath, m_Config, saveError)) return true;
+
+		ZomberryBase.Log( "ZomBerryAuth", "ERROR: Can't save " + CONFIG_FILE + ": " + saveError );
+		return false;
 	}
 
 	protected void GenerateSetupToken() {
@@ -139,6 +173,15 @@ class ZBerryAuth {
 		if (!admin) return NULL;
 
 		return m_Config.FindGroup(admin.Group);
+	}
+
+	//Rank of the identity's group, -1 for non-admins
+	int GetLevel(PlayerIdentity identity) {
+		if (EveryoneIsAdmin()) return ZBerryPermGroup.SUPERADMIN_LEVEL;
+
+		ZBerryPermGroup group = FindGroupOf(identity);
+		if (!group) return -1;
+		return group.Level;
 	}
 
 	//The patterns this identity has, empty for non-admins
@@ -282,11 +325,11 @@ class ZBerryAuth {
 
 		ZBerryPermGroup superadmin = m_Config.FindGroup(SUPERADMIN_GROUP);
 		if (!superadmin) {
-			superadmin = new ZBerryPermGroup(SUPERADMIN_GROUP);
-			superadmin.SpawnAllowed.Insert("*");
+			superadmin = NewFullGroup(SUPERADMIN_GROUP, ZBerryPermGroup.SUPERADMIN_LEVEL);
 			m_Config.Groups.Insert(superadmin);
 		}
 		if (superadmin.Permissions.Find("*") == -1) superadmin.Permissions.Insert("*");
+		superadmin.Level = ZBerryPermGroup.SUPERADMIN_LEVEL;
 
 		m_Config.Admins.Insert(new ZBerryAdminEntry(id, sender.GetName(), SUPERADMIN_GROUP));
 		SaveConfig();
@@ -325,6 +368,7 @@ class ZBerryAuth {
 
 	void SendSnapshot(PlayerIdentity recipient) {
 		ZBerryPermsSnapshot snapshot = BuildSnapshot();
+		snapshot.EditorLevel = GetLevel(recipient);
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.PermsData, new Param1<ref ZBerryPermsSnapshot>(snapshot), true, recipient );
 	}
 
@@ -348,7 +392,7 @@ class ZBerryAuth {
 			return;
 		}
 
-		string problem = ApplyUpdate(update.param1);
+		string problem = ApplyUpdate(update.param1, GetLevel(sender));
 		if (problem != "") {
 			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " permission change rejected: " + problem );
 			Tell(sender, "Permissions not saved: " + problem);
@@ -362,8 +406,10 @@ class ZBerryAuth {
 		SendSnapshot(sender);
 	}
 
-	//Checks and stores a new set of groups and admins. Returns why it was rejected, "" when saved
-	string ApplyUpdate(ZBerryPermsSnapshot update) {
+	//Checks and stores a new set of groups and admins made by a manager of editorLevel. Returns why it was
+	//rejected, "" when saved. Below the superadmin level, groups ranked at or above the editor's own level and the
+	//admins in them must stay exactly as they were, and nothing may be added at or above that level
+	string ApplyUpdate(ZBerryPermsSnapshot update, int editorLevel = 100) {
 		if (!update.Groups || !update.Admins) return "incomplete data";
 
 		ZBerryPermsConfig newConfig = new ZBerryPermsConfig;
@@ -391,8 +437,44 @@ class ZBerryAuth {
 		//Nobody could fix the permissions in-game anymore
 		if (!anyManager) return "no admin would be left with " + ZBerryPermissions.PERMISSIONS_MANAGE;
 
+		string hierarchyProblem = CheckHierarchy(m_Config, newConfig, editorLevel);
+		if (hierarchyProblem != "") return hierarchyProblem;
+
 		m_Config = newConfig;
 		SaveConfig();
+		return "";
+	}
+
+	protected string CheckHierarchy(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig, int editorLevel) {
+		if (editorLevel >= ZBerryPermGroup.SUPERADMIN_LEVEL) return "";
+
+		foreach (ZBerryPermGroup oldGroup : oldConfig.Groups) {
+			if (oldGroup.IsEditableBy(editorLevel)) continue;
+			if (!oldGroup.IsSameAs(newConfig.FindGroup(oldGroup.Name))) return "your group can't change group " + oldGroup.Name;
+		}
+
+		foreach (ZBerryPermGroup newGroup : newConfig.Groups) {
+			ZBerryPermGroup existing = oldConfig.FindGroup(newGroup.Name);
+			if (existing && !existing.IsEditableBy(editorLevel)) continue; //Checked above, unchanged
+			if (!newGroup.IsEditableBy(editorLevel)) return "group " + newGroup.Name + " must have a level below " + editorLevel;
+		}
+
+		foreach (ZBerryAdminEntry oldAdmin : oldConfig.Admins) {
+			ZBerryPermGroup oldAdminGroup = oldConfig.FindGroup(oldAdmin.Group);
+			if (!oldAdminGroup || oldAdminGroup.IsEditableBy(editorLevel)) continue;
+
+			ZBerryAdminEntry kept = newConfig.FindAdmin(oldAdmin.Id);
+			if (!kept || kept.Group != oldAdmin.Group) return "your group can't change admins of group " + oldAdmin.Group;
+		}
+
+		foreach (ZBerryAdminEntry newAdmin : newConfig.Admins) {
+			ZBerryPermGroup newAdminGroup = newConfig.FindGroup(newAdmin.Group);
+			if (newAdminGroup.IsEditableBy(editorLevel)) continue;
+
+			ZBerryAdminEntry before = oldConfig.FindAdmin(newAdmin.Id);
+			if (!before || before.Group != newAdmin.Group) return "your group can't add admins to group " + newAdmin.Group;
+		}
+
 		return "";
 	}
 

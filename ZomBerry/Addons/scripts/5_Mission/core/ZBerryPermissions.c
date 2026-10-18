@@ -131,13 +131,19 @@ class ZBerryPermissions {
 	}
 };
 
+//Level orders the groups: managers may only change groups (and their admins) ranked below their own,
+//except the superadmin level, which may change everything
 class ZBerryPermGroup {
+	static const int SUPERADMIN_LEVEL = 100;
+
 	string Name;
+	int Level;
 	ref TStringArray Permissions;
 	ref TStringArray SpawnAllowed;
 
-	void ZBerryPermGroup(string name = "") {
+	void ZBerryPermGroup(string name = "", int level = 0) {
 		Name = name;
+		Level = level;
 		Permissions = new TStringArray;
 		SpawnAllowed = new TStringArray;
 	}
@@ -146,6 +152,24 @@ class ZBerryPermGroup {
 	void Sanitize() {
 		if (!Permissions) Permissions = new TStringArray;
 		if (!SpawnAllowed) SpawnAllowed = new TStringArray;
+		Level = Math.Clamp(Level, 0, SUPERADMIN_LEVEL);
+	}
+
+	//Can a manager of this level change it
+	bool IsEditableBy(int editorLevel) {
+		return editorLevel >= SUPERADMIN_LEVEL || Level < editorLevel;
+	}
+
+	bool IsSameAs(ZBerryPermGroup other) {
+		return other && Name == other.Name && Level == other.Level && SameList(Permissions, other.Permissions) && SameList(SpawnAllowed, other.SpawnAllowed);
+	}
+
+	static bool SameList(TStringArray a, TStringArray b) {
+		if (a.Count() != b.Count()) return false;
+		foreach (string item : a) {
+			if (b.Find(item) == -1) return false;
+		}
+		return true;
 	}
 };
 
@@ -215,6 +239,7 @@ class ZBerryPermsSnapshot {
 	ref ZBerryAdminEntryArray Admins;
 	ref TStringArray KnownNodes;
 	ref ZBerryOnlineIdentityArray Online;
+	int EditorLevel; //Level of the admin this snapshot was sent to
 
 	void ZBerryPermsSnapshot() {
 		Groups = new ZBerryPermGroupArray;

@@ -38,13 +38,13 @@ With no admins configured, the server prints a **setup token** like `ABCD-EFGH-J
 
 #### Groups
 
-Each admin belongs to one group, and each group has permission patterns and spawn rules:
+Each admin belongs to one group, and each group has a level, permission patterns and spawn rules:
 
 ```json
 {
     "Groups": [
-        { "Name": "superadmin", "Permissions": ["*"], "SpawnAllowed": ["*"] },
-        { "Name": "moderator",
+        { "Name": "superadmin", "Level": 100, "Permissions": ["*"], "SpawnAllowed": ["*"] },
+        { "Name": "moderator", "Level": 10,
           "Permissions": ["zomberry.players.list", "zomberry.map.*", "zomberry.functions.TPToTarget", "zomberry.functions.HealTarget"],
           "SpawnAllowed": [] }
     ],
@@ -56,6 +56,12 @@ Each admin belongs to one group, and each group has permission patterns and spaw
 
 - **`Id`:** the player's Steam64 ID. A BattlEye GUID works too.
 - **`Name`:** only for display. ZomBerry updates it when the admin joins.
+
+#### Levels
+
+`Level` (0 to 100) decides who may change whom. An admin who may manage permissions can only change groups ranked **below** their own: their permissions, spawn rules, level, or deleting them. They can also only assign or remove admins who are in such groups, and only into such groups. Groups at their own level or above are read-only for them.
+
+The `superadmin` group is always level 100, and level 100 may change everything, including itself. So a level 90 admin can manage moderators, but not fellow level 90 admins and not superadmins.
 
 #### Permissions
 
@@ -93,12 +99,16 @@ The **Permissions** tab needs `zomberry.permissions.manage`. While it's open:
 - **Editing a group:** pick it on the left. Double-click a permission to switch it between allowed `[x]`, denied `[-]` and unset `[ ]`; `(x)` means a wildcard already grants it.
   - **Your own patterns:** add them, such as `zomberry.functions.TP*`, with the field below the list.
   - **Spawn rules:** go in the bottom field, comma-separated.
-- **Groups:** create or delete them with the buttons below the groups list.
+- **Groups:** create or delete them with the buttons below the groups list. The level of the edited group is in the field next to "Groups". New groups start one level below your own, and groups you can't change are greyed out.
 - **Saving:** press **Save** in the header. Nothing changes on the server before that. The server refuses changes that would leave no admin able to manage permissions.
 
 #### Upgrading from admins.cfg
 
-On the first start of 0.7.0, the IDs in an existing `admins.cfg` (in `<profiles>/ZomBerry/` or the server root) are imported into a `superadmin` group. After that, `admins.cfg` isn't used. Earlier versions wrote one example ID into new `admins.cfg` files by themselves; that ID is skipped.
+On the first start of 0.7.0, an existing `admins.cfg` (in `<profiles>/ZomBerry/` or the server root) is imported:
+- **The first ID** becomes a `superadmin` (level 100).
+- **All other IDs** go into an `admin` group (level 90). They have every permission, but can't change superadmins or their own group.
+
+The file is then renamed to `admins.cfg.imported` and isn't used anymore. Earlier versions wrote one example ID into new `admins.cfg` files by themselves; that ID is skipped.
 
 For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every player `*`.
 

@@ -1,15 +1,17 @@
 //Permission editor: the players panel lists online players and known admins, this tab edits groups and
-//assigns the selected entry to one. Works on a local copy of the server's data until Save (header button)
+//assigns the selected entry to one. Works on a local copy of the server's data until Save (header button).
+//Groups ranked at or above the editor's own level are read-only (the server enforces the same rule)
 class ZBerryUIPermsTab extends ZBerryUITab {
 	static const int COLOR_ALLOWED = 0xFF47EB00;
 	static const int COLOR_DENIED = 0xFFFF5A5A;
 	static const int COLOR_WILDCARD = 0xFFA0D890; //Granted by a wildcard pattern
 	static const int COLOR_SELECTED = 0xFFFF751A;
+	static const int COLOR_LOCKED = 0xFF909090;
 
 	protected TextWidget m_SelectedText;
 	protected ButtonWidget m_GroupButton, m_AddGroupButton, m_DeleteGroupButton, m_AddPermButton;
 	protected TextListboxWidget m_GroupsList, m_PermsList;
-	protected EditBoxWidget m_GroupNameInput, m_PermInput, m_SpawnRulesInput;
+	protected EditBoxWidget m_GroupNameInput, m_PermInput, m_SpawnRulesInput, m_LevelInput;
 
 	protected ZBerryUIPlayersPanel m_PlayersPanel;
 	protected ref ZBerryPermsSnapshot m_Snapshot;
@@ -31,6 +33,30 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		m_GroupNameInput = EditBoxWidget.Cast( BindWidget("GroupNameInput") );
 		m_PermInput = EditBoxWidget.Cast( BindWidget("PermInput") );
 		m_SpawnRulesInput = EditBoxWidget.Cast( BindWidget("SpawnRulesInput") );
+		m_LevelInput = EditBoxWidget.Cast( BindWidget("LevelInput") );
+	}
+
+	protected bool CanEdit(ZBerryPermGroup group) {
+		return group && m_Snapshot && group.IsEditableBy(m_Snapshot.EditorLevel);
+	}
+
+	//Tells why when it can't
+	protected ZBerryPermGroup GetEditableGroup() {
+		ZBerryPermGroup group;
+		if (m_Snapshot) group = m_Snapshot.FindGroup(m_EditGroup);
+		if (!group) return NULL;
+
+		if (!CanEdit(group)) {
+			ZBerryUIUtils.Message("Your group can't change group " + group.Name + " (level " + group.Level + ", yours is " + m_Snapshot.EditorLevel + ")");
+			return NULL;
+		}
+		return group;
+	}
+
+	//Admins whose group is out of reach can't be moved
+	protected bool CanEditAdmin(ZBerryAdminEntry admin) {
+		if (!admin) return true;
+		return CanEdit(m_Snapshot.FindGroup(admin.Group));
 	}
 
 	void SetPlayersPanel(ZBerryUIPlayersPanel panel) {
@@ -114,7 +140,19 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		RefreshGroups();
 		RefreshPerms();
 		RefreshSpawnRules();
+		RefreshLevel();
 		UpdateActionButton();
+	}
+
+	protected void RefreshLevel() {
+		ZBerryPermGroup group;
+		if (m_Snapshot) group = m_Snapshot.FindGroup(m_EditGroup);
+
+		if (!group) {
+			m_LevelInput.SetText("");
+			return;
+		}
+		m_LevelInput.SetText(group.Level.ToString());
 	}
 
 	protected void RefreshSelected() {
@@ -141,8 +179,12 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		for (int i = 0; i < m_Snapshot.Groups.Count(); ++i) {
 			ZBerryPermGroup group = m_Snapshot.Groups[i];
-			m_GroupsList.AddItem(" " + group.Name + " (" + CountAdmins(group.Name) + ")", new Param1<string>(group.Name), 0);
-			if (group.Name == m_EditGroup) m_GroupsList.SetItemColor(i, 0, COLOR_SELECTED);
+			m_GroupsList.AddItem(" " + group.Name + " [" + group.Level + "] (" + CountAdmins(group.Name) + ")", new Param1<string>(group.Name), 0);
+			if (group.Name == m_EditGroup) {
+				m_GroupsList.SetItemColor(i, 0, COLOR_SELECTED);
+			} else if (!CanEdit(group)) {
+				m_GroupsList.SetItemColor(i, 0, COLOR_LOCKED);
+			}
 		}
 	}
 
@@ -204,7 +246,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	//unset -> allow -> deny -> unset
 	protected void TogglePermission(string node) {
-		ZBerryPermGroup group = m_Snapshot.FindGroup(m_EditGroup);
+		ZBerryPermGroup group = GetEditableGroup();
 		if (!group) return;
 
 		bool allowed = group.Permissions.Find(node) != -1;
@@ -223,7 +265,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	}
 
 	protected void AddPattern() {
-		ZBerryPermGroup group = m_Snapshot.FindGroup(m_EditGroup);
+		ZBerryPermGroup group = GetEditableGroup();
 		string pattern = m_PermInput.GetText().Trim();
 		if (!group || pattern == "") return;
 
@@ -244,7 +286,10 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			return;
 		}
 
-		m_Snapshot.Groups.Insert(new ZBerryPermGroup(name));
+		//One below the editor, so they can keep editing it
+		int level = 50;
+		if (m_Snapshot.EditorLevel < ZBerryPermGroup.SUPERADMIN_LEVEL) level = Math.Max(0, m_Snapshot.EditorLevel - 1);
+		m_Snapshot.Groups.Insert(new ZBerryPermGroup(name, level));
 		m_EditGroup = name;
 		m_GroupNameInput.SetText("");
 		MarkDirty();
@@ -253,7 +298,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	//Asks once, admins of the group lose their rights
 	protected void DeleteGroup() {
-		ZBerryPermGroup group = m_Snapshot.FindGroup(m_EditGroup);
+		ZBerryPermGroup group = GetEditableGroup();
 		if (!group) return;
 
 		if (!m_ConfirmDelete) {
@@ -280,14 +325,20 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		m_DeleteGroupButton.SetText("Delete");
 	}
 
-	//none -> first group -> ... -> last group -> none
+	//none -> first group -> ... -> last group -> none, only through groups the editor may assign
 	protected void CycleSelectedGroup() {
 		if (m_SelectedId == "") return;
 
-		TStringArray options = {""};
-		foreach (ZBerryPermGroup group : m_Snapshot.Groups) options.Insert(group.Name);
-
 		ZBerryAdminEntry admin = m_Snapshot.FindAdmin(m_SelectedId);
+		if (!CanEditAdmin(admin)) {
+			ZBerryUIUtils.Message("Your group can't change admins of group " + admin.Group);
+			return;
+		}
+
+		TStringArray options = {""};
+		foreach (ZBerryPermGroup group : m_Snapshot.Groups) {
+			if (CanEdit(group)) options.Insert(group.Name);
+		}
 		string current = "";
 		if (admin) current = admin.Group;
 
@@ -322,6 +373,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			RefreshGroups();
 			RefreshPerms();
 			RefreshSpawnRules();
+			RefreshLevel();
 			return true;
 		}
 		if (w == m_GroupButton) {
@@ -359,11 +411,28 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		if (!m_Snapshot) return false;
 
 		if (w == m_SpawnRulesInput) {
-			ZBerryPermGroup group = m_Snapshot.FindGroup(m_EditGroup);
+			ZBerryPermGroup group = GetEditableGroup();
 			if (group) {
 				group.SpawnAllowed = ZBerryPermissions.SplitList(m_SpawnRulesInput.GetText());
 				MarkDirty();
+			} else {
+				RefreshSpawnRules();
 			}
+			return true;
+		}
+		if (w == m_LevelInput) {
+			ZBerryPermGroup levelGroup = GetEditableGroup();
+			if (!levelGroup) {
+				RefreshLevel();
+				return true;
+			}
+
+			int maxLevel = ZBerryPermGroup.SUPERADMIN_LEVEL;
+			if (m_Snapshot.EditorLevel < ZBerryPermGroup.SUPERADMIN_LEVEL) maxLevel = m_Snapshot.EditorLevel - 1;
+			levelGroup.Level = Math.Clamp(m_LevelInput.GetText().ToInt(), 0, maxLevel);
+			if (finished) RefreshLevel();
+			MarkDirty();
+			RefreshGroups();
 			return true;
 		}
 		if (w == m_PermInput && finished) {
@@ -378,7 +447,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	}
 
 	override bool OnMouseEnter(Widget w, int x, int y) {
-		if (w == m_SpawnRulesInput || w == m_PermInput || w == m_GroupNameInput) {
+		if (w == m_SpawnRulesInput || w == m_PermInput || w == m_GroupNameInput || w == m_LevelInput) {
 			++m_MouseOnInputs;
 			return true;
 		}
@@ -386,7 +455,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	}
 
 	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y) {
-		if (w == m_SpawnRulesInput || w == m_PermInput || w == m_GroupNameInput) {
+		if (w == m_SpawnRulesInput || w == m_PermInput || w == m_GroupNameInput || w == m_LevelInput) {
 			m_MouseOnInputs = Math.Max(0, m_MouseOnInputs - 1);
 			return true;
 		}
