@@ -147,7 +147,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void Update(float timeslice) {
 		if (m_ActiveTab) m_ActiveTab.Update(timeslice);
-		m_PlayersPanel.Update(timeslice);
+		m_PlayersPanel.Update(timeslice, m_ActiveTab == m_MapTab);
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {

@@ -9,10 +9,12 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
 	protected ref ZBerryScaledList m_PlayersLists;
 	static const float PLAYERS_REFRESH_INTERVAL = 5; //Seconds
+	static const float MAP_REFRESH_INTERVAL = 2; //While the map shows player markers
 	static const float BANS_REFRESH_INTERVAL = 30; //Keeps "time left" current
 
 	protected TextWidget m_PlyInfo; //Health and blood, ban or admin details of the selected row
-	protected float m_RefreshTimer = 0;
+	protected float m_PlayersTimer = 0;
+	protected float m_BansTimer = 0;
 	protected float m_LaidOutHeight = -1;
 	protected bool m_LaidOutWithButtons;
 	protected ButtonWidget m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
@@ -206,18 +208,27 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		return "";
 	}
 
-	//Called by the menu every frame while it's open. Permissions mode has no timer: the tab reloads it on open and after saving
-	void Update(float tDelta) {
+	//Called by the menu every frame while it's open: the one place the player list (also the map's markers) and the ban list
+	//are refreshed. Permissions mode has no timer: the tab reloads it on open and after saving
+	void Update(float tDelta, bool mapShown) {
 		LayoutRows();
-		if (m_PermsMode) return;
 
-		m_RefreshTimer += tDelta;
-		if (m_BansMode && m_RefreshTimer >= BANS_REFRESH_INTERVAL) {
-			m_RefreshTimer = 0;
-			RequestBans();
-		} else if (!m_BansMode && m_RefreshTimer >= PLAYERS_REFRESH_INTERVAL) {
-			m_RefreshTimer = 0;
+		float playersInterval = PLAYERS_REFRESH_INTERVAL;
+		if (mapShown) playersInterval = MAP_REFRESH_INTERVAL;
+		bool listShown = !m_PermsMode && !m_BansMode;
+
+		m_PlayersTimer += tDelta;
+		if ((mapShown || listShown) && m_PlayersTimer >= playersInterval) {
+			m_PlayersTimer = 0;
 			RequestSync();
+		}
+
+		if (!m_BansMode) return;
+
+		m_BansTimer += tDelta;
+		if (m_BansTimer >= BANS_REFRESH_INTERVAL) {
+			m_BansTimer = 0;
+			RequestBans();
 		}
 	}
 
