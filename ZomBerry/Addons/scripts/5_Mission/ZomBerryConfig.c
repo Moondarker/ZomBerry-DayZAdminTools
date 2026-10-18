@@ -97,17 +97,22 @@ class ZomberryConfig {
 		ConfigureMain();
 	}
 
-	private void ConfigureMain() {
-		ref ZBerryJsonConfig newConfigData;
+	//Spawn tab filter buttons when the config has none
+	static ZBerryJsonSpawnMenuGroupArray DefaultSpawnGroups() {
+		ZBerryJsonSpawnMenuGroupArray groups = new ZBerryJsonSpawnMenuGroupArray;
+		groups.Insert(new ZBerryJsonSpawnMenuGroup("Items", "Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"));
+		groups.Insert(new ZBerryJsonSpawnMenuGroup("Objects", "Transport,House"));
+		groups.Insert(new ZBerryJsonSpawnMenuGroup("AI", "DZ_LightAI"));
+		return groups;
+	}
 
-		JsonFileLoader<ZBerryJsonConfig>.JsonLoadFile(cfgPath + "ZomBerryConfig.json", newConfigData);
-		if (!newConfigData) {
-			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Unable to find config file, will continue with default settings (debug disabled, separate log files)" );
-			m_spawnMenuGroups = {
-				new ZBerryJsonSpawnMenuGroup("Items","Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"),
-				new ZBerryJsonSpawnMenuGroup("Objects","Transport,House"),
-				new ZBerryJsonSpawnMenuGroup("AI","DZ_LightAI"),
-			};
+	private void ConfigureMain() {
+		ZBerryJsonConfig newConfigData;
+		string loadError;
+
+		if (!JsonFileLoader<ZBerryJsonConfig>.LoadFile(cfgPath + "ZomBerryConfig.json", newConfigData, loadError) || !newConfigData) {
+			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Can't read ZomBerryConfig.json, will continue with default settings (debug disabled, separate log files): " + loadError );
+			m_spawnMenuGroups = DefaultSpawnGroups();
 			return;
 		}
 
@@ -119,6 +124,10 @@ class ZomberryConfig {
 
 		if (GetGame().IsClient() || !GetGame().IsMultiplayer()) {
 			m_spawnMenuGroups = newConfigData.SpawnMenuSorting;
+			if (!m_spawnMenuGroups || m_spawnMenuGroups.Count() == 0) {
+				ZomberryBase.Log( "ZomBerryConfig", "WARN: ZomBerryConfig.json has no SpawnMenuSorting, using the default spawn menu groups" );
+				m_spawnMenuGroups = DefaultSpawnGroups();
+			}
 		}
 	}
 
@@ -146,13 +155,12 @@ class ZomberryConfig {
 
 			newConfigData.DebugLevel = zbryDebug;
 			newConfigData.UseScriptLog = false;
-			newConfigData.SpawnMenuSorting = {
-												new ZBerryJsonSpawnMenuGroup("Items","Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base"),
-												new ZBerryJsonSpawnMenuGroup("Objects","Transport,House"),
-												new ZBerryJsonSpawnMenuGroup("AI","DZ_LightAI"),
-											 };
+			newConfigData.SpawnMenuSorting = DefaultSpawnGroups();
 
-			JsonFileLoader<ZBerryJsonConfig>.JsonSaveFile(cfgPath + "ZomBerryConfig.json", newConfigData);
+			string saveError;
+			if (!JsonFileLoader<ZBerryJsonConfig>.SaveFile(cfgPath + "ZomBerryConfig.json", newConfigData, saveError)) {
+				ZomberryBase.Log( "ZomBerryConfig", "ERROR: Can't create ZomBerryConfig.json: " + saveError );
+			}
 		}
 
 		if (!FileExist(dPath + "ZomBerryKeybinds.bin") && GetGame().IsClient()) {
