@@ -19,38 +19,88 @@ ZomBerry is a client **and** server mod. Admins need it loaded on their game, an
 1. **Load the mod on both sides.** Copy the mod folder to the server and to the client (or subscribe on the workshop), then add it to `-mod=` on both, for example `-mod=@ZomBerry`.
 2. **Accept the signature on the server.** Copy `Keys/Vaker.bikey` into the server's `keys` folder.
 3. **Start the server with a profile folder.** Use `-profiles=<folder>`; ZomBerry keeps its configuration and logs in `<profiles>/ZomBerry/`.
-4. **Add your admins.** Put one ID per line in `<profiles>/ZomBerry/admins.cfg`, see [Admins](#admins).
-5. **Open the menu in-game with `O`.**
+4. **Become the first admin.** Start the server, take the setup token from its log, join, press `O` and enter it. See [First start](#first-start).
+5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab.
 
 Client and server must run the same major and minor version (for example 0.7.x on both). Otherwise the client refuses to open the menu and says why in chat.
 
 ## Configuration
 
-### Admins
+### Admins and permissions
 
-`admins.cfg` is a plain text file with one ID per line. Both formats work:
-- **Steam64 ID**, for example `76561198000000000`.
-- **BattlEye GUID**, the hashed ID shown in the server's logs.
+Admin rights are permission groups stored in `<profiles>/ZomBerry/ZomBerryPermissions.json`. They can be edited in that file, or in-game on the **Permissions** tab.
 
-The server looks for it in this order and uses the first one it finds:
+#### First start
 
-1. `<profiles>/ZomBerry/admins.cfg` (recommended)
-2. `admins.cfg` in the server root folder
-3. `ZomBerry/Config/admins.cfg` inside the mod folder
+With no admins configured, the server prints a **setup token** like `ABCD-EFGH-JKLM` to its script log and to `<profiles>/ZomBerry/ZomBerry_<date>.log`. Join the server and press `O`. A dialog asks for the token, and the first player to enter it becomes a `superadmin`.
+- **Attempts:** each player has 5 tries, and every attempt is logged.
+- **After use:** the token stops working once it has been used.
 
-If none exists on first start, ZomBerry creates one in `<profiles>/ZomBerry/`. Check its contents and replace them with your own IDs.
+#### Groups
 
-### Installation mode
+Each admin belongs to one group, and each group has permission patterns and spawn rules:
 
-If you can't get admin rights working, start the server once with `-zbryInstallMode=true`. Every connecting player then gets a reduced menu with guided steps:
-- list the admins ZomBerry found,
-- check where `admins.cfg` is,
-- create it in the right place,
-- add **your** ID to it.
+```json
+{
+    "Groups": [
+        { "Name": "superadmin", "Permissions": ["*"], "SpawnAllowed": ["*"] },
+        { "Name": "moderator",
+          "Permissions": ["zomberry.players.list", "zomberry.map.*", "zomberry.functions.TPToTarget", "zomberry.functions.HealTarget"],
+          "SpawnAllowed": [] }
+    ],
+    "Admins": [
+        { "Id": "76561198000000000", "Name": "Somebody", "Group": "superadmin" }
+    ]
+}
+```
 
-The player list and spawning are disabled while installation mode is on. Remove the launch option afterwards.
+- **`Id`:** the player's Steam64 ID. A BattlEye GUID works too.
+- **`Name`:** only for display. ZomBerry updates it when the admin joins.
 
-For a local test server only, `-zbryGiveAdminRightsToEveryone=true` makes every player an admin.
+#### Permissions
+
+| Permission | Allows |
+|---|---|
+| `zomberry.players.list` | The player list, with health and blood |
+| `zomberry.map.view` | The Map tab |
+| `zomberry.map.player_markers` | Player markers on the map |
+| `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
+| `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
+| `zomberry.spawn.inventory` | Spawning into your inventory |
+| `zomberry.permissions.manage` | The Permissions tab |
+| `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
+
+How patterns match:
+- **Wildcards:** `*` and `?` work anywhere. `zomberry.map.*` grants every map permission, and `*` alone grants everything.
+- **Denying:** a leading `-` denies, and a deny always wins. `["*", "-zomberry.permissions.*"]` grants everything except managing permissions.
+- **Opening the menu:** any member of a group can open it. The Functions tab only lists the functions that admin may run, and tabs without the matching permission are hidden. The server checks every request again, so a modified client gains nothing.
+
+#### Spawn rules
+
+`SpawnAllowed` decides which classes a group may spawn. A rule can be:
+- **A class name** (`AKM`).
+- **A base class** (`Weapon_Base`): every class inheriting from it matches.
+- **A wildcard** (`Mag_*`).
+- **A deny** (`-Mag_STANAG*`), which always wins.
+
+The Spawn tab only lists the classes the admin may spawn.
+
+#### In-game editor
+
+The **Permissions** tab needs `zomberry.permissions.manage`. While it's open:
+- **The left panel** lists online players plus offline admins.
+- **Assigning a group:** double-click an entry, then press the **Group** button to cycle through the groups or "none".
+- **Editing a group:** pick it on the left. Double-click a permission to switch it between allowed `[x]`, denied `[-]` and unset `[ ]`; `(x)` means a wildcard already grants it.
+  - **Your own patterns:** add them, such as `zomberry.functions.TP*`, with the field below the list.
+  - **Spawn rules:** go in the bottom field, comma-separated.
+- **Groups:** create or delete them with the buttons below the groups list.
+- **Saving:** press **Save** in the header. Nothing changes on the server before that. The server refuses changes that would leave no admin able to manage permissions.
+
+#### Upgrading from admins.cfg
+
+On the first start of 0.7.0, the IDs in an existing `admins.cfg` (in `<profiles>/ZomBerry/` or the server root) are imported into a `superadmin` group. After that, `admins.cfg` isn't used. Earlier versions wrote one example ID into new `admins.cfg` files by themselves; that ID is skipped.
+
+For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every player `*`.
 
 ### ZomBerryConfig.json
 
@@ -66,8 +116,7 @@ Created with default values on first start:
         { "CategoryName": "Items", "BaseClassNames": "Edible_Base,Weapon_Base,Magazine_Base,Clothing_Base" },
         { "CategoryName": "Objects", "BaseClassNames": "Transport,House" },
         { "CategoryName": "AI", "BaseClassNames": "DZ_LightAI" }
-    ],
-    "PermissionGroups": []
+    ]
 }
 ```
 
@@ -76,7 +125,6 @@ Created with default values on first start:
 | `DebugLevel` | `0` normal, `1` adds frequent events (like the player list sync), `2` also dumps the whole function list and vehicle repair details |
 | `UseScriptLog` | `0` writes ZomBerry's own log files to `<profiles>/ZomBerry/`, `1` writes to the game's script log instead |
 | `SpawnMenuSorting` | Client side: the filter buttons of the Spawn tab, up to three. Each one lists the classes inheriting from any of its comma-separated `BaseClassNames` |
-| `PermissionGroups` | Reserved for the upcoming permissions system, currently unused |
 
 ### Keybinds
 
@@ -131,11 +179,17 @@ Players appear as markers, green for admins and blue for everyone else. They upd
 
 The cursor's coordinates are shown below the map.
 
+### Permissions
+
+Admins with `zomberry.permissions.manage` get this tab, which edits groups, permissions and spawn rules. See [In-game editor](#in-game-editor).
+
 ## Troubleshooting
 
 - **The menu doesn't open:**
-  - Check that both client and server load ZomBerry, and that your ID is in `admins.cfg`.
-  - The server log shows "Auth respond to admin <name>" for admins. A message in chat when you press `O` tells you about a version mismatch or a broken `admins.cfg`.
+  - Check that both client and server load ZomBerry, and that your ID is in a group in `ZomBerryPermissions.json`.
+  - The server log shows "Auth respond to admin <name>" for admins. A chat message when you press `O` tells you about a version mismatch.
+  - If `ZomBerryPermissions.json` can't be read (broken JSON), the server says so in its ZomBerry log and nobody is an admin until it's fixed. ZomBerry never overwrites a broken file.
+- **A tab or function is missing:** the admin's group lacks the permission for it.
 - **Logs:**
   - **Server:** `<profiles>/ZomBerry/ZomBerry_<date>.log`, and the server's script log.
   - **Client:** `ZomBerry/` in the game's profile folder (`%LocalAppData%/DayZ` by default).
@@ -203,7 +257,7 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 |---|---|
 | `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
 | `4_World/` | God mode on `PlayerBase`, and the free and spectator cameras |
-| `5_Mission/core/` | Server side: auth and admin list, request handlers, installation mode, spawning, version and build info |
+| `5_Mission/core/` | Permissions (matching, groups, JSON), server and client auth, request handlers, spawning, version and build info |
 | `5_Mission/ui/` | Admin menu components, one class per tab or panel |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
 | `5_Mission/*.c` | Mission hooks, command API, stock functions, config, logger, keybinds |
@@ -216,11 +270,12 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 
 ## Planned features
 
-- A permissions system (per-admin access to functions)
 - Keybinds for functions with parameters
 - New functions in the default kit
 
 Done in 0.7.0:
+- Permission groups with fine-grained, wildcard permissions and spawn rules, editable in JSON and in-game
+- A setup token for the first admin, replacing installation mode and manual file editing
 - No dependencies: ZomBerry's own RPC layer replaces Community Framework
 - The admin menu was rebuilt from self-contained UI components, and the map updates live
 - Server-side checks on every admin request, and more robust stock functions
