@@ -158,7 +158,7 @@ GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 - `instance`: the object that has the method. Keep it alive for as long as the command exists.
 - `categoryName`: an existing category.
 - `targetRequired`: if `true`, the admin must select a player first. If `false`, the admin is the target when nobody is selected.
-- `functionParams`: up to 3 integer parameters, shown as sliders with an exact-value box.
+- `functionParams`: up to 3 integer parameters, shown as sliders with an exact-value box. A parameter can name its values: the box then shows the name, and admins can type either a name or a number. With as many names as values, each value gets its own name. With fewer names, the range is split evenly between them. The function still receives the number.
 
 ```c
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);
@@ -166,6 +166,10 @@ GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMo
 GetZomberryCmdAPI().AddCommand("Set time", "MyModSetTime", this, "MyMod", false, {
 	new ZBerryFuncParam("Hour", {0, 23, 12,}),   //Name, {min, max, default}
 	new ZBerryFuncParam("Minute", {0, 59, 0,}),
+});
+
+GetZomberryCmdAPI().AddCommand("Toggle lights", "MyModLights", this, "MyMod", false, {
+	new ZBerryFuncParam("Lights", {0, 1, 1,}, {"Off", "On"}),   //Optional value names
 });
 ```
 
@@ -214,7 +218,6 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 
 - A permissions system (per-admin access to functions)
 - Keybinds for functions with parameters
-- Named values for function parameters
 - New functions in the default kit
 
 Done in 0.7.0:
@@ -222,6 +225,7 @@ Done in 0.7.0:
 - The admin menu was rebuilt from self-contained UI components, and the map updates live
 - Server-side checks on every admin request, and more robust stock functions
 - Inventory spawning loads magazines into the weapon in hands and explains when an item doesn't fit
+- Function parameters can have named values (Partial heal shows No/Yes, Set date shows month names)
 
 Earlier:
 - The commands list is completely server-side, so it can be extended from missions and server-side mods

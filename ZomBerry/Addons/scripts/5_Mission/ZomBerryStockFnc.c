@@ -16,9 +16,9 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Partial heal", "HealTargetPart", this, "OnTarget", false, {
-			new ZBerryFuncParam("Heal diseases", {0, 1, 1,}),
-			new ZBerryFuncParam("Heal wounds", {0, 1, 1,}),
-			new ZBerryFuncParam("Feed", {0, 1, 1,}),
+			new ZBerryFuncParam("Heal diseases", {0, 1, 1,}, {"No", "Yes"}),
+			new ZBerryFuncParam("Heal wounds", {0, 1, 1,}, {"No", "Yes"}),
+			new ZBerryFuncParam("Feed", {0, 1, 1,}, {"No", "Yes"}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
@@ -52,7 +52,7 @@ class ZomberryStockFunctions {
 		});
 		m_ZomberryCmdAPI.AddCommand("Set date", "SetDate", this, "OnServer", false, {
 			new ZBerryFuncParam("Day", {1, 30, 1,}),
-			new ZBerryFuncParam("Month", {1, 12, 1,}),
+			new ZBerryFuncParam("Month", {1, 12, 1,}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}),
 			new ZBerryFuncParam("Year", {1970, 2119, 2019,}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Set weather", "SetWeather", this, "OnServer", false, {

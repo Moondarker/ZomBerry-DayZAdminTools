@@ -43,7 +43,7 @@ class ZBerryCategoryArray: array<ref ZBerryCategory> {
 class ZBerryFuncParamArray: array<ref ZBerryFuncParam> {
 	void Clone(ZBerryFuncParamArray original) {
 		for (int idx = 0; idx < original.Count(); ++idx) {
-			Insert(new ZBerryFuncParam(original.Get(idx).name, original.Get(idx).values));
+			Insert(new ZBerryFuncParam(original.Get(idx).name, original.Get(idx).values, original.Get(idx).valueNames));
 		}
 	}
 
@@ -195,18 +195,65 @@ class ZBerryFunction {
 	}
 }
 
+//A function parameter: an integer in [min, max]. Optional value names are shown instead of the number,
+//the range is split evenly between them (one name per value when there are as many names as values)
 class ZBerryFuncParam {
 	string name;
-	ref TIntArray values;
+	ref TIntArray values; //min, max, default
+	ref TStringArray valueNames; //Empty when the parameter has no named values
 
-	void ZBerryFuncParam( string pName, TIntArray pValues ) {
+	void ZBerryFuncParam( string pName, TIntArray pValues, TStringArray pValueNames = NULL ) {
 		name = pName;
 		values = new TIntArray;
 		values.InsertAll(pValues);
+		valueNames = new TStringArray;
+		if (pValueNames) valueNames.InsertAll(pValueNames);
+	}
+
+	bool HasValueNames() {
+		return valueNames.Count() > 0;
+	}
+
+	//Name covering this value, "" without names. Typed locals and Floor/Ceil on purpose:
+	//Enforce doesn't do plain integer math on mixed array/method operands
+	string GetValueName(int value) {
+		float minValue = values.Get(0);
+		float maxValue = values.Get(1);
+		float range = maxValue - minValue + 1;
+		float nameCount = Math.Min(valueNames.Count(), range); //Names beyond one per value are never reached
+		if (nameCount <= 0) return "";
+
+		float offset = Math.Clamp(value, minValue, maxValue) - minValue;
+		int index = Math.Floor(offset * nameCount / range);
+		return valueNames.Get(Math.Min(index, nameCount - 1));
+	}
+
+	//First value covered by this name (case-insensitive), false when there's no such name
+	bool FindNameValue(string valueName, out int value) {
+		float minValue = values.Get(0);
+		float maxValue = values.Get(1);
+		float range = maxValue - minValue + 1;
+		float nameCount = Math.Min(valueNames.Count(), range);
+
+		valueName.ToLower();
+		for (int index = 0; index < nameCount; ++index) {
+			string candidate = valueNames.Get(index);
+			candidate.ToLower();
+			if (candidate != valueName) continue;
+
+			float firstOffset = Math.Ceil(index * range / nameCount);
+			value = minValue + firstOffset;
+			return true;
+		}
+
+		return false;
 	}
 
 	string Debug() {
-		return "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString();
+		string result = "\"" + name + "\" - min: " + values[0].ToString() + ", max: " + values[1].ToString() + ", default: " + values[2].ToString();
+		if (HasValueNames()) result += ", names: " + valueNames.Count();
+
+		return result;
 	}
 }
 

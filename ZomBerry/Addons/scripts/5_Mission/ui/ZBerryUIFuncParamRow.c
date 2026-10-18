@@ -1,8 +1,10 @@
-//One function parameter: label + slider + edit box, kept in sync and clamped to [min, max]
+//One function parameter: label + slider + edit box, kept in sync and clamped to [min, max].
+//With value names the box shows the name, typing either a name or a number works
 class ZBerryUIFuncParamRow extends ZBerryUIComponent {
 	protected TextWidget m_Name;
 	protected SliderWidget m_Slider;
 	protected EditBoxWidget m_ValueBox;
+	protected ZBerryFuncParam m_Param;
 
 	protected int m_Min = 0;
 	protected int m_Max = 1000;
@@ -17,6 +19,7 @@ class ZBerryUIFuncParamRow extends ZBerryUIComponent {
 	}
 
 	void Setup(ZBerryFuncParam param) {
+		m_Param = param;
 		m_Name.SetText(param.name);
 		m_Min = param.values.Get(0);
 		m_Max = param.values.Get(1);
@@ -40,7 +43,12 @@ class ZBerryUIFuncParamRow extends ZBerryUIComponent {
 			return true;
 		}
 		if (w == m_ValueBox) {
-			m_Value = Clamp(m_ValueBox.GetText().ToInt());
+			int namedValue;
+			if (m_Param && m_Param.FindNameValue(m_ValueBox.GetText(), namedValue)) {
+				m_Value = Clamp(namedValue);
+			} else {
+				m_Value = Clamp(m_ValueBox.GetText().ToInt());
+			}
 			UpdateSlider(); //Box itself is corrected on mouse leave, to not fight with typing
 			return true;
 		}
@@ -70,6 +78,13 @@ class ZBerryUIFuncParamRow extends ZBerryUIComponent {
 	}
 
 	protected void UpdateBox() {
-		m_ValueBox.SetText(m_Value.ToString());
+		string valueName;
+		if (m_Param) valueName = m_Param.GetValueName(m_Value);
+
+		if (valueName != "") {
+			m_ValueBox.SetText(valueName);
+		} else {
+			m_ValueBox.SetText(m_Value.ToString());
+		}
 	}
 };
