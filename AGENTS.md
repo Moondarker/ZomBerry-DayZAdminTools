@@ -15,9 +15,9 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 | Path | Contents |
 |---|---|
 | `config.cpp` | CfgPatches/CfgMods: script modules, inputs, the mod version |
-| `Common/` | `#define ZOMBERRY_AT`, visible to every module |
+| `Common/` | `#define ZOMBERRY_AT`, visible to every module. Other mods use it to check whether ZomBerry is loaded |
 | `3_Game/ZBerryRPC.c` | Own RPC layer: one engine RPC ID (`74635`), every message starts with an opcode (`ZBerryRPCOp`) |
-| `4_World/` | `PlayerBase` god mode, FreeCam and spectator cameras |
+| `4_World/` | `PlayerBase` god mode (`ZBIsGod`/`ZBSetGod`, used by other mods), FreeCam and spectator cameras |
 | `5_Mission/ZomBerry.c` | `ZomberryBase`, the `MissionServer`/`MissionGameplay` hooks, menu and dialog opening |
 | `5_Mission/core/` | Server auth and permissions (`ZBerryAuth`, `ZBerryPermissions`), client auth (`ZBerryClientAuth`), request handlers (`ZBerryServerRPC`), bans, spawning, version and build info, the Permissions API |
 | `5_Mission/ui/` | Admin menu components: one class per tab, panel or dialog |
@@ -41,7 +41,9 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - Load JSON with `JsonFileLoader<T>.LoadFile(path, data, error)` and log `error`.
   - On failure, keep running with safe defaults, but don't save over the file.
   - Don't use the deprecated `JsonLoadFile`/`JsonSaveFile`: they give no reason.
-- **Keep public APIs stable.** Other mods and missions use `GetZomberryCmdAPI()`, `GetZomberryPermAPI()`, `ZBGetPlayerById()` and `ZomberryStockFunctions.MessagePlayer()`.
+- **Keep public APIs stable.** Other mods and missions use:
+  - `GetZomberryCmdAPI()`, `GetZomberryPermAPI()`, `ZBGetPlayerById()` and `ZomberryStockFunctions.MessagePlayer()`;
+  - `#define ZOMBERRY_AT` with `PlayerBase.ZBIsGod()` and `ZBSetGod()`, so mods that switch damage themselves (safe zones) can leave god mode alone. God mode has to stay a server-side flag on `PlayerBase` that goes together with `SetAllowDamage`.
 - **Log through `ZomberryBase.Log(module, text)`**, with a `ZomBerry<Area>` module name and an `INFO:`, `WARN:` or `ERROR:` prefix. Log every admin action on the server with the admin's name and ID. Chatty events go through `ZomberryBase.DebugLog(level, ...)`.
 
 ## Enforce Script pitfalls
