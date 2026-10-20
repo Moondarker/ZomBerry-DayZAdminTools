@@ -51,7 +51,11 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 - **Keep public APIs stable.** Other mods and missions use:
   - `GetZomberryCmdAPI()`, `GetZomberryPermAPI()`, `ZBGetPlayerById()` and `ZomberryStockFunctions.MessagePlayer()`;
   - `#define ZOMBERRY_AT` with `PlayerBase.ZBIsGod()` and `ZBSetGod()`, so mods that switch damage themselves (safe zones) can leave god mode alone. God mode has to stay a server-side flag on `PlayerBase` that goes together with `SetAllowDamage`.
-- **Log through `ZomberryBase.Log(module, text)`**, with a `ZomBerry<Area>` module name and an `INFO:`, `WARN:` or `ERROR:` prefix. Log every admin action on the server with the admin's name and ID. Chatty events go through `ZomberryBase.DebugLog(level, ...)`.
+  - **Public means exactly these.** That's the APIs listed here, plus the client-feature methods of the command API, all documented in the README's "For developers" section.
+    - Keep them backwards compatible: add methods and append optional parameters, but don't remove or change existing ones.
+    - Everything else (UI components, keybinds, config, RPC opcodes and handlers) is internal and may change freely.
+- **Log players as `ZBDescribePlayer(identity)`**, "Name (Steam64 id)", so every log line can be matched by the same id. Use `GetId()` (the BattlEye GUID) only for matching legacy GUID entries, never in logs.
+- **Log through `ZomberryBase.Log(module, text)`**, with a `ZomBerry<Area>` module name and an `INFO:`, `WARN:` or `ERROR:` prefix. Log every admin action on the server with the admin, and with the target if there is one. Chatty events go through `ZomberryBase.DebugLog(level, ...)`.
 
 ## Enforce Script pitfalls
 

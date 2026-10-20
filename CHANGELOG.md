@@ -38,6 +38,7 @@
   - **Positions, headings, and the selected player's health** go out as about 12 bytes per player. After the first update only changes are sent, plus a full update every 10 seconds.
   - **Map markers** are only resent when their category changed.
   - **Before**, every open menu fetched the whole player list every 2–5 seconds, and every map marker every 10 seconds.
+- **Every log line names players the same way**, "Name (Steam64 id)". Function, spawn, teleport, kick and ban lines used the BattlEye GUID before. Offline bans by GUID still log the GUID, the only ID they have.
 - **Function and spawn requests** no longer carry the admin's ID, which the server ignored anyway (#52).
 
 - **The log says what a permission change changed:** one line per change.
