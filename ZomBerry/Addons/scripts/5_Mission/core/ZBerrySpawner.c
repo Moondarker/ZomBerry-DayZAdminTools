@@ -34,10 +34,10 @@ class ZBerrySpawner {
 		return "spawned " + className + " at " + position;
 	}
 
-	//"their" for the admin's own, "Name (Steam64)'s" for someone else's, for log lines
+	//"their" for the admin's own, "{target}'s" for someone else's (the log event fills the player in)
 	protected static string DescribeOwner(PlayerBase recipient, PlayerBase admin) {
 		if (recipient == admin) return "their";
-		return ZBDescribePlayer(recipient.GetIdentity()) + "'s";
+		return "{target}'s";
 	}
 
 	//The name players see, from whichever config has the class; the class name when there's none

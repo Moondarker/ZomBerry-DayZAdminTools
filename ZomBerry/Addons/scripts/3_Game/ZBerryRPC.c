@@ -28,8 +28,8 @@ enum ZBerryRPCOp {
 	Markers = 25, //Server -> client: the map markers of one category, when they changed
 	ClientFeature = 26, //Server -> client: switch a client-side feature (name, on/off, arguments)
 	CameraMode = 27, //Client -> server: a watched player's 1st/3rd person mode (ZBerrySpectate)
-	LogRequest = 28, //Client -> server: kind mask, search text (ZBerryActivityLog)
-	LogData = 29 //Server -> client: matching log entries, newest first
+	LogEvents = 28, //Server -> client: start over, a batch of log events (ZBerryEventLog)
+	LogDamage = 29 //Server -> client: start over, new player and weapon names, a batch of damage records
 }
 
 //Which side received the call

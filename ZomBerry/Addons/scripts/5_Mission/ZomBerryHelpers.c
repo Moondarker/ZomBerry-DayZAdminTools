@@ -132,9 +132,11 @@ class ZBerryFunction {
 	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
 	protected bool m_Harmful; //Hurts or moves the target: groups can protect their members from it (zomberry.protect.*.harm)
+	protected bool m_ServerWide; //Acts on the world rather than on a player (time, weather, cleanup), for the log
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false ) {
 		m_Harmful = harmful;
+		m_ServerWide = serverWide;
 		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
@@ -175,6 +177,25 @@ class ZBerryFunction {
 
 	bool IsHarmful() {
 		return m_Harmful;
+	}
+
+	bool IsServerWide() {
+		return m_ServerWide;
+	}
+
+	//"Set weather (Fog: 0, Overcast: 80, Rain: 100)", named values by name, for the log
+	string DescribeCall(TIntArray values) {
+		if (m_Parameters.Count() == 0 || !values) return m_DisplayName;
+
+		string text = m_DisplayName + " (";
+		for (int i = 0; i < m_Parameters.Count() && i < values.Count(); ++i) {
+			if (i > 0) text += ", ";
+			ZBerryFuncParam param = m_Parameters[i];
+			string valueName = param.GetValueName(values[i]);
+			if (valueName == "") valueName = values[i].ToString();
+			text += param.name + ": " + valueName;
+		}
+		return text + ")";
 	}
 
 	ref ZBerryFuncParamArray GetParams() {

@@ -153,9 +153,10 @@ modded class BaseBuildingBase {
 	}
 };
 
-//Player deaths for whoever listens (the admin log): (PlayerBase victim, Object killer)
-class ZBerryKillFeed {
-	static ref ScriptInvoker OnPlayerKilled = new ScriptInvoker();
+//Player deaths and hits for whoever listens (the admin log), server side
+class ZBerryPlayerFeed {
+	static ref ScriptInvoker OnPlayerKilled = new ScriptInvoker(); //(PlayerBase victim, Object killer)
+	static ref ScriptInvoker OnPlayerHit = new ScriptInvoker(); //(PlayerBase victim, PlayerBase attacker, EntityAI source, float damage): player hits only
 };
 
 //Living players until they die, then bodies until they're gone
@@ -167,9 +168,17 @@ modded class PlayerBase {
 
 	override void EEKilled(Object killer) {
 		super.EEKilled(killer);
-		if (GetGame().IsServer()) ZBerryKillFeed.OnPlayerKilled.Invoke(this, killer);
+		if (GetGame().IsServer()) ZBerryPlayerFeed.OnPlayerKilled.Invoke(this, killer);
 		ZBerryEntityRegistry.Unregister(ZBerryEntityCategory.PLAYERS, this);
 		ZBerryEntityRegistry.Register(ZBerryEntityCategory.BODIES, this);
+	}
+
+	override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef) {
+		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
+		if (!GetGame().IsServer() || !source || !damageResult) return;
+
+		PlayerBase attacker = PlayerBase.Cast(source.GetHierarchyRootPlayer());
+		if (attacker && attacker != this) ZBerryPlayerFeed.OnPlayerHit.Invoke(this, attacker, source, damageResult.GetDamage("", "Health"));
 	}
 
 	override void EEDelete(EntityAI parent) {

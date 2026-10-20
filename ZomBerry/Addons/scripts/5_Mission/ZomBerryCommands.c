@@ -16,7 +16,8 @@ class ZomberryCmdAPI {
 
 	//harmful: the function hurts, moves or otherwise works against its target. Groups can protect their members
 	//from harmful functions run by lower-ranked or same-level admins (zomberry.protect.lower.harm, zomberry.protect.same.harm)
-	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false) {
+	//serverWide: it acts on the world rather than on a player (time, weather, cleanup), so the log files it that way
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false) {
 		if (m_oCategoryList.Contains(catName)) {
 			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
 				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Adding " + funcName + ", but function with same name already exists.");
@@ -27,7 +28,7 @@ class ZomberryCmdAPI {
 			ZBerryFuncParamArray params = funcParams; //Local keeps the new empty array alive, arguments are weak references
 			if (!params) params = new ZBerryFuncParamArray;
 
-			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful);
+			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful, serverWide);
 			++m_lastFuncId;
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);

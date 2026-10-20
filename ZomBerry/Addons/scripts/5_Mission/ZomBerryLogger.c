@@ -1,5 +1,6 @@
-//The one way ZomBerry logs (through ZomberryBase.Log): each line goes to ZomBerry's log file (or the script log), and on
-//the server, lines of the modules below also go to the in-game admin log (ZBerryActivityLog), which keeps them searchable
+//ZomBerry's log file (or the script log). Plain lines come through ZomberryBase.Log; events (admin actions, kicks, bans,
+//kills, refusals) through ZomberryBase.LogEvent, which writes them here with these modules and keeps them in the
+//in-game log (ZBerryEventLog) too
 class ZomberryLogger {
 	static const string MODULE_ADMIN = "ZomBerryAdmin"; //Admin actions
 	static const string MODULE_BANS = "ZomBerryBans"; //Kicks, bans, refused joins
@@ -11,7 +12,6 @@ class ZomberryLogger {
 
 	void Log(string module, string txt) {
 		Write(module, txt);
-		if (GetGame() && GetGame().IsServer()) GetZBerryActivityLog().Record(module, txt);
 	}
 
 	//The file, or the script log when there's none (or it can't be written)

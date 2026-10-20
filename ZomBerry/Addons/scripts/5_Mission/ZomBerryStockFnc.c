@@ -52,29 +52,29 @@ class ZomberryStockFunctions {
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
 		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false, NULL, false, true);
 		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, "OnServer", false, {
 			new ZBerryFuncParam("Hour", {0, 23, 12,}),
 			new ZBerryFuncParam("Minute", {0, 59, 0,}),
-		});
+		}, false, true);
 		m_ZomberryCmdAPI.AddCommand("Set date", "SetDate", this, "OnServer", false, {
 			new ZBerryFuncParam("Day", {1, 30, 1,}),
 			new ZBerryFuncParam("Month", {1, 12, 1,}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}),
 			new ZBerryFuncParam("Year", {1970, 2119, 2019,}),
-		});
+		}, false, true);
 		m_ZomberryCmdAPI.AddCommand("Set weather", "SetWeather", this, "OnServer", false, {
 			new ZBerryFuncParam("Fog", {0, 100, 0,}),
 			new ZBerryFuncParam("Overcast", {0, 100, 0,}),
 			new ZBerryFuncParam("Rain", {0, 100, 0,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
+		}, false, true);
+		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false, NULL, false, true);
 		m_ZomberryCmdAPI.AddCommand("Clean up around cursor", "CleanupArea", this, "OnServer", false, {
 			new ZBerryFuncParam("Radius (m)", {5, 200, 50,}),
 			new ZBerryFuncParam("What", {0, 3, 0,}, ZBerryWorldTools.GetCleanNames()),
-		});
-		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true);
+		}, false, true);
+		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, "OnServer", false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true, true);
 		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, "OnServer", false, {
 			new ZBerryFuncParam("Players", {0, 1, 1,}, {"Off", "On"}),
 			new ZBerryFuncParam("Vehicles", {0, 1, 0,}, {"Off", "On"}),

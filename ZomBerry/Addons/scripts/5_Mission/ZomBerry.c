@@ -26,7 +26,7 @@ class ZomberryBase {
 			m_Bans = new ZBerryBans;
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
 			m_Streams = new ZBerryStreamServer(m_Auth);
-			GetZBerryActivityLog().SetAuth(m_Auth);
+			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
 		}
@@ -60,8 +60,47 @@ class ZomberryBase {
 		return m_ZomberryKeybinds;
 	}
 
+	//A plain line for ZomBerry's log file. Admin actions, kicks, bans, kills and refusals go through LogEvent instead
 	static void Log( string module, string toLog ) {
 		GetLogger().Log( module, toLog );
+	}
+
+	/**
+	\brief Log an event: written to ZomBerry's log file (except logins and logouts) and kept in the in-game log
+		\param type \p int ZBerryEventType
+		\param actor \p PlayerIdentity who did it (NULL: nobody, or singleplayer)
+		\param target \p PlayerIdentity whom it was done to (NULL: nobody)
+		\param text \p string with {actor} and {target} where the players go, e.g. "{actor} kicked {target}: spam"
+		\param flags \p int ZBerryEventFlags
+	*/
+	static void LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0 ) {
+		string actorId, actorName, targetId, targetName;
+		DescribeIdentity(actor, actorId, actorName);
+		DescribeIdentity(target, targetId, targetName);
+		LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags);
+	}
+
+	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name
+	static void LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0 ) {
+		if (!GetGame() || !GetGame().IsServer()) return;
+
+		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags);
+		if (ZBerryEventType.IsInGameOnly(type)) return;
+
+		string line = logEvent.Format();
+		if (type == ZBerryEventType.REFUSED) line = "WARN: " + line;
+		GetLogger().Log( ZBerryEventType.GetModule(type), line );
+	}
+
+	protected static void DescribeIdentity(PlayerIdentity identity, out string id, out string name) {
+		id = "";
+		name = "";
+		if (!identity) {
+			if (!GetGame().IsMultiplayer()) name = "Singleplayer";
+			return;
+		}
+		id = identity.GetPlainId();
+		name = identity.GetName();
 	}
 
 	static void DebugLog( int dLvl, string module, string toLog ) {
@@ -127,19 +166,25 @@ modded class MissionServer {
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (!ban) return;
 
-		ZomberryBase.Log( "ZomBerryBans", "INFO: Banned player " + ZBDescribePlayer(identity) + " tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
+		ZomberryBase.LogEvent( ZBerryEventType.JOIN_REFUSED, NULL, identity, "Banned player {target} tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
 		GetGame().DisconnectPlayer(identity, identity.GetId());
 	}
 
 	//In case the engine still let the character in
 	override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity) {
 		super.InvokeOnConnect(player, identity);
+		GetZBerryEventLog().OnPlayerConnected(identity);
 
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (ban) m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
 
 		//Frozen players stay frozen across relogs; a moment later, so their client is ready for the feature
 		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);
+	}
+
+	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed) {
+		GetZBerryEventLog().OnPlayerDisconnected(identity); //Before super: the identity may be gone after it
+		super.OnClientDisconnectedEvent(identity, player, logoutTime, authFailed);
 	}
 
 	protected ZBerryBanEntry FindZBerryBan(PlayerIdentity identity) {
@@ -161,7 +206,7 @@ modded class MissionGameplay {
 		GetZBerryClientAuth();
 		GetZBerryStreams();
 		GetZBerryClientFeatures();
-		GetZBerryActivityLog();
+		GetZBerryEventLog();
 		m_ZBerryESP = new ZBerryESPOverlay;
 		GetZBerrySpectate(); //Registers its client features: spectating, and reporting the camera mode while watched
 

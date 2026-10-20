@@ -309,6 +309,7 @@ class ZBerryAuth {
 
 		TStringArray permissions = GetPermissions(identity);
 		TStringArray spawnRules = GetSpawnRules(identity);
+		GetZBerryEventLog().StartSync(identity); //Only if they may read the log and aren't synced yet
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.AuthState, new Param4<string, int, ref TStringArray, ref TStringArray>(g_zbryVer, state, permissions, spawnRules), true, identity );
 	}
 
@@ -338,12 +339,12 @@ class ZBerryAuth {
 		Param2< bool, string > authInfo; //direction (always true), client version
 		if (!IsServerCall(type, sender)) return;
 		if ( !ctx.Read( authInfo ) ) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " - Auth error, please update client to latest version (v" + g_zbryVer + "+)!");
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} couldn't authenticate, their ZomBerry is too old (server: v" + g_zbryVer + ")" );
 			return;
 		}
 
 		if (authInfo.param2 != g_zbryVer) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " ZomBerry version mismatch! S: v" + g_zbryVer + ", C: v" + authInfo.param2 );
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} has another ZomBerry version: v" + authInfo.param2 + " (server: v" + g_zbryVer + ")" );
 		}
 
 		ZBerryAdminEntry admin = FindAdmin(sender);
@@ -355,7 +356,7 @@ class ZBerryAuth {
 		if (IsAdmin(sender)) {
 			ZomberryBase.Log( "ZomBerryDbg", "Auth respond to admin " + Who(sender) );
 		} else if (m_SetupToken != "") {
-			ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " joined while setup is pending, look for the SETUP TOKEN banner in the server's logs" );
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} joined while setup is pending, look for the SETUP TOKEN banner in the server's logs" );
 		}
 
 		PushAuthState(sender);
@@ -368,14 +369,14 @@ class ZBerryAuth {
 
 		string id = sender.GetPlainId();
 		if (m_SetupToken == "") {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a setup token, but setup is already done" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a setup token, but setup is already done" );
 			PushAuthState(sender);
 			return;
 		}
 
 		int attempts = m_TokenAttempts.Get(id);
 		if (attempts >= MAX_TOKEN_ATTEMPTS) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a setup token after " + MAX_TOKEN_ATTEMPTS + " wrong attempts, ignored" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a setup token after " + MAX_TOKEN_ATTEMPTS + " wrong attempts, ignored" );
 			Tell(sender, "Too many wrong setup tokens");
 			return;
 		}
@@ -384,7 +385,7 @@ class ZBerryAuth {
 		token.ToUpper();
 		if (token != m_SetupToken) {
 			m_TokenAttempts.Set(id, attempts + 1);
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a wrong setup token (attempt " + (attempts + 1) + "/" + MAX_TOKEN_ATTEMPTS + ")" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a wrong setup token (attempt " + (attempts + 1) + "/" + MAX_TOKEN_ATTEMPTS + ")" );
 			Tell(sender, "Wrong setup token");
 			return;
 		}
@@ -402,7 +403,7 @@ class ZBerryAuth {
 		m_SetupToken = "";
 		m_TokenAttempts.Clear();
 
-		ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " entered the setup token and is now in the " + SUPERADMIN_GROUP + " group" );
+		ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} entered the setup token and is now in the " + SUPERADMIN_GROUP + " group" );
 		Tell(sender, "Setup done, you are a superadmin now");
 		PushAuthStateToEveryone();
 	}
@@ -444,7 +445,7 @@ class ZBerryAuth {
 	void PermsRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		if (!IsServerCall(type, sender)) return;
 		if (!HasPermission(sender, ZBerryPermissions.PERMISSIONS_MANAGE)) {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to read permissions, but IS NOT ALLOWED" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to read permissions without " + ZBerryPermissions.PERMISSIONS_MANAGE );
 			return;
 		}
 
@@ -457,21 +458,21 @@ class ZBerryAuth {
 		if ( !ctx.Read( update ) || !update.param1 ) return;
 
 		if (!HasPermission(sender, ZBerryPermissions.PERMISSIONS_MANAGE)) {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to change permissions, but IS NOT ALLOWED" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to change permissions without " + ZBerryPermissions.PERMISSIONS_MANAGE );
 			return;
 		}
 
 		string problem = ApplyUpdate(update.param1, GetLevel(sender));
 		if (problem != "") {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " permission change rejected: " + problem );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to change permissions, rejected: " + problem );
 			Tell(sender, "Permissions not saved: " + problem);
 			SendSnapshot(sender);
 			return;
 		}
 
-		if (m_LastChanges.Count() == 0) ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " saved permissions without changes" );
+		if (m_LastChanges.Count() == 0) ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, sender, NULL, "{actor} saved permissions without changes" );
 		foreach (string change : m_LastChanges) {
-			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " changed permissions: " + change );
+			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, sender, NULL, "{actor} changed permissions: " + change );
 		}
 		Tell(sender, "Permissions saved");
 		PushAuthStateToEveryone();
