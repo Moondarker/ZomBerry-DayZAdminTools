@@ -26,6 +26,7 @@
   - **Size:** the server keeps the last 2048 events and 10486 damage records.
   - **Who gets it:** admins with `zomberry.logs.view` receive everything once after joining, in small batches so the server doesn't stall, and live updates from then on.
   - **Log file:** logins, logouts and damage stay out of ZomBerry's log file. Everything else is written there too.
+  - **Times** show in each admin's local time. The server keeps them in UTC.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).

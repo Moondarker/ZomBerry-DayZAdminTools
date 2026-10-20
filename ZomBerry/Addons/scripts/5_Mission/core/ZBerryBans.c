@@ -54,6 +54,39 @@ class ZBerryTime {
 		return year.ToString() + "-" + month.ToStringLen(2) + "-" + day.ToStringLen(2) + " " + hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + " UTC";
 	}
 
+	//Seconds this machine's clock is ahead of UTC (time zone and daylight saving), to the nearest quarter hour
+	static int GetLocalOffset() {
+		int year, month, day, hour, minute, second;
+		GetYearMonthDay(year, month, day);
+		GetHourMinuteSecond(hour, minute, second);
+		int localNow = FromDate(year, month, day, hour, minute, second);
+		int utcNow = Now();
+		float difference = localNow - utcNow; //Typed locals: the same maths in one expression came out 0
+		float quarters = difference / 900.0;
+		int rounded = Math.Round(quarters);
+		return rounded * 900;
+	}
+
+	//"21:05:33" in the local time of this machine (offset from GetLocalOffset)
+	static string FormatLocalClock(int time, int offset) {
+		int localTime = time + offset;
+		int secondsOfDay = localTime % 86400;
+		if (secondsOfDay < 0) secondsOfDay += 86400;
+		int hour = secondsOfDay / 3600;
+		int minute = (secondsOfDay / 60) % 60;
+		int second = secondsOfDay % 60;
+		return hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2);
+	}
+
+	//"2026-10-18 21:05:33" in the local time of this machine (offset from GetLocalOffset)
+	static string FormatLocal(int time, int offset) {
+		int localTime = time + offset;
+		int days = localTime / 86400;
+		int year, month, day;
+		CivilFromDays(days, year, month, day);
+		return year.ToString() + "-" + month.ToStringLen(2) + "-" + day.ToStringLen(2) + " " + FormatLocalClock(time, offset);
+	}
+
 	//"3d 4h", "2h 5min", "45min"
 	static string FormatDuration(int seconds) {
 		if (seconds < 60) return "<1min";

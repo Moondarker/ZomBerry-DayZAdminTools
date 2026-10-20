@@ -35,6 +35,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	protected string m_PlayerId = "";
 	protected string m_PlayerName = "";
 	protected bool m_Live = true;
+	protected int m_LocalOffset; //Events are kept in UTC, shown in the admin's local time
 	protected bool m_Dirty = true; //The log changed since the last rebuild
 	protected bool m_PlayersBuilt = false;
 	protected float m_RefreshTimer = 0;
@@ -307,6 +308,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 		ZBerryEventLog log = GetZBerryEventLog();
 		string search = m_Search;
+		m_LocalOffset = ZBerryTime.GetLocalOffset();
 		search.ToLower();
 
 		ZBerryLogEventArray events = new ZBerryLogEventArray;
@@ -373,16 +375,16 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	}
 
 	protected void AddEventRow(ZBerryLogEvent logEvent) {
-		int row = m_List.AddItem(" " + FormatClock(logEvent.Time) + "  " + logEvent.FormatNames(), NULL, 0);
+		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(logEvent.Time, m_LocalOffset) + "  " + logEvent.FormatNames(), NULL, 0);
 		m_List.SetItemColor(row, 0, GetEventColor(logEvent));
-		m_RowDetails.Insert(ZBerryTime.Format(logEvent.Time) + " | " + GetTypeName(logEvent.Type) + " | " + logEvent.Format());
+		m_RowDetails.Insert(ZBerryTime.FormatLocal(logEvent.Time, m_LocalOffset) + " | " + GetTypeName(logEvent.Type) + " | " + logEvent.Format());
 	}
 
 	protected void AddDamageRow(ZBerryEventLog log, int index) {
 		int time = log.GetClientDamageTime(index);
-		int row = m_List.AddItem(" " + FormatClock(time) + "  " + DescribeDamage(log, index, false), NULL, 0);
+		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(time, m_LocalOffset) + "  " + DescribeDamage(log, index, false), NULL, 0);
 		m_List.SetItemColor(row, 0, COLOR_DAMAGE);
-		m_RowDetails.Insert(ZBerryTime.Format(time) + " | Damage | " + DescribeDamage(log, index, true));
+		m_RowDetails.Insert(ZBerryTime.FormatLocal(time, m_LocalOffset) + " | Damage | " + DescribeDamage(log, index, true));
 	}
 
 	//"A hit B 3x with KA-M, 37.5 damage, 30 m", with the Steam64 ids when withIds
@@ -420,15 +422,6 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		}
 		if ((logEvent.Flags & ZBerryEventFlags.HARMFUL) != 0) return COLOR_HARMFUL;
 		return ZBerryUIUtils.TEXT_DEFAULT;
-	}
-
-	//"21:05:33" (UTC, like the log file)
-	protected static string FormatClock(int time) {
-		int secondsOfDay = time % 86400;
-		int hour = secondsOfDay / 3600;
-		int minute = (secondsOfDay / 60) % 60;
-		int second = secondsOfDay % 60;
-		return hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2);
 	}
 
 	protected void UpdateSummary(ZBerryEventLog log, bool capped) {
