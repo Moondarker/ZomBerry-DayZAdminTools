@@ -241,7 +241,7 @@ The stock set:
 ### Spawn
 
 - **Picking an object:** use the filter buttons from `SpawnMenuSorting`, or the search field, which matches class names and display names. Double-click a category header to fold it, and double-click an entry to spawn it.
-- **Choosing where it goes:** the target button switches between three places:
+- **Choosing where it goes:** the target button cycles through these places:
   - **Cursor:** where you look.
   - **Ground:** at your feet.
   - **Inventory:** into your own inventory.
