@@ -101,7 +101,8 @@ class ZBerryDamageBurst {
 //ZomberryBase.LogEvent/LogEventRaw (and the death and hit hooks). Two queues:
 // - events: MAX_EVENTS typed events (admin actions, kicks, bans, logins, kills, refusals)
 // - damage: MAX_DAMAGE compact records, player against player only. Hits are merged per attacker and victim until
-//   BURST_MS passes without one, then stored as 7 ints; player names and weapon names are kept once, in tables that
+//   BURST_MS passes without one, or until the attacker gets hit by a player themselves (so an exchange of fire stays
+//   readable, one record per volley), then stored as 7 ints; player names and weapon names are kept once, in tables that
 //   only grow, and a record refers to them by index. Damage never goes into the log file
 //An admin with zomberry.logs.view gets everything once after joining (BATCH_* per tick, so the server never stalls),
 //then only what's new
@@ -203,15 +204,19 @@ class ZBerryEventLog {
 
 	//Server, from the hit hook: merged into the attacker/victim burst
 	void AddHit(PlayerBase victim, PlayerBase attacker, string weapon, float damage) {
-		string victimId = GetSteamId(victim);
-		string attackerId = GetSteamId(attacker);
-		string key = attackerId + ">" + victimId;
+		string victimKey = GetPlayerKey(victim);
+		string attackerKey = GetPlayerKey(attacker);
+		string key = attackerKey + ">" + victimKey;
+
+		//Getting hit ends whatever the victim was dealing out: in an exchange of fire the records alternate
+		//(A hit B x3, B hit A x2, A hit B x1...) instead of two bursts swallowing the whole fight
+		if (victimKey != attackerKey) CloseBurstsOf(victimKey);
 
 		ZBerryDamageBurst burst = m_Bursts.Get(key);
 		if (!burst) {
 			burst = new ZBerryDamageBurst;
-			burst.AttackerIndex = GetTableIndex(m_Players, m_PlayerIndex, attackerId, attackerId + "|" + GetName(attacker));
-			burst.VictimIndex = GetTableIndex(m_Players, m_PlayerIndex, victimId, victimId + "|" + GetName(victim));
+			burst.AttackerIndex = GetTableIndex(m_Players, m_PlayerIndex, attackerKey, GetSteamId(attacker) + "|" + GetName(attacker));
+			burst.VictimIndex = GetTableIndex(m_Players, m_PlayerIndex, victimKey, GetSteamId(victim) + "|" + GetName(victim));
 			burst.StartTime = ZBerryTime.Now();
 			m_Bursts.Set(key, burst);
 		}
@@ -230,23 +235,50 @@ class ZBerryEventLog {
 		foreach (string key, ZBerryDamageBurst burst : m_Bursts) {
 			if (!force && now - burst.LastHitMs < BURST_MS) continue;
 
-			int slot = (m_NextDamageSeq % MAX_DAMAGE) * DAMAGE_INTS;
-			float damageTenths = burst.Damage * 10;
-			m_Damage[slot] = burst.StartTime;
-			m_Damage[slot + 1] = burst.AttackerIndex;
-			m_Damage[slot + 2] = burst.VictimIndex;
-			m_Damage[slot + 3] = burst.Hits;
-			m_Damage[slot + 4] = Math.Round(damageTenths);
-			m_Damage[slot + 5] = burst.WeaponIndex;
-			m_Damage[slot + 6] = Math.Round(burst.Distance);
-			++m_NextDamageSeq;
+			StoreBurst(burst);
 			done.Insert(key);
 		}
 		foreach (string doneKey : done) m_Bursts.Remove(doneKey);
 	}
 
+	//The open bursts this player is dealing out become records now
+	protected void CloseBurstsOf(string attackerKey) {
+		string prefix = attackerKey + ">";
+		TStringArray done = new TStringArray;
+		foreach (string key, ZBerryDamageBurst burst : m_Bursts) {
+			if (key.IndexOf(prefix) != 0) continue;
+
+			StoreBurst(burst);
+			done.Insert(key);
+		}
+		foreach (string doneKey : done) m_Bursts.Remove(doneKey);
+	}
+
+	protected void StoreBurst(ZBerryDamageBurst burst) {
+		int slot = (m_NextDamageSeq % MAX_DAMAGE) * DAMAGE_INTS;
+		float damageTenths = burst.Damage * 10;
+		m_Damage[slot] = burst.StartTime;
+		m_Damage[slot + 1] = burst.AttackerIndex;
+		m_Damage[slot + 2] = burst.VictimIndex;
+		m_Damage[slot + 3] = burst.Hits;
+		m_Damage[slot + 4] = Math.Round(damageTenths);
+		m_Damage[slot + 5] = burst.WeaponIndex;
+		m_Damage[slot + 6] = Math.Round(burst.Distance);
+		++m_NextDamageSeq;
+	}
+
 	int GetDamageCount() {
 		return Math.Min(m_NextDamageSeq, MAX_DAMAGE);
+	}
+
+	//Steam64, or the network id for characters without one (AI mods), so two of those never share a burst
+	protected static string GetPlayerKey(PlayerBase player) {
+		string steamId = GetSteamId(player);
+		if (steamId != "" || !player) return steamId;
+
+		int low, high;
+		player.GetNetworkID(low, high);
+		return "#" + low + ":" + high;
 	}
 
 	protected static string GetSteamId(PlayerBase player) {

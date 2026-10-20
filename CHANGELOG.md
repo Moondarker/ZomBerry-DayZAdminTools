@@ -21,7 +21,7 @@
 - **Admin event log, server and client side** (its view comes later):
   - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, logouts, kills, auth problems and refused attempts.
   - **Players** are kept as separate fields (name and Steam64), so the view can highlight them.
-  - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim.
+  - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim. A burst ends after 3 s without hits, or as soon as the attacker is hit by another player, so a firefight is logged volley by volley.
   - **Size:** the server keeps the last 2048 events and 10486 damage records.
   - **Who gets it:** admins with `zomberry.logs.view` receive everything once after joining, in small batches so the server doesn't stall, and live updates from then on.
   - **Log file:** logins, logouts and damage stay out of ZomBerry's log file. Everything else is written there too.
