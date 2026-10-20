@@ -654,14 +654,25 @@ class ZomberryStockFunctions {
 	}
 
 	void SetWeather( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		Weather WMgr = GetGame().GetWeather();
-
-		SetWeatherPhenomenon(WMgr.GetFog(), fValues[0] / 100.0);
-		SetWeatherPhenomenon(WMgr.GetOvercast(), fValues[1] / 100.0);
-		SetWeatherPhenomenon(WMgr.GetRain(), fValues[2] / 100.0);
-		WMgr.SetStorm(GetStormDensity(fValues[1], fValues[2]), 0.7, GetStormTimeout(fValues[2]));
-
+		ApplyWeather(fValues[0], fValues[1], fValues[2]);
 		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+	}
+
+	static const float WEATHER_HOLD = 360; //Seconds the admin's weather lasts before the server's own weather takes over
+
+	//Fog, overcast and rain in percent. Rain only starts above the world's overcast threshold (0.6 on Chernarus), and
+	//below it the world stops the rain itself, over a minute. So overcast and rain change at once, in that order when
+	//clouds come in and the other way round when they clear
+	static void ApplyWeather(int fogPercent, int overcastPercent, int rainPercent) {
+		Weather WMgr = GetGame().GetWeather();
+		float overcast = overcastPercent / 100.0;
+		bool cloudsComeIn = overcast >= WMgr.GetOvercast().GetActual();
+
+		if (cloudsComeIn) SetWeatherPhenomenon(WMgr.GetOvercast(), overcast, 0);
+		SetWeatherPhenomenon(WMgr.GetRain(), rainPercent / 100.0, 0);
+		if (!cloudsComeIn) SetWeatherPhenomenon(WMgr.GetOvercast(), overcast, 0);
+		SetWeatherPhenomenon(WMgr.GetFog(), fogPercent / 100.0, 1);
+		WMgr.SetStorm(GetStormDensity(overcastPercent, rainPercent), 0.7, GetStormTimeout(rainPercent));
 	}
 
 	//0-1: overcast and rain (0-100 each) together make a storm. Typed float locals: int maths gave 0 below 100/100
@@ -677,8 +688,10 @@ class ZomberryStockFunctions {
 		return 3600 / (rain / 2.0 + 0.1);
 	}
 
-	//Sets a weather phenomenon right away, then restores the server's own limits so its weather settings keep working
-	protected void SetWeatherPhenomenon(WeatherPhenomenon phenomenon, float value) {
+	//Sets a weather phenomenon (reached in changeTime seconds, kept for WEATHER_HOLD), then restores the server's own
+	//limits so its weather settings keep working. No SetNextChange: an early next change let the world's weather logic
+	//replace the value straight away (a storm's rain came out at its own forecast, clear weather kept raining for a minute)
+	protected static void SetWeatherPhenomenon(WeatherPhenomenon phenomenon, float value, float changeTime) {
 		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax;
 		phenomenon.GetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.GetLimits(fnMin, fnMax);
@@ -688,8 +701,7 @@ class ZomberryStockFunctions {
 		phenomenon.SetLimits(0, 1);
 		phenomenon.SetForecastTimeLimits(0, 3600);
 
-		phenomenon.Set(value, 1, 360);
-		phenomenon.SetNextChange(0.01);
+		phenomenon.Set(value, changeTime, WEATHER_HOLD);
 
 		phenomenon.SetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.SetLimits(fnMin, fnMax);
