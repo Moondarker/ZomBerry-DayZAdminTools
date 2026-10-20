@@ -10,6 +10,7 @@ class ZBerryAuth {
 	protected ref ZBerryPermsConfig m_Config = new ZBerryPermsConfig;
 	protected string m_ConfigPath;
 	protected string m_SetupToken = ""; //Set while no admin exists
+	protected ref TStringArray m_LastChanges = new TStringArray; //What the last ApplyUpdate changed, for the log
 	protected ref map<string, int> m_TokenAttempts = new map<string, int>;
 
 	void ZBerryAuth() {
@@ -468,7 +469,10 @@ class ZBerryAuth {
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " changed permissions: " + m_Config.Groups.Count() + " groups, " + m_Config.Admins.Count() + " admins" );
+		if (m_LastChanges.Count() == 0) ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " saved permissions without changes" );
+		foreach (string change : m_LastChanges) {
+			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " changed permissions: " + change );
+		}
 		Tell(sender, "Permissions saved");
 		PushAuthStateToEveryone();
 		SendSnapshot(sender);
@@ -508,9 +512,71 @@ class ZBerryAuth {
 		string hierarchyProblem = CheckHierarchy(m_Config, newConfig, editorLevel);
 		if (hierarchyProblem != "") return hierarchyProblem;
 
+		m_LastChanges = DescribeChanges(m_Config, newConfig);
 		m_Config = newConfig;
 		SaveConfig();
 		return "";
+	}
+
+	//One line per change between two configs, for the log: groups added, removed or edited (level, permissions,
+	//spawn rules), admins added, removed or moved to another group
+	static TStringArray DescribeChanges(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig) {
+		TStringArray changes = new TStringArray;
+
+		foreach (ZBerryPermGroup oldGroup : oldConfig.Groups) {
+			if (!newConfig.FindGroup(oldGroup.Name)) changes.Insert("removed group " + oldGroup.Name);
+		}
+
+		foreach (ZBerryPermGroup newGroup : newConfig.Groups) {
+			ZBerryPermGroup before = oldConfig.FindGroup(newGroup.Name);
+			if (!before) {
+				changes.Insert("added group " + newGroup.Name + " (level " + newGroup.Level + ", permissions: " + DescribeList(newGroup.Permissions) + ", spawn rules: " + DescribeList(newGroup.SpawnAllowed) + ")");
+				continue;
+			}
+
+			if (before.Level != newGroup.Level) changes.Insert("group " + newGroup.Name + ": level " + before.Level + " -> " + newGroup.Level);
+			string permissions = DescribeListChange(before.Permissions, newGroup.Permissions);
+			if (permissions != "") changes.Insert("group " + newGroup.Name + ": permissions " + permissions);
+			string spawnRules = DescribeListChange(before.SpawnAllowed, newGroup.SpawnAllowed);
+			if (spawnRules != "") changes.Insert("group " + newGroup.Name + ": spawn rules " + spawnRules);
+		}
+
+		foreach (ZBerryAdminEntry oldAdmin : oldConfig.Admins) {
+			if (!newConfig.FindAdmin(oldAdmin.Id)) changes.Insert("removed admin " + DescribeAdmin(oldAdmin) + " from group " + oldAdmin.Group);
+		}
+
+		foreach (ZBerryAdminEntry newAdmin : newConfig.Admins) {
+			ZBerryAdminEntry adminBefore = oldConfig.FindAdmin(newAdmin.Id);
+			if (!adminBefore) {
+				changes.Insert("added admin " + DescribeAdmin(newAdmin) + " to group " + newAdmin.Group);
+			} else if (adminBefore.Group != newAdmin.Group) {
+				changes.Insert("moved admin " + DescribeAdmin(newAdmin) + " from group " + adminBefore.Group + " to " + newAdmin.Group);
+			}
+		}
+
+		return changes;
+	}
+
+	protected static string DescribeAdmin(ZBerryAdminEntry admin) {
+		if (admin.Name == "") return admin.Id;
+		return admin.Name + " (" + admin.Id + ")";
+	}
+
+	protected static string DescribeList(TStringArray items) {
+		if (items.Count() == 0) return "none";
+		return ZBerryPermissions.JoinList(items);
+	}
+
+	//"+a, +b, -c", "" when nothing changed
+	protected static string DescribeListChange(TStringArray before, TStringArray after) {
+		TStringArray parts = new TStringArray;
+		foreach (string added : after) {
+			if (before.Find(added) == -1) parts.Insert("+" + added);
+		}
+		foreach (string removed : before) {
+			if (after.Find(removed) == -1) parts.Insert("-" + removed);
+		}
+		return ZBerryPermissions.JoinList(parts);
 	}
 
 	protected string CheckHierarchy(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig, int editorLevel) {

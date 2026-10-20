@@ -40,6 +40,11 @@
   - **Before**, every open menu fetched the whole player list every 2–5 seconds, and every map marker every 10 seconds.
 - **Function and spawn requests** no longer carry the admin's ID, which the server ignored anyway (#52).
 
+- **The log says what a permission change changed:** one line per change.
+  - **Groups:** added, removed, level changes, permissions and spawn rules added or removed.
+  - **Admins:** added, removed, or moved to another group.
+  - **Before**, every save logged only the number of groups and admins.
+
 ### Fixed
 
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
