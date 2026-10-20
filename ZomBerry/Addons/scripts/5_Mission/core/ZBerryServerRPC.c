@@ -207,7 +207,7 @@ class ZBerryServerRPC {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " tried to teleport, but was in vehicle");
 		} else {
 			adminPly.SetPosition(position);
-			ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, NULL, "{actor} teleported to " + position.ToString() );
+			ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, NULL, "{actor} teleported to " + ZBDescribePosition(position) );
 		}
 	}
 
@@ -230,7 +230,7 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, targetPly.GetIdentity(), "{actor} teleported {target} to " + position.ToString(), ZBerryEventFlags.HARMFUL );
+		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, targetPly.GetIdentity(), "{actor} teleported {target} to " + ZBDescribePosition(position), ZBerryEventFlags.HARMFUL );
 		Tell(sender, "Teleported " + targetPly.GetIdentity().GetName());
 	}
 

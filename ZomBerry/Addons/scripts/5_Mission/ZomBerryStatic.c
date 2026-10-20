@@ -70,3 +70,13 @@ static string ZBDescribePlayer(PlayerIdentity identity) {
 
 	return identity.GetName() + " (" + identity.GetPlainId() + ")";
 }
+
+/**
+\brief How ZomBerry writes a position in logs: map coordinates in whole metres, like the map tab shows them ("X 9871 Y 2144")
+	\param position \p vector world position (the height is left out)
+*/
+static string ZBDescribePosition(vector position) {
+	int x = Math.Round(position[0]);
+	int y = Math.Round(position[2]);
+	return "X " + x.ToString() + " Y " + y.ToString();
+}

@@ -774,7 +774,7 @@ class ZomberryStockFunctions {
 		if (inVehicles > 0) result += ", " + inVehicles + " skipped (in vehicles)";
 		if (protectedCount > 0) result += ", " + protectedCount + " skipped (protected from your rank)";
 		MessagePlayer(admin, result);
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(admin.GetIdentity()) + " teleported all players to " + center.ToString() + ": " + result );
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(admin.GetIdentity()) + " teleported all players to " + ZBDescribePosition(center) + ": " + result );
 	}
 
 	//Evenly spread on a circle around center, TP_ALL_SPACING apart, at least 3 m out, on the surface
@@ -826,7 +826,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " deleted " + description + " at " + entity.GetPosition().ToString() );
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " deleted " + description + " at " + ZBDescribePosition(entity.GetPosition()) );
 		GetGame().ObjectDelete(entity);
 		MessagePlayer(admin, "Deleted " + description);
 	}
@@ -859,7 +859,7 @@ class ZomberryStockFunctions {
 		foreach (EntityAI entity : found) {
 			if (entity) GetGame().ObjectDelete(entity);
 		}
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + cursor.ToString() );
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor) );
 		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName);
 	}
 
@@ -878,7 +878,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " flipped " + vehicle.GetDisplayName() + " at " + vehicle.GetPosition().ToString() );
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " flipped " + vehicle.GetDisplayName() + " at " + ZBDescribePosition(vehicle.GetPosition()) );
 		MessagePlayer(admin, vehicle.GetDisplayName() + " is back on its wheels");
 	}
 };

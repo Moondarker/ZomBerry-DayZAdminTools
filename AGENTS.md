@@ -54,7 +54,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - **Public means exactly these.** That's the APIs listed here, plus the client-feature methods of the command API, all documented in the README's "For developers" section.
     - Keep them backwards compatible: add methods and append optional parameters, but don't remove or change existing ones.
     - Everything else (UI components, keybinds, config, RPC opcodes and handlers) is internal and may change freely.
-- **Log players as `ZBDescribePlayer(identity)`**, "Name (Steam64 id)", so every log line can be matched by the same id. Use `GetId()` (the BattlEye GUID) only for matching legacy GUID entries, never in logs.
+- **Log players as `ZBDescribePlayer(identity)`**, "Name (Steam64 id)", so every log line can be matched by the same id. Use `GetId()` (the BattlEye GUID) only for matching legacy GUID entries, never in logs. Write positions as `ZBDescribePosition(vector)`, map coordinates in whole metres.
 - **Admin actions, kicks, bans, kills and refusals are events:** `ZomberryBase.LogEvent(type, actor, target, "{actor} did X to {target}", flags)`, or `LogEventRaw` for players who may be offline.
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
   - `ZomberryBase.Log` is for plain lines only: startup, config, errors, details.

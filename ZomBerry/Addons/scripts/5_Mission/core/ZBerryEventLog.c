@@ -310,7 +310,7 @@ class ZBerryEventLog {
 	static void OnPlayerKilled(PlayerBase victim, Object killer) {
 		if (!GetGame().IsServer() || !victim) return;
 
-		string where = " at " + victim.GetPosition().ToString();
+		string where = " at " + ZBDescribePosition(victim.GetPosition());
 		EntityAI killerEntity = EntityAI.Cast(killer);
 		PlayerBase killerPlayer;
 		if (killerEntity) killerPlayer = PlayerBase.Cast(killerEntity.GetHierarchyRootPlayer());

@@ -27,6 +27,7 @@
   - **Who gets it:** admins with `zomberry.logs.view` receive everything once after joining, in small batches so the server doesn't stall, and live updates from then on.
   - **Log file:** logins, logouts and damage stay out of ZomBerry's log file. Everything else is written there too.
   - **Times** show in each admin's local time. The server keeps them in UTC.
+  - **Positions** are written as map coordinates in whole metres ("X 9871 Y 2144"), here and in the log file.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
