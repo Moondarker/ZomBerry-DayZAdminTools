@@ -14,6 +14,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 	protected string m_ObjFilter = "All";
 	protected string m_ObjTarget = "Cursor";
+	protected ZBerryUIPlayersPanel m_PlayersPanel; //For the selected player's spawn targets
 	protected bool m_ExpertMode = false;
 	protected bool m_MouseOnSearch = false;
 	protected bool m_ListDirty = true;
@@ -83,9 +84,13 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		return false;
 	}
 
-	//Ground -> Cursor -> Inventory -> Ground, skipping targets the admin may not use
+	void SetPlayersPanel(ZBerryUIPlayersPanel playersPanel) {
+		m_PlayersPanel = playersPanel;
+	}
+
+	//Ground -> Cursor -> Inventory -> Player's feet -> Player's inv. -> Ground, skipping targets the admin may not use
 	protected string NextAllowedTarget(string current) {
-		TStringArray order = {"Ground", "Cursor", "Inventory"};
+		TStringArray order = {"Ground", "Cursor", "Inventory", "Player's feet", "Player's inv."};
 		int index = order.Find(current);
 
 		for (int step = 1; step <= order.Count(); ++step) {
@@ -97,9 +102,12 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	protected bool IsTargetAllowed(string objTarget) {
-		if (objTarget == "Inventory") return GetZBerryClientAuth().Has(ZBerryPermissions.SPAWN_INVENTORY);
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		if (objTarget == "Player's inv.") return auth.Has(ZBerryPermissions.SPAWN_PLAYER) && auth.Has(ZBerryPermissions.SPAWN_INVENTORY);
+		if (objTarget == "Player's feet") return auth.Has(ZBerryPermissions.SPAWN_PLAYER) && auth.Has(ZBerryPermissions.SPAWN_GROUND);
+		if (objTarget == "Inventory") return auth.Has(ZBerryPermissions.SPAWN_INVENTORY);
 
-		return GetZBerryClientAuth().Has(ZBerryPermissions.SPAWN_GROUND);
+		return auth.Has(ZBerryPermissions.SPAWN_GROUND);
 	}
 
 	override void OnPermissionsChanged() {
@@ -129,11 +137,21 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		if (objData.param1 == "Entry") {
 			vector targetPlace = ZBerryUIUtils.GetCursorPos();
-			bool targetInventory = false;
+			int mode = ZBerrySpawner.AT_POSITION;
+			int playerId = -1;
 			if (m_ObjTarget == "Ground") targetPlace = GetGame().GetPlayer().GetPosition();
-			if (m_ObjTarget == "Inventory") targetInventory = true;
+			if (m_ObjTarget == "Inventory") mode = ZBerrySpawner.OWN_INVENTORY;
+			if (m_ObjTarget == "Player's feet") mode = ZBerrySpawner.PLAYER_FEET;
+			if (m_ObjTarget == "Player's inv.") mode = ZBerrySpawner.PLAYER_INVENTORY;
 
-			GetZBerryRPC().SendRPC( ZBerryRPCOp.SpawnObject, new Param3< string, vector, bool >( objData.param2, targetPlace, targetInventory ), true );
+			if (mode == ZBerrySpawner.PLAYER_FEET || mode == ZBerrySpawner.PLAYER_INVENTORY) {
+				if (!m_PlayersPanel || !m_PlayersPanel.GetSelectedPlayerId(playerId)) {
+					ZBerryUIUtils.Message("Double-click a player in the list first");
+					return true;
+				}
+			}
+
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.SpawnObject, new Param4< string, vector, int, int >( objData.param2, targetPlace, mode, playerId ), true );
 		}
 		return true;
 	}

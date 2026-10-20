@@ -36,6 +36,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		AddTab(m_FunctionsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/FunctionsTab.layout", "FunctionsButton");
 
 		m_SpawnTab = new ZBerryUISpawnTab();
+		m_SpawnTab.SetPlayersPanel(m_PlayersPanel);
 		AddTab(m_SpawnTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/SpawnTab.layout", "SpawnButton");
 
 		m_MapTab = new ZBerryUIMapTab();

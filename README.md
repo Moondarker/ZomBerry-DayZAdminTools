@@ -106,6 +106,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.map.markers.<category>` | Object markers on the map: `vehicles`, `tents`, `storage`, `bases` or `bodies`. `zomberry.map.markers.*` grants all of them |
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
+| `zomberry.spawn.player` | Spawning for the selected player: at their feet or into their inventory (together with `zomberry.spawn.ground` or `.inventory`). Follows the protection nodes |
 | `zomberry.permissions.manage` | The Permissions tab |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
@@ -247,6 +248,7 @@ The stock set:
     - Weapon attachments go straight onto a carried weapon with a free matching slot.
     - A matching magazine is loaded into it when the weapon is empty.
     - If nothing fits, chat tells you whether there's no room or the object can't be carried at all.
+  - **Player's feet** and **Player's inv.:** the same for the player you double-clicked in the list. They get a chat message when something lands in their inventory.
 - **Safe and Expert:** the header button switches between the two lists. Safe (green) hides classes without a proper display name, such as test and placeholder items. Expert (red) shows everything.
 
 ### Map

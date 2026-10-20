@@ -140,20 +140,44 @@ class ZBerryServerRPC {
 	}
 
 	void SpawnObject( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param3< string, vector, bool > tgtParam; //Class name, ground position, into inventory
+		Param4< string, vector, int, int > tgtParam; //Class name, position (AT_POSITION), ZBerrySpawner mode, selected player
 		if ( !ctx.Read( tgtParam ) ) return;
 
-		string targetNode = ZBerryPermissions.SPAWN_GROUND;
-		if (tgtParam.param3) targetNode = ZBerryPermissions.SPAWN_INVENTORY;
-		if (!CanRun(type, sender, {targetNode}, "spawn " + tgtParam.param1)) return;
+		string className = tgtParam.param1;
+		int mode = tgtParam.param3;
+		bool forPlayer = mode == ZBerrySpawner.PLAYER_FEET || mode == ZBerrySpawner.PLAYER_INVENTORY;
+		bool intoInventory = mode == ZBerrySpawner.OWN_INVENTORY || mode == ZBerrySpawner.PLAYER_INVENTORY;
 
-		if (!m_Auth.CanSpawn(sender, tgtParam.param1)) {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to spawn " + tgtParam.param1 + ", but the class IS NOT ALLOWED for their group");
+		TStringArray nodes = {ZBerryPermissions.SPAWN_GROUND};
+		if (intoInventory) nodes = {ZBerryPermissions.SPAWN_INVENTORY};
+		if (!CanRun(type, sender, nodes, "spawn " + className)) return;
+		if (forPlayer && !CanRun(type, sender, {ZBerryPermissions.SPAWN_PLAYER}, "spawn " + className + " for another player")) return;
+
+		if (!m_Auth.CanSpawn(sender, className)) {
+			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to spawn " + className + ", but the class IS NOT ALLOWED for their group");
 			return;
 		}
 
-		string result = ZBerrySpawner.Spawn(tgtParam.param1, ZBGetPlayerById(GetSenderId(sender)), tgtParam.param2, tgtParam.param3);
+		PlayerBase admin = ZBGetPlayerById(GetSenderId(sender));
+		PlayerBase recipient = admin;
+		vector position = tgtParam.param2;
+		if (forPlayer) {
+			recipient = ZBGetPlayerById(tgtParam.param4);
+			if (!recipient || recipient == admin) {
+				Tell(sender, "Spawn failed: double-click another player in the list first");
+				return;
+			}
+			if (!m_Auth.CanTarget(sender, recipient.GetIdentity(), false)) {
+				ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to spawn " + className + " for " + Who(recipient.GetIdentity()) + ", refused: the target's group is protected from their rank" );
+				Tell(sender, "Can't spawn for " + ZomberryStockFunctions.GetPlayerName(recipient) + ": their group is protected from your rank");
+				return;
+			}
+			position = recipient.GetPosition();
+		}
+
+		string result = ZBerrySpawner.Spawn(className, recipient, position, intoInventory, admin);
 		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " " + result);
+		if (forPlayer && intoInventory && result.IndexOf("couldn't") != 0) ZomberryStockFunctions.MessagePlayer(recipient, "An admin gave you " + ZBerrySpawner.GetDisplayName(className));
 	}
 
 	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
