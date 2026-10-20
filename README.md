@@ -208,7 +208,11 @@ The left panel lists everyone online. Admins are green, and the item in a player
 
 - **Running a function:** click it in the list, set its parameters if it has any (slider or exact value), then press **Execute** or double-click the function.
   - Functions in the "OnTarget" and "==" categories act on the selected player. If no player is selected, some of them use you as the target and the rest ask you to select a player first.
-  - "Delete object near cursor" asks for confirmation: run it a second time on the same object.
+  - "Delete object near cursor" deletes what the cursor is on: items, vehicles, bodies, base parts, infected or animals. It never deletes living players or objects that belong to the map. Run it a second time on the same object to confirm.
+  - "Clean up around cursor" removes one kind of thing within a radius (5–200 m): infected, dead bodies, loose items, or ruined items.
+    - Bases, tents, storage, stashes and fireplaces are never touched.
+    - The first run says how many it found, and running it again within 10 seconds deletes them.
+  - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
 - **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
 - **Removing all binds:** select any function without parameters, hold `A` and press the button twice.
@@ -219,7 +223,7 @@ The stock set:
 |---|---|
 | OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, spectate target, toggle freeze, repair item in hands, refuel and repair nearby vehicles |
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
-| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, teleport all players to you, ESP |
+| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, clean up around cursor, flip vehicle near cursor, teleport all players to you, ESP |
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 

@@ -1,7 +1,8 @@
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
-	autoptr TIntStringMap m_deleteList = new TIntStringMap;
+	protected ref map<int, string> m_PendingKeys = new map<int, string>; //Admin session id -> what the last first run would do
+	protected ref map<int, int> m_PendingTimes = new map<int, int>; //... and when
 	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
 	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
@@ -68,6 +69,11 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Rain", {0, 100, 0,}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Clean up around cursor", "CleanupArea", this, "OnServer", false, {
+			new ZBerryFuncParam("Radius (m)", {5, 200, 50,}),
+			new ZBerryFuncParam("What", {0, 3, 0,}, ZBerryWorldTools.GetCleanNames()),
+		});
+		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, "OnServer", false, {
 			new ZBerryFuncParam("Players", {0, 1, 1,}, {"Off", "On"}),
@@ -765,36 +771,97 @@ class ZomberryStockFunctions {
 		return Vector(x, GetGame().SurfaceY(x, z), z);
 	}
 
+	static const int CONFIRM_MS = 10000;
+
+	//Destructive functions run twice: the first run says what would happen, the second one (with the same key
+	//within CONFIRM_MS) does it. Returns true on the confirming run
+	protected bool IsConfirmed(int adminId, string key) {
+		string pendingKey;
+		int pendingTime;
+		int now = GetGame().GetTime();
+		bool confirmed = m_PendingKeys.Find(adminId, pendingKey) && pendingKey == key && m_PendingTimes.Find(adminId, pendingTime) && now - pendingTime <= CONFIRM_MS;
+
+		if (confirmed) {
+			m_PendingKeys.Remove(adminId);
+			m_PendingTimes.Remove(adminId);
+		} else {
+			m_PendingKeys.Set(adminId, key);
+			m_PendingTimes.Set(adminId, now);
+		}
+		return confirmed;
+	}
+
+	//The object the cursor is on (by bounding box, within 1 m): items, vehicles, bodies, base parts, infected, animals.
+	//Never living players or map objects. Confirmed by running it again on the same object
 	void DeleteObj( string funcName, int adminId, int targetId, vector cursor ) {
-		ref array<Object> nearest_objects = new array<Object>;
-		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
-		Object toBeDeleted;
-
-		GetGame().GetObjectsAtPosition3D(cursor, 1.5, nearest_objects, proxy_cargos);
-		if (nearest_objects.Count() < 1) return;
-		toBeDeleted = NULL;
-
-		for (int i = 0; i < nearest_objects.Count(); ++i) {
-			string tempObjId = nearest_objects.Get(i).ToString(); tempObjId.ToLower();
-			if (nearest_objects.Get(i).IsKindOf("SurvivorBase") || tempObjId.Contains("static")) continue;
-			if (nearest_objects.Get(i).IsWell() || nearest_objects.Get(i).IsBush()) continue;
-			if (nearest_objects.Get(i).IsRock() || nearest_objects.Get(i).IsTree()) continue;
-
-			toBeDeleted = nearest_objects.Get(i);
-			break;
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		EntityAI entity = ZBerryWorldTools.PickAt(cursor, 1.0);
+		if (!entity) {
+			MessagePlayer(admin, "Nothing to delete under the cursor (map objects and living players can't be deleted)");
+			return;
 		}
-		if (!toBeDeleted) return;
 
-		if (!m_deleteList.Contains(adminId)) {
-			m_deleteList.Insert(adminId, toBeDeleted.ToString());
-			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
-		} else if (m_deleteList.Get(adminId) != toBeDeleted.ToString()) {
-			m_deleteList.Set(adminId, toBeDeleted.ToString());
-			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
-		} else if (m_deleteList.Get(adminId) == toBeDeleted.ToString()) {
-			MessagePlayer(ZBGetPlayerById(adminId), toBeDeleted.ToString() + " annihilated.");
-			GetGame().ObjectDelete(toBeDeleted);
-			m_deleteList.Remove(adminId);
+		int low, high;
+		entity.GetNetworkID(low, high);
+		string description = entity.GetDisplayName() + " (" + entity.GetType() + ")";
+		if (!IsConfirmed(adminId, "delete:" + low + ":" + high)) {
+			MessagePlayer(admin, "Delete " + description + "? Run it again within " + (CONFIRM_MS / 1000) + " seconds on the same object to confirm.");
+			return;
 		}
+
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " deleted " + description + " at " + entity.GetPosition().ToString() );
+		GetGame().ObjectDelete(entity);
+		MessagePlayer(admin, "Deleted " + description);
+	}
+
+	//Removes one kind of thing within a radius of the cursor: infected, dead bodies, loose items or ruined items.
+	//Built and placed things (bases, tents, storage, stashes, fireplaces) are never touched. Confirmed by running it again
+	void CleanupArea( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		float radius = Math.Clamp(fValues[0], 5, 200);
+		int kind = Math.Clamp(fValues[1], 0, ZBerryWorldTools.GetCleanNames().Count() - 1);
+		string kindName = ZBerryWorldTools.GetCleanNames()[kind];
+		kindName.ToLower(); //In place
+
+		array<EntityAI> found = ZBerryWorldTools.FindForCleanup(cursor, radius, kind);
+		if (found.Count() == 0) {
+			MessagePlayer(admin, "No " + kindName + " within " + radius + " m");
+			return;
+		}
+
+		//Same kind, radius and spot (to 10 m) as the first run
+		float x = cursor[0];
+		float z = cursor[2];
+		int cellX = Math.Floor(x / 10);
+		int cellZ = Math.Floor(z / 10);
+		if (!IsConfirmed(adminId, "clean:" + kind + ":" + radius + ":" + cellX + ":" + cellZ)) {
+			MessagePlayer(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
+			return;
+		}
+
+		foreach (EntityAI entity : found) {
+			if (entity) GetGame().ObjectDelete(entity);
+		}
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + cursor.ToString() );
+		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName.ToLower());
+	}
+
+	//The car or boat nearest to the cursor (within 5 m of its body), back on its wheels
+	void FlipVehicle( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		Transport vehicle = Transport.Cast(ZBerryWorldTools.PickAt(cursor, 5, true));
+		if (!vehicle) {
+			MessagePlayer(admin, "No vehicle near the cursor");
+			return;
+		}
+
+		string problem = ZBerryWorldTools.FlipVehicle(vehicle);
+		if (problem != "") {
+			MessagePlayer(admin, "Can't flip " + vehicle.GetDisplayName() + ": " + problem);
+			return;
+		}
+
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " flipped " + vehicle.GetDisplayName() + " at " + vehicle.GetPosition().ToString() );
+		MessagePlayer(admin, vehicle.GetDisplayName() + " is back on its wheels");
 	}
 };

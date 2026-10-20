@@ -18,6 +18,8 @@
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
+- **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
+- **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
@@ -51,6 +53,7 @@
 
 ### Fixed
 
+- **Delete object near cursor picked the wrong thing:** it took the first object within 1.5 m, could hit map objects, which only vanish for players who join later, and confirmed by comparing text. It now picks the object the cursor is on (by its bounding box), only networked objects, never living players, and confirms by network ID.
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
 
 ## 0.7.0
