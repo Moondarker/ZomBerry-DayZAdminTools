@@ -18,7 +18,8 @@
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
-- **Admin event log, server and client side** (its view comes later):
+- **Admin event log, server and client side.** Its view is a preview for now: `F9` with `"DebugLevel": 1` or more in the client's `ZomBerryConfig.json`.
+  - **View:** everyone the log mentions on the left (double-click one to see only their events), a search by text, name or Steam64 id, a type filter, and live updates you can pause.
   - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, logouts, kills, auth problems and refused attempts.
   - **Players** are kept as separate fields (name and Steam64), so the view can highlight them.
   - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim. A burst ends after 3 s without hits, or as soon as the attacker is hit by another player, so a firefight is logged volley by volley.

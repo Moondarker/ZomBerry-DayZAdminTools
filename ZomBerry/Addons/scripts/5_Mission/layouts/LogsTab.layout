@@ -1,0 +1,668 @@
+PanelWidgetClass LogsWrapper {
+ visible 0
+ position 0 56
+ size 600 0.94
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  EditBoxWidgetClass LogSearchInput {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 8
+   size 300 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   font "gui/fonts/sdf_MetronLight24"
+   "exact text" 0
+  }
+  ButtonWidgetClass LogSearchButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 310 0
+   size 110 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LogSearchButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Search"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass LogTypesButton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 0
+   size 170 36
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LogTypesButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Types: all"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass LogSummary {
+   position 0 44
+   size 600 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Waiting for the log..."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "text valign" center
+   "exact text size" 14
+  }
+  TextListboxWidgetClass LogList {
+   color 0 0 0 0.7843
+   position 0 70
+   size 600 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 300
+   font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass LogList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 600 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 300
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass LogList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 600 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 300
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass LogList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 600 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 300
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass LogList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 70
+   size 600 774
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 300
+   font "gui/fonts/Metron28"
+  }
+  TextWidgetClass LogDetails {
+   position 4 850
+   size 592 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  PanelWidgetClass LogTypesDropdown {
+   visible 0
+   color 0 0 0 0.95
+   position 0 40
+   size 170 440
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   priority 10
+   style rover_sim_colorable
+   {
+    ButtonWidgetClass LogTypeAll {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 4
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogTypeAllLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  All"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogTypeNone {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 28
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogTypeNoneLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  None"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType1 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 52
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType1Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Function (self)"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType2 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 76
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType2Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Function (player)"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType3 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 100
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType3Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Function (server)"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType4 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 124
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType4Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Spawn"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType5 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 148
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType5Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Teleport"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType6 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 172
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType6Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Permissions"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType7 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 196
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType7Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Kick"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType8 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 220
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType8Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Ban"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType9 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 244
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType9Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Unban"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType10 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 268
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType10Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Join refused"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType11 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 292
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType11Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Login"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType12 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 316
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType12Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Logout"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType13 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 340
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType13Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Kill"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType14 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 364
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType14Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Auth"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType15 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 388
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType15Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Refused"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType16 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 412
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType16Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Damage"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

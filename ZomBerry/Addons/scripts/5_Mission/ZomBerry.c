@@ -198,6 +198,7 @@ modded class MissionGameplay {
 	bool m_plyWarned = false;
 	ref ZomberryBase m_ZomberryBase;
 	ref ZomberryMenu m_ZomberryMenu;
+	ref ZomberryLogMenu m_ZomberryLogMenu; //Debug preview of the log view (F9)
 	ref ZBerryTokenDialog m_ZBerryTokenDialog;
 	ref ZBerryESPOverlay m_ZBerryESP;
 
@@ -216,6 +217,7 @@ modded class MissionGameplay {
 	void ~MissionGameplay() {
 
 		if (m_ZomberryMenu) delete m_ZomberryMenu;
+		if (m_ZomberryLogMenu) delete m_ZomberryLogMenu;
 		if (m_ZomberryBase) delete m_ZomberryBase;
 	}
 
@@ -229,6 +231,32 @@ modded class MissionGameplay {
 		}
 
 		return m_ZomberryMenu;
+	}
+
+	private bool IsLogMenuOpen() {
+		return m_ZomberryLogMenu && m_ZomberryLogMenu.GetLayoutRoot() && m_ZomberryLogMenu.GetLayoutRoot().IsVisible();
+	}
+
+	//F9 in debug mode (client "DebugLevel" 1+): the log view on its own, until the admin menu gets a Logs tab
+	private void ToggleLogMenu() {
+		if (IsLogMenuOpen()) {
+			if (!m_ZomberryLogMenu.GetCloseClearance()) return;
+			GetUIManager().HideScriptedMenu( m_ZomberryLogMenu );
+			PlayerControlEnable(false);
+			return;
+		}
+		if (GetUIManager().GetMenu() || !GetZBerryClientAuth().IsAdmin()) return;
+		if (!GetZBerryClientAuth().Has(ZBerryPermissions.LOGS_VIEW)) {
+			DisplayMessage("[ZomBerry]: You may not view the log (" + ZBerryPermissions.LOGS_VIEW + ")");
+			return;
+		}
+
+		if (!m_ZomberryLogMenu) {
+			m_ZomberryLogMenu = new ZomberryLogMenu;
+			m_ZomberryLogMenu.Init();
+		}
+		GetUIManager().ShowScriptedMenu( m_ZomberryLogMenu, NULL );
+		PlayerControlDisable(INPUT_EXCLUDE_ALL);
 	}
 
 	private ZBerryTokenDialog GetTokenDialog() {
@@ -259,6 +287,11 @@ modded class MissionGameplay {
 
 	override void OnKeyPress(int key) {
 		super.OnKeyPress(key);
+
+		if (key == KeyCode.KC_F9 && ZomberryBase.GetConfig().GetDebugLvl() >= 1) {
+			ToggleLogMenu();
+			return;
+		}
 
 		if (GetZomberryMenu().GetLayoutRoot().IsVisible()) {
 			GetZomberryMenu().OnBindKeyPress(key);
@@ -307,6 +340,10 @@ modded class MissionGameplay {
 				PlayerControlEnable(false);
 			}
 			CloseTokenDialog();
+			if (IsLogMenuOpen() && m_ZomberryLogMenu.GetCloseClearance()) {
+				GetUIManager().HideScriptedMenu( m_ZomberryLogMenu );
+				PlayerControlEnable(false);
+			}
 		}
 	}
 };

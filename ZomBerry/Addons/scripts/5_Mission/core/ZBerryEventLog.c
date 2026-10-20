@@ -61,6 +61,18 @@ class ZBerryLogEvent {
 		return text;
 	}
 
+	//Names only, for the log view's rows (the ids are in Format)
+	string FormatNames() {
+		string text = Text;
+		text.Replace("{actor}", ActorName);
+		text.Replace("{target}", TargetName);
+		return text;
+	}
+
+	bool Involves(string steamId) {
+		return steamId != "" && (ActorId == steamId || TargetId == steamId);
+	}
+
 	static string DescribeParty(string name, string id) {
 		if (id == "") return name;
 		return name + " (" + id + ")";
@@ -497,6 +509,41 @@ class ZBerryEventLog {
 		if (weaponIndex >= 0 && weaponIndex < m_ClientWeapons.Count()) weapon = m_ClientWeapons[weaponIndex];
 		distance = m_ClientDamage[slot + 6];
 		return true;
+	}
+
+	//Client: who a record is between, as indices into the player table (for filtering without building strings)
+	bool GetClientDamageParties(int index, out int attackerIndex, out int victimIndex) {
+		int slot = index * DAMAGE_INTS;
+		if (index < 0 || slot + DAMAGE_INTS > m_ClientDamage.Count()) return false;
+
+		attackerIndex = m_ClientDamage[slot + 1];
+		victimIndex = m_ClientDamage[slot + 2];
+		return true;
+	}
+
+	int GetClientDamageTime(int index) {
+		int slot = index * DAMAGE_INTS;
+		if (index < 0 || slot + DAMAGE_INTS > m_ClientDamage.Count()) return 0;
+		return m_ClientDamage[slot];
+	}
+
+	//Client: everyone who dealt or took player damage
+	int GetClientPlayerCount() {
+		return m_ClientPlayers.Count();
+	}
+
+	void GetClientPlayer(int index, out string id, out string name) {
+		SplitPlayer(m_ClientPlayers, index, id, name);
+	}
+
+	//Client: the player table index of a Steam64 id, -1 when they're not in it
+	int FindClientPlayer(string steamId) {
+		if (steamId == "") return -1;
+		string prefix = steamId + "|";
+		for (int i = 0; i < m_ClientPlayers.Count(); ++i) {
+			if (m_ClientPlayers[i].IndexOf(prefix) == 0) return i;
+		}
+		return -1;
 	}
 
 	protected static void SplitPlayer(TStringArray table, int index, out string id, out string name) {
