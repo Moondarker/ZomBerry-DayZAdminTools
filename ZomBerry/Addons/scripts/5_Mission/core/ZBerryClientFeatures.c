@@ -73,7 +73,7 @@ class ZBerryClientFeatures {
 			}
 			if (feature.RequiredNode == "" || auth.HasPermission(feature.Identity, feature.RequiredNode)) continue;
 
-			ZomberryBase.Log( "ZomBerryAdmin", "INFO: Client feature " + feature.Name + " switched off, its permission " + feature.RequiredNode + " was removed" );
+			ZomberryBase.Log( "ZomBerryAdmin", "INFO: Client feature " + feature.Name + " switched off for " + ZBDescribePlayer(feature.Identity) + ", its permission " + feature.RequiredNode + " was removed" );
 			Set(feature.Identity, feature.Name, false);
 		}
 	}

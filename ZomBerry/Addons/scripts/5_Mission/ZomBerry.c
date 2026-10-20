@@ -126,7 +126,7 @@ modded class MissionServer {
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (!ban) return;
 
-		ZomberryBase.Log( "ZomBerryBans", "INFO: Banned player " + identity.GetName() + " (" + identity.GetPlainId() + ") tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
+		ZomberryBase.Log( "ZomBerryBans", "INFO: Banned player " + ZBDescribePlayer(identity) + " tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
 		GetGame().DisconnectPlayer(identity, identity.GetId());
 	}
 

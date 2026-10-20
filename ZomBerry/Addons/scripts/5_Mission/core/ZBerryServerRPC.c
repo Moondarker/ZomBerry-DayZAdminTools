@@ -46,7 +46,7 @@ class ZBerryServerRPC {
 	protected string Who(PlayerIdentity sender) {
 		if (!sender) return "Singleplayer";
 
-		return sender.GetName() + " (" + sender.GetId() + ")";
+		return ZBDescribePlayer(sender);
 	}
 
 	//Never trust a player id sent by the client: the sender is the admin
@@ -255,8 +255,10 @@ class ZBerryServerRPC {
 			name = targetPly.GetIdentity().GetName();
 		}
 
-		string display = name;
-		if (display == "") display = id + guid;
+		string bannedId = id; //Steam64 when known; offline bans by GUID only know the GUID
+		if (bannedId == "") bannedId = guid;
+		string display = bannedId;
+		if (name != "") display = name + " (" + bannedId + ")";
 
 		string problem = CheckTarget(sender, id, guid);
 		if (problem != "") {
@@ -281,7 +283,7 @@ class ZBerryServerRPC {
 		if (duration > 0) length = "for " + ZBerryTime.FormatDuration(duration);
 		if (targetPly) m_Bans.KickPlayer(targetPly, "Banned by an admin " + length + ": " + reason);
 
-		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " banned " + display + " (" + entry.GetDisplayId() + ") " + length + ": " + reason );
+		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " banned " + display + " " + length + ": " + reason );
 		Tell(sender, "Banned " + display + " " + length);
 		if (m_Auth.HasPermission(sender, ZBerryPermissions.PLAYERS_UNBAN)) SendBans(sender);
 	}

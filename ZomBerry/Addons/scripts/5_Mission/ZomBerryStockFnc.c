@@ -88,7 +88,7 @@ class ZomberryStockFunctions {
 		admin = ZBGetPlayerById(adminId);
 		target = ZBGetPlayerById(targetId);
 		if (!admin) {
-			ZomberryBase.Log( "ZomBerryFnc", "WARN: Admin #" + adminId + " has no character, function skipped" );
+			ZomberryBase.Log( "ZomBerryFnc", "WARN: " + ZBDescribePlayer(ZBGetIdentityById(adminId)) + " has no character, function skipped" );
 			return false;
 		}
 		if (target) return true;
@@ -693,7 +693,7 @@ class ZomberryStockFunctions {
 		if (inVehicles > 0) result += ", " + inVehicles + " skipped (in vehicles)";
 		if (protectedCount > 0) result += ", " + protectedCount + " skipped (protected from your rank)";
 		MessagePlayer(admin, result);
-		ZomberryBase.Log( "ZomBerryAdmin", GetPlayerName(admin) + " teleported all players to " + center.ToString() + ": " + result );
+		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(admin.GetIdentity()) + " teleported all players to " + center.ToString() + ": " + result );
 	}
 
 	//Evenly spread on a circle around center, TP_ALL_SPACING apart, at least 3 m out, on the surface

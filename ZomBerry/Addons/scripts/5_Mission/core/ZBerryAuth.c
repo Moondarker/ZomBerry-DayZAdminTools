@@ -327,7 +327,7 @@ class ZBerryAuth {
 	}
 
 	protected string Who(PlayerIdentity sender) {
-		return sender.GetName() + " (" + sender.GetPlainId() + ")";
+		return ZBDescribePlayer(sender);
 	}
 
 	protected void Tell(PlayerIdentity sender, string message) {

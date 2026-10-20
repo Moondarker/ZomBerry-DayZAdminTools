@@ -44,3 +44,29 @@ static PlayerBase ZBGetPlayerById (int plyId) {
 
 	return NULL;
 }
+
+
+/**
+\brief Get a connected player's identity by session id, also while they have no character (dead, respawning)
+	\param sessionId \p int PlayerIdentity session Id
+	\return \p PlayerIdentity, NULL if nobody with this id is connected (and always in singleplayer)
+*/
+static PlayerIdentity ZBGetIdentityById(int sessionId) {
+	array<PlayerIdentity> identities = new array<PlayerIdentity>;
+	GetGame().GetPlayerIndentities(identities);
+
+	foreach (PlayerIdentity identity : identities) {
+		if (identity && identity.GetPlayerId() == sessionId) return identity;
+	}
+	return NULL;
+}
+
+/**
+\brief How ZomBerry names a player in logs: "Name (Steam64 id)", so log lines can be matched by id
+	\param identity \p PlayerIdentity, NULL in singleplayer
+*/
+static string ZBDescribePlayer(PlayerIdentity identity) {
+	if (!identity) return "Singleplayer";
+
+	return identity.GetName() + " (" + identity.GetPlainId() + ")";
+}
