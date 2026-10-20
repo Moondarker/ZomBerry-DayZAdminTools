@@ -197,6 +197,8 @@ The stock set:
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor |
 
+**God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+
 **FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character.
 
 ### Spawn
@@ -341,6 +343,27 @@ void MyModUpdateButtons() {
 
 The example mission registers `missionexample.vip_loadout` and gives members of a group with that permission a map on spawn.
 
+### God mode and other mods
+
+ZomBerry's god mode uses the engine's damage switch, `SetAllowDamage(false)`. Other mods use the same switch: a safe zone, for example, turns damage off on the way in and back on on the way out. That also ends god mode for an admin who walks out of the zone.
+
+To avoid that, check ZomBerry's god mode before turning damage back on:
+- **`#define ZOMBERRY_AT`** is set while ZomBerry is loaded, so the code also compiles without it.
+- **`bool PlayerBase.ZBIsGod()`** says whether the player is in god mode.
+
+```c
+void MyModLeaveSafeZone(PlayerBase player) {
+#ifdef ZOMBERRY_AT
+	if (player.ZBIsGod()) return; //ZomBerry's god mode keeps damage off
+#endif
+	player.SetAllowDamage(true);
+}
+```
+
+**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message.
+
+Both work on the **server** only. The flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client.
+
 ### Testing without a server
 
 [Examples/offlineTest.chernarusplus](Examples/offlineTest.chernarusplus/init.c) is a minimal offline mission: a character on the map, no loot or infected. Copy it to the game's `Missions` folder and start `DayZ_x64.exe` directly (not through BattlEye):
@@ -357,7 +380,7 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 | Path | Contents |
 |---|---|
 | `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
-| `4_World/` | God mode on `PlayerBase`, and the free and spectator cameras |
+| `4_World/` | God mode on `PlayerBase` (`ZBIsGod`, `ZBSetGod`), and the free and spectator cameras |
 | `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, bans, spawning, version and build info |
 | `5_Mission/ui/` | Admin menu components, one class per tab or panel |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
