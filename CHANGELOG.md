@@ -18,6 +18,7 @@
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
+- **Admin and kill log, server side:** the server keeps the last 1,000 admin, ban, auth and kill lines in memory. Admins with `zomberry.logs.view` can search them by kind, name or Steam64 ID. Kill lines name victim, killer, weapon and distance. The in-game view comes later.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).

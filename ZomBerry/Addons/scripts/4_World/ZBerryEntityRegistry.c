@@ -153,6 +153,11 @@ modded class BaseBuildingBase {
 	}
 };
 
+//Player deaths for whoever listens (the admin log): (PlayerBase victim, Object killer)
+class ZBerryKillFeed {
+	static ref ScriptInvoker OnPlayerKilled = new ScriptInvoker();
+};
+
 //Living players until they die, then bodies until they're gone
 modded class PlayerBase {
 	override void EEInit() {
@@ -162,6 +167,7 @@ modded class PlayerBase {
 
 	override void EEKilled(Object killer) {
 		super.EEKilled(killer);
+		if (GetGame().IsServer()) ZBerryKillFeed.OnPlayerKilled.Invoke(this, killer);
 		ZBerryEntityRegistry.Unregister(ZBerryEntityCategory.PLAYERS, this);
 		ZBerryEntityRegistry.Register(ZBerryEntityCategory.BODIES, this);
 	}

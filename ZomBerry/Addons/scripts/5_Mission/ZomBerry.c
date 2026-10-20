@@ -26,6 +26,7 @@ class ZomberryBase {
 			m_Bans = new ZBerryBans;
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
 			m_Streams = new ZBerryStreamServer(m_Auth);
+			GetZBerryActivityLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
 		}
@@ -61,6 +62,7 @@ class ZomberryBase {
 
 	static void Log( string module, string toLog ) {
 		GetLogger().Log( module, toLog );
+		if (GetGame() && GetGame().IsServer()) GetZBerryActivityLog().AddFromModule(module, toLog); //In-game log: admin, ban and auth lines
 	}
 
 	static void DebugLog( int dLvl, string module, string toLog ) {
@@ -160,6 +162,7 @@ modded class MissionGameplay {
 		GetZBerryClientAuth();
 		GetZBerryStreams();
 		GetZBerryClientFeatures();
+		GetZBerryActivityLog();
 		m_ZBerryESP = new ZBerryESPOverlay;
 		GetZBerrySpectate(); //Registers its client features: spectating, and reporting the camera mode while watched
 

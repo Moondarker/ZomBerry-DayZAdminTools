@@ -11,6 +11,7 @@ class ZBerryPermissions {
 	static const string SPAWN_INVENTORY = "zomberry.spawn.inventory";
 	static const string SPAWN_PLAYER = "zomberry.spawn.player"; //For the selected player: at their feet or into their inventory
 	static const string PERMISSIONS_MANAGE = "zomberry.permissions.manage";
+	static const string LOGS_VIEW = "zomberry.logs.view"; //The in-game admin and kill log
 	//Granted to a group, these shield its members from functions run by other admins (level 100 ignores them)
 	static const string PROTECT_LOWER = "zomberry.protect.lower"; //Lower-ranked admins can't run any function on them
 	static const string PROTECT_LOWER_HARM = "zomberry.protect.lower.harm"; //... no harmful ones
@@ -36,7 +37,7 @@ class ZBerryPermissions {
 		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
 			nodes.Insert(MapMarkerNode(category));
 		}
-		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, SPAWN_PLAYER, PERMISSIONS_MANAGE, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
+		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, SPAWN_PLAYER, PERMISSIONS_MANAGE, LOGS_VIEW, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
 		return nodes;
 	}
 
