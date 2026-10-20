@@ -12,6 +12,10 @@
   - The server keeps track of these objects as they appear and disappear, instead of scanning the map.
 - **Player orientation on the map** (#61): an arrow in front of each player marker shows which way they face.
 
+### Fixed
+
+- **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
+
 ## 0.7.0
 
 The big rewrite: own RPC layer and no dependencies, permission groups, kicks and bans, a rebuilt admin menu that scales with the resolution, and APIs for other mods.

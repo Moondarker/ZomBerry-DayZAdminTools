@@ -554,9 +554,22 @@ class ZomberryStockFunctions {
 		SetWeatherPhenomenon(WMgr.GetFog(), fValues[0] / 100.0);
 		SetWeatherPhenomenon(WMgr.GetOvercast(), fValues[1] / 100.0);
 		SetWeatherPhenomenon(WMgr.GetRain(), fValues[2] / 100.0);
-		WMgr.SetStorm((fValues[1]*fValues[2])/10000, 0.7, 3600/((fValues[2]/2)+0.1));
+		WMgr.SetStorm(GetStormDensity(fValues[1], fValues[2]), 0.7, GetStormTimeout(fValues[2]));
 
 		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+	}
+
+	//0-1: overcast and rain (0-100 each) together make a storm. Typed float locals: int maths gave 0 below 100/100
+	static float GetStormDensity(int overcastPercent, int rainPercent) {
+		float overcast = overcastPercent;
+		float rain = rainPercent;
+		return Math.Clamp((overcast / 100.0) * (rain / 100.0), 0, 1);
+	}
+
+	//Seconds between lightning strikes: shorter the heavier the rain
+	static float GetStormTimeout(int rainPercent) {
+		float rain = rainPercent;
+		return 3600 / (rain / 2.0 + 0.1);
 	}
 
 	//Sets a weather phenomenon right away, then restores the server's own limits so its weather settings keep working
