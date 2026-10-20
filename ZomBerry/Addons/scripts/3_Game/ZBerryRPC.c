@@ -3,11 +3,10 @@
 //CF defines RPCManager, GetRPCManager and CallType itself, and both mods are often loaded together
 const int ZBERRY_RPC_ID = 74635;
 
-//Sent with every message, client and server must agree on them: only ever append, never renumber or reuse
+//Sent with every message, client and server must agree on them: only ever append, never renumber or reuse.
+//Retired in 0.8.0, never reuse: 2, 3 (player list polling), 19, 20 (map marker polling), 21 (player headings)
 enum ZBerryRPCOp {
 	AdminAuth = 1,
-	SyncPlayersRequest = 2,
-	SyncPlayers = 3,
 	SyncFunctionsRequest = 4,
 	SyncFunctions = 5,
 	ExecuteCommand = 6,
@@ -23,9 +22,10 @@ enum ZBerryRPCOp {
 	Unban = 16, //Client -> server: Steam64 id or GUID
 	BansRequest = 17,
 	BansData = 18, //Server -> client: ban list, server time
-	MapMarkersRequest = 19, //Client -> server: bit mask of ZBerryMapCategory values
-	MapMarkers = 20, //Server -> client: markers, how many were left out
-	PlayerHeadings = 21 //Server -> client: session ids, yaw in degrees (only when SyncPlayersRequest asked for them)
+	Subscribe = 22, //Client -> server: what this client shows (ZBerryStreamFlags, marker categories, selected player, view)
+	Roster = 23, //Server -> client: who is online, when it changed
+	PlayerState = 24, //Server -> client: packed positions, headings, health (ZBerryStatePacker)
+	Markers = 25 //Server -> client: the map markers of one category, when they changed
 }
 
 //Which side received the call

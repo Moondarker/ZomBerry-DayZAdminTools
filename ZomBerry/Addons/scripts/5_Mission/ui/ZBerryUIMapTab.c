@@ -1,12 +1,12 @@
-//Map with player and object markers (filter buttons on top), arrows for where players face, cursor coordinates and Alt+LMB teleport
+//Map with player and object markers (filter buttons on top), arrows for where players face, cursor coordinates and Alt+LMB teleport.
+//Everything shown comes from the streams (GetZBerryStreams), this tab only says what it shows
 class ZBerryUIMapTab extends ZBerryUITab {
 	static const int COLOR_MARK_ADMIN = 0xFF47EB00;
 	static const int COLOR_MARK_PLAYER = 0xFF55AAFF;
 	static const string MARK_ICON = "\\dz\\gear\\navigation\\data\\map_tree_ca.paa";
-	static const float MARKERS_REFRESH_INTERVAL = 10; //Seconds, while the map is shown and a category is on
 	static const string HINT = "Teleport using Alt+LMB";
 
-	//Per ZBerryMapCategory
+	//Per marker category (ZBerryEntityCategory below MARKER_COUNT)
 	static TIntArray GetCategoryColors() {
 		return {0xFFFFC34D, 0xFF4DD9A0, 0xFFC08A5A, 0xFFFF5A5A, 0xFFBBBBBB};
 	}
@@ -17,16 +17,13 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 	protected MapWidget m_MapWidget;
 	protected CanvasWidget m_Arrows; //Over the map, redrawn every frame (the map can move and zoom)
-	protected ref map<int, float> m_Headings = new map<int, float>; //Session id -> yaw in degrees
 	protected TextWidget m_MapText, m_MapHint;
 	protected ButtonWidget m_PlayersFilter;
-	protected ref array<ButtonWidget> m_CategoryFilters = new array<ButtonWidget>; //Per ZBerryMapCategory
+	protected ref array<ButtonWidget> m_CategoryFilters = new array<ButtonWidget>; //Per marker category
 
 	protected bool m_ShowPlayers = true;
 	protected ref array<bool> m_ShowCategory = new array<bool>;
 	protected ref ZBerryPlayerArray m_LastPlayers;
-	protected ref ZBerryMapMarkerArray m_Markers;
-	protected float m_MarkersTimer = 0;
 
 	protected vector m_MapPos;
 	protected float m_MapScale;
@@ -47,6 +44,12 @@ class ZBerryUIMapTab extends ZBerryUITab {
 			m_ShowCategory.Insert(false);
 		}
 		UpdateFilterButtons();
+
+		GetZBerryStreams().OnMarkersChanged.Insert(OnMarkersChanged);
+	}
+
+	void ~ZBerryUIMapTab() {
+		if (g_ZBerryStreamClient) g_ZBerryStreamClient.OnMarkersChanged.Remove(OnMarkersChanged);
 	}
 
 	//Each filter needs its permission, active ones are green
@@ -74,44 +77,40 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		return mask;
 	}
 
-	protected void RequestMarkers() {
-		m_MarkersTimer = 0;
-		int mask = GetCategoryMask();
-		if (mask == 0) {
-			m_Markers = NULL;
-			Redraw();
-			return;
-		}
-
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.MapMarkersRequest, new Param1<int>(mask), true, NULL );
-	}
-
-	void SetMarkers(ZBerryMapMarkerArray markers, int dropped) {
-		m_Markers = markers;
-		if (dropped > 0) {
-			m_MapHint.SetText(HINT + " | " + dropped + " markers not shown (limit)");
-		} else {
-			m_MapHint.SetText(HINT);
-		}
-		Redraw();
+	protected void OnMarkersChanged(int category) {
+		if (IsVisible()) Redraw();
 	}
 
 	//Players and the shown categories; the widget can only clear all marks at once
 	protected void Redraw() {
 		m_MapWidget.ClearUserMarks();
+		ZBerryStreamClient streams = GetZBerryStreams();
 
-		if (m_Markers) {
-			TIntArray colors = GetCategoryColors();
-			TStringArray icons = GetCategoryIcons();
-			foreach (ZBerryMapMarker marker : m_Markers) {
-				if (marker.Category < 0 || marker.Category >= m_ShowCategory.Count() || !m_ShowCategory[marker.Category]) continue;
-				m_MapWidget.AddUserMark(marker.Position, marker.Label, colors[marker.Category], icons[marker.Category]);
+		TIntArray colors = GetCategoryColors();
+		TStringArray icons = GetCategoryIcons();
+		int dropped = 0;
+		for (int category = 0; category < m_ShowCategory.Count(); ++category) {
+			if (!m_ShowCategory[category]) continue;
+
+			ZBerryMapMarkerArray markers = streams.GetMarkers(category);
+			if (!markers) continue;
+			foreach (ZBerryMapMarker marker : markers) {
+				m_MapWidget.AddUserMark(marker.Position, marker.Label, colors[category], icons[category]);
 			}
+			dropped += streams.GetDroppedMarkers(category);
+		}
+
+		if (dropped > 0) {
+			m_MapHint.SetText(HINT + " | " + dropped + " markers not shown (limit)");
+		} else {
+			m_MapHint.SetText(HINT);
 		}
 
 		if (!m_LastPlayers || !m_ShowPlayers || !GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) return;
 
 		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			if (!streams.HasPosition(ply.m_PlayerID)) continue;
+
 			if (ply.m_IsAdmin) {
 				m_MapWidget.AddUserMark(ply.m_PlayerPos, ply.m_PlayerName, COLOR_MARK_ADMIN, MARK_ICON);
 			} else {
@@ -135,8 +134,8 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		m_ShowCategory[category] = !m_ShowCategory[category];
 		UpdateFilterButtons();
+		GetZBerryStreams().SetMarkerMask(GetCategoryMask());
 		Redraw();
-		if (m_ShowCategory[category]) RequestMarkers();
 		return true;
 	}
 
@@ -151,24 +150,27 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		SetActionButton("WIP", ZBerryUIUtils.TEXT_DEFAULT);
 
-		ZBerryUIPlayersPanel.RequestSync(true); //Fresh markers right away, the players panel refreshes them from then on
-		RequestMarkers();
+		GetZBerryStreams().SetMarkerMask(GetCategoryMask());
+		GetZBerryStreams().SetMapShown(true);
+		Redraw();
+	}
+
+	protected override void OnDeactivate() {
+		GetZBerryStreams().SetMapShown(false);
 	}
 
 	override void OnPermissionsChanged() {
 		UpdateFilterButtons();
+		GetZBerryStreams().SetMarkerMask(GetCategoryMask());
 		Redraw();
+	}
+
+	override void OnMenuShow() {
+		if (IsVisible()) OnActivate(); //The menu reopened on this tab
 	}
 
 	override void OnMenuHide() {
 		m_MapDiff = false;
-	}
-
-	void SetHeadings(TIntArray ids, TFloatArray headings) {
-		m_Headings.Clear();
-		for (int i = 0; i < ids.Count() && i < headings.Count(); ++i) {
-			m_Headings.Set(ids[i], headings[i]);
-		}
 	}
 
 	//A small arrow in front of each player marker, pointing where they face. Canvas coordinates are physical pixels
@@ -177,6 +179,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		m_Arrows.Clear();
 		if (!m_LastPlayers || !m_ShowPlayers || !GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) return;
 
+		ZBerryStreamClient streams = GetZBerryStreams();
 		float canvasX, canvasY, canvasWidth, canvasHeight;
 		m_Arrows.GetScreenPos(canvasX, canvasY);
 		m_Arrows.GetScreenSize(canvasWidth, canvasHeight);
@@ -185,7 +188,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		foreach (ZBerryPlayer ply : m_LastPlayers) {
 			float heading;
-			if (!m_Headings.Find(ply.m_PlayerID, heading)) continue;
+			if (!streams.GetHeading(ply.m_PlayerID, heading)) continue;
 
 			vector screenPos = m_MapWidget.MapToScreen(ply.m_PlayerPos);
 			float x = screenPos[0] - canvasX;
@@ -212,14 +215,12 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 	void SetPlayers(ZBerryPlayerArray players) {
 		m_LastPlayers = players;
-		Redraw();
+		if (IsVisible()) Redraw();
 	}
 
 	override void Update(float tDelta) {
 		if (!IsVisible()) return;
 
-		m_MarkersTimer += tDelta;
-		if (m_MarkersTimer >= MARKERS_REFRESH_INTERVAL && GetCategoryMask() != 0) RequestMarkers();
 		DrawArrows();
 
 		//Map widget resets its position after being hidden, so restore the last one

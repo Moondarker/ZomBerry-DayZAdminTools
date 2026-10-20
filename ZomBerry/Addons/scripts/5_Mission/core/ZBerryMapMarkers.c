@@ -1,6 +1,6 @@
 //One marker on the Map tab: a single object, or several of one category grouped by area
 class ZBerryMapMarker {
-	int Category; //ZBerryMapCategory
+	int Category; //ZBerryEntityCategory, below MARKER_COUNT
 	vector Position;
 	string Label;
 	int Count; //Objects this marker stands for
@@ -15,14 +15,22 @@ class ZBerryMapMarker {
 
 typedef array<ref ZBerryMapMarker> ZBerryMapMarkerArray;
 
-//Server side: turns the registry into markers for one admin
+//The markers of one category at one moment, with a signature to tell whether they changed since the last send
+class ZBerryMarkerBatch {
+	int Category;
+	ref ZBerryMapMarkerArray Markers = new ZBerryMapMarkerArray;
+	int Dropped; //Left out because of ZBerryMapMarkers.MAX_MARKERS
+	int Signature;
+};
+
+//Server side: turns the registry into markers
 class ZBerryMapMarkers {
-	static const int MAX_MARKERS = 1000; //Per reply, keeps the RPC small
+	static const int MAX_MARKERS = 1000; //Per category and message, keeps the RPC small
 	static const float GROUP_CELL = 50; //Metres: storage and base parts within one cell share a marker
 
 	//Bases are dozens of parts and storage tends to sit in piles: one marker per area for those
 	static bool IsGrouped(int category) {
-		return category == ZBerryMapCategory.STORAGE || category == ZBerryMapCategory.BASES;
+		return category == ZBerryEntityCategory.STORAGE || category == ZBerryEntityCategory.BASES;
 	}
 
 	static string GetCategoryName(int category) {
@@ -31,52 +39,61 @@ class ZBerryMapMarkers {
 		return names[category];
 	}
 
-	//Markers of the given categories. dropped: markers left out because of MAX_MARKERS
-	static ZBerryMapMarkerArray Build(TIntArray categories, out int dropped) {
-		ZBerryMapMarkerArray result = new ZBerryMapMarkerArray;
-		dropped = 0;
+	static ZBerryMarkerBatch Build(int category) {
+		ZBerryMarkerBatch batch = new ZBerryMarkerBatch;
+		batch.Category = category;
 
-		foreach (int category : categories) {
-			map<string, ref ZBerryMapMarker> cells = new map<string, ref ZBerryMapMarker>;
-			TStringArray cellOrder = new TStringArray;
+		map<string, ref ZBerryMapMarker> cells = new map<string, ref ZBerryMapMarker>;
+		TStringArray cellOrder = new TStringArray;
 
-			array<EntityAI> entities = ZBerryMapRegistry.GetEntities(category);
-			foreach (EntityAI entity : entities) {
-				if (!IsShown(category, entity)) continue;
+		array<EntityAI> entities = ZBerryEntityRegistry.GetEntities(category);
+		foreach (EntityAI entity : entities) {
+			if (!IsShown(category, entity)) continue;
 
-				vector position = entity.GetPosition();
-				if (!IsGrouped(category)) {
-					Add(result, new ZBerryMapMarker(category, position, GetLabel(category, entity), 1), dropped);
-					continue;
-				}
-
-				string cell = GetCellKey(position);
-				ZBerryMapMarker grouped = cells.Get(cell);
-				if (!grouped) {
-					grouped = new ZBerryMapMarker(category, position, "", 0);
-					cells.Set(cell, grouped);
-					cellOrder.Insert(cell);
-				}
-				grouped.Count = grouped.Count + 1;
+			vector position = entity.GetPosition();
+			if (!IsGrouped(category)) {
+				Add(batch, new ZBerryMapMarker(category, position, GetLabel(category, entity), 1));
+				continue;
 			}
 
-			foreach (string key : cellOrder) {
-				ZBerryMapMarker marker = cells.Get(key);
-				marker.Label = GetCategoryName(category);
-				if (marker.Count > 1) marker.Label += " (" + marker.Count + ")";
-				Add(result, marker, dropped);
+			string cell = GetCellKey(position);
+			ZBerryMapMarker grouped = cells.Get(cell);
+			if (!grouped) {
+				grouped = new ZBerryMapMarker(category, position, "", 0);
+				cells.Set(cell, grouped);
+				cellOrder.Insert(cell);
 			}
+			grouped.Count = grouped.Count + 1;
 		}
 
-		return result;
+		foreach (string key : cellOrder) {
+			ZBerryMapMarker marker = cells.Get(key);
+			marker.Label = GetCategoryName(category);
+			if (marker.Count > 1) marker.Label += " (" + marker.Count + ")";
+			Add(batch, marker);
+		}
+
+		batch.Signature = GetSignature(batch);
+		return batch;
 	}
 
-	protected static void Add(ZBerryMapMarkerArray result, ZBerryMapMarker marker, out int dropped) {
-		if (result.Count() >= MAX_MARKERS) {
-			dropped = dropped + 1;
+	protected static void Add(ZBerryMarkerBatch batch, ZBerryMapMarker marker) {
+		if (batch.Markers.Count() >= MAX_MARKERS) {
+			batch.Dropped = batch.Dropped + 1;
 			return;
 		}
-		result.Insert(marker);
+		batch.Markers.Insert(marker);
+	}
+
+	//Changes when a marker appears, disappears, moves a metre or changes its count
+	static int GetSignature(ZBerryMarkerBatch batch) {
+		int signature = batch.Markers.Count() * 7919 + batch.Dropped;
+		foreach (ZBerryMapMarker marker : batch.Markers) {
+			int packed = ZBerryStatePacker.PackPosition(marker.Position);
+			signature = signature * 31 + packed;
+			signature = signature * 31 + marker.Count;
+		}
+		return signature;
 	}
 
 	//Typed float locals: Enforce doesn't do plain maths on vector components mixed with constants
@@ -92,17 +109,17 @@ class ZBerryMapMarkers {
 	static bool IsShown(int category, EntityAI entity) {
 		if (!entity || entity.GetHierarchyParent()) return false;
 
-		if (category == ZBerryMapCategory.TENTS) {
+		if (category == ZBerryEntityCategory.TENTS) {
 			TentBase tent = TentBase.Cast(entity);
 			return tent && tent.GetState() == TentBase.PITCHED;
 		}
-		if (category == ZBerryMapCategory.BODIES) return !entity.IsAlive();
+		if (category == ZBerryEntityCategory.BODIES) return !entity.IsAlive();
 
 		return true;
 	}
 
 	static string GetLabel(int category, EntityAI entity) {
-		if (category == ZBerryMapCategory.BODIES) {
+		if (category == ZBerryEntityCategory.BODIES) {
 			PlayerBase body = PlayerBase.Cast(entity);
 			if (body && body.GetCachedName() != "") return "Body: " + body.GetCachedName();
 			return GetCategoryName(category);

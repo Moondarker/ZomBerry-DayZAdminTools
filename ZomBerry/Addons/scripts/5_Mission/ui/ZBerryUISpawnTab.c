@@ -133,7 +133,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			if (m_ObjTarget == "Ground") targetPlace = GetGame().GetPlayer().GetPosition();
 			if (m_ObjTarget == "Inventory") targetInventory = true;
 
-			GetZBerryRPC().SendRPC( ZBerryRPCOp.SpawnObject, new Param4< string, int, vector, bool >( objData.param2, ZBerryUIUtils.GetLocalPlayerId(), targetPlace, targetInventory ), true );
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.SpawnObject, new Param3< string, vector, bool >( objData.param2, targetPlace, targetInventory ), true );
 		}
 		return true;
 	}

@@ -101,11 +101,6 @@ class ZBerryUIKickBanDialog extends ZBerryUIComponent {
 		}
 
 		Close();
-		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(RefreshPlayers, ZBerryBans.KICK_DELAY + 1500, false); //Once the player is gone
-	}
-
-	protected void RefreshPlayers() {
-		ZBerryUIPlayersPanel.RequestSync();
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button) {

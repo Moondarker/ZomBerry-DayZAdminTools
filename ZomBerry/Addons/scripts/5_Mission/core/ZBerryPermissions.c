@@ -23,15 +23,15 @@ class ZBerryPermissions {
 		return FUNCTIONS_PREFIX + funcName;
 	}
 
-	//Map markers of one ZBerryMapCategory
+	//Map markers of one marker category (ZBerryEntityCategory below MARKER_COUNT)
 	static string MapMarkerNode(int category) {
-		return MAP_MARKERS_PREFIX + ZBerryMapCategory.GetKey(category);
+		return MAP_MARKERS_PREFIX + ZBerryEntityCategory.GetKey(category);
 	}
 
 	//Every fixed node; function nodes are added from the registered commands
 	static TStringArray GetFixedNodes() {
 		TStringArray nodes = {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT};
-		for (int category = 0; category < ZBerryMapCategory.COUNT; ++category) {
+		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
 			nodes.Insert(MapMarkerNode(category));
 		}
 		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});

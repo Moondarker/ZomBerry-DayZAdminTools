@@ -9,7 +9,8 @@ class ZomberryKeybinds {
 		if (!m_KeyToFunc.Find(key, funcId)) return;
 
 		int adminId = ZBerryUIUtils.GetLocalPlayerId(); //Also without a character (dead, respawning)
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
+		TIntArray values = {0, 0, 0}; //Local: a temporary inside the Param would be freed before it's sent
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param4< int, int, vector, autoptr TIntArray >( funcId, adminId, ZBerryUIUtils.GetCursorPos(), values ), true );
 	}
 
 	//The server sent a new function list

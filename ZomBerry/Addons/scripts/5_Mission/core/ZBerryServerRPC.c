@@ -1,8 +1,6 @@
 //Requests from the admin menu, handled on the server (or locally in singleplayer).
 //Each handler reads its request, checks CanRun, then does the work: one code path for multiplayer and singleplayer
 class ZBerryServerRPC {
-	static const int SYNC_HEADINGS = 1; //SyncPlayersRequest flag
-
 	protected ZBerryAuth m_Auth;
 	protected ZBerryBans m_Bans;
 
@@ -10,7 +8,6 @@ class ZBerryServerRPC {
 		m_Auth = auth;
 		m_Bans = bans;
 
-		GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncPlayersRequest, "SyncPlayersRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctionsRequest, "SyncFunctionsRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.ExecuteCommand, "ExecuteCommand", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.SpawnObject, "SpawnObject", this, ZBerrySPExec.Client );
@@ -19,7 +16,6 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Ban, "Ban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Unban, "Unban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.BansRequest, "BansRequest", this, ZBerrySPExec.Client );
-		GetZBerryRPC().AddRPC( ZBerryRPCOp.MapMarkersRequest, "MapMarkersRequest", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -60,87 +56,6 @@ class ZBerryServerRPC {
 		return sender.GetPlayerId();
 	}
 
-	void SyncPlayersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param1< int > syncFlags; //SYNC_HEADINGS: also send which way players face (0.7.0 clients always send 0)
-		int flags = 0;
-		if ( ctx.Read( syncFlags ) ) flags = syncFlags.param1;
-		if (!CanRun(type, sender, {ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS}, "get the player list")) return;
-
-		ZBerryPlayerArray playerList = BuildPlayerList(sender);
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayers, new Param2<ref ZBerryPlayerArray, int> (playerList, GetGame().GetTime()), true, sender );
-		if ((flags & SYNC_HEADINGS) != 0 && m_Auth.HasPermission(sender, ZBerryPermissions.MAP_PLAYER_MARKERS)) SendPlayerHeadings(sender);
-		ZomberryBase.DebugLog( 1, "ZomBerryDbg", Who(sender) + " - player list sync"); //Every 2 seconds while the map is open
-	}
-
-	//Yaw of every player (degrees, as the vanilla map's compass shows it), matched to the list by session id.
-	//A separate message, so the player list keeps the layout 0.7.0 clients expect
-	protected void SendPlayerHeadings(PlayerIdentity recipient) {
-		TIntArray ids = new TIntArray;
-		TFloatArray headings = new TFloatArray;
-
-		array<Man> players = new array<Man>;
-		if (GetGame().IsMultiplayer()) {
-			GetGame().GetPlayers(players);
-		} else if (GetGame().GetPlayer()) {
-			players.Insert(GetGame().GetPlayer());
-		}
-
-		foreach (Man man : players) {
-			int id = 0;
-			if (GetGame().IsMultiplayer()) {
-				if (!man.GetIdentity()) continue;
-				id = man.GetIdentity().GetPlayerId();
-			}
-
-			vector yawPitchRoll = man.GetYawPitchRoll();
-			ids.Insert(id);
-			headings.Insert(yawPitchRoll[0]);
-		}
-
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerHeadings, new Param2<ref TIntArray, ref TFloatArray>(ids, headings), true, recipient );
-	}
-
-	//Positions only go to admins who see map markers, health and blood only to those who see the player list
-	protected ZBerryPlayerArray BuildPlayerList(PlayerIdentity recipient) {
-		ZBerryPlayerArray playerList = new ZBerryPlayerArray;
-
-		if (!GetGame().IsMultiplayer()) {
-			PlayerBase localPlayer = PlayerBase.Cast(GetGame().GetPlayer());
-			string localName = "Player";
-			if (localPlayer.GetItemInHands()) localName += " [" + localPlayer.GetItemInHands().GetInventoryItemType().GetName() + "]";
-
-			playerList.Insert(new ZBerryPlayer(0, localName, true, localPlayer.GetPosition(), localPlayer.GetHealth(), localPlayer.GetHealth("", "Blood")));
-			return playerList;
-		}
-
-		bool showPositions = m_Auth.HasPermission(recipient, ZBerryPermissions.MAP_PLAYER_MARKERS);
-		bool showHealth = m_Auth.HasPermission(recipient, ZBerryPermissions.PLAYERS_LIST);
-		array<Man> players = new array<Man>;
-		GetGame().GetPlayers(players);
-
-		foreach (Man man : players) {
-			PlayerBase player = PlayerBase.Cast(man);
-			if (!player || !player.GetIdentity()) continue; //Connecting/disconnecting players have no identity
-
-			string plyName = player.GetIdentity().GetName();
-			if (player.GetItemInHands() && !player.GetCommand_Vehicle()) plyName += " [" + player.GetItemInHands().GetInventoryItemType().GetName() + "]";
-			if (player.GetCommand_Vehicle()) plyName += " [" + player.GetCommand_Vehicle().GetTransport().GetDisplayName() + "]";
-
-			vector position = "0 0 0";
-			if (showPositions) position = player.GetPosition();
-			int health = 0;
-			int blood = 0;
-			if (showHealth) {
-				health = player.GetHealth();
-				blood = player.GetHealth("", "Blood");
-			}
-
-			playerList.Insert(new ZBerryPlayer(player.GetIdentity().GetPlayerId(), plyName, m_Auth.IsAdmin(player.GetIdentity()), position, health, blood));
-		}
-
-		return playerList;
-	}
-
 	//Any admin gets the list, filtered down to what they may run
 	void SyncFunctionsRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		if (GetGame().IsMultiplayer()) {
@@ -175,7 +90,7 @@ class ZBerryServerRPC {
 	}
 
 	void ExecuteCommand( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param5< int, int, int, vector, autoptr TIntArray > funcParam; //Function id, Admin Id (ignored), Target Id, Admin cursor, Function params
+		Param4< int, int, vector, autoptr TIntArray > funcParam; //Function id, target session id, admin's cursor, function values
 		if ( !ctx.Read( funcParam ) ) return;
 
 		ZBerryFunction cmdFunc = GetZomberryCmdAPI().GetFunc(funcParam.param1);
@@ -189,7 +104,7 @@ class ZBerryServerRPC {
 		}
 
 		int adminId = GetSenderId(sender);
-		int targetId = funcParam.param3;
+		int targetId = funcParam.param2;
 		PlayerBase targetPly = ZBGetPlayerById(targetId);
 		if (targetId != adminId && targetPly && targetPly.GetIdentity() && !m_Auth.CanTarget(sender, targetPly.GetIdentity(), cmdFunc.IsHarmful())) {
 			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to execute " + cmdFunc.GetName() + " on " + Who(targetPly.GetIdentity()) + ", refused: the target's group is protected from their rank" );
@@ -197,7 +112,7 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		RunFunction(cmdFunc, adminId, targetId, funcParam.param4, funcParam.param5);
+		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
 
 		if (targetId != adminId && targetPly && targetPly.GetIdentity()) {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " executed " + cmdFunc.GetName() + " on target " + Who(targetPly.GetIdentity()));
@@ -225,11 +140,11 @@ class ZBerryServerRPC {
 	}
 
 	void SpawnObject( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param4< string, int, vector, bool > tgtParam; //Class name, Admin Id (ignored), Ground position, Into inventory
+		Param3< string, vector, bool > tgtParam; //Class name, ground position, into inventory
 		if ( !ctx.Read( tgtParam ) ) return;
 
 		string targetNode = ZBerryPermissions.SPAWN_GROUND;
-		if (tgtParam.param4) targetNode = ZBerryPermissions.SPAWN_INVENTORY;
+		if (tgtParam.param3) targetNode = ZBerryPermissions.SPAWN_INVENTORY;
 		if (!CanRun(type, sender, {targetNode}, "spawn " + tgtParam.param1)) return;
 
 		if (!m_Auth.CanSpawn(sender, tgtParam.param1)) {
@@ -237,30 +152,8 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		string result = ZBerrySpawner.Spawn(tgtParam.param1, ZBGetPlayerById(GetSenderId(sender)), tgtParam.param3, tgtParam.param4);
+		string result = ZBerrySpawner.Spawn(tgtParam.param1, ZBGetPlayerById(GetSenderId(sender)), tgtParam.param2, tgtParam.param3);
 		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " " + result);
-	}
-
-	//Only the requested categories the sender may see
-	void MapMarkersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param1< int > request; //Bit mask of ZBerryMapCategory values
-		if ( !ctx.Read( request ) ) return;
-		if (GetGame().IsMultiplayer() && (type != ZBerryCallType.Server || !GetGame().IsServer() || !sender)) return;
-
-		TIntArray categories = new TIntArray;
-		for (int category = 0; category < ZBerryMapCategory.COUNT; ++category) {
-			if ((request.param1 & (1 << category)) == 0) continue;
-			if (m_Auth.HasPermission(sender, ZBerryPermissions.MapMarkerNode(category))) categories.Insert(category);
-		}
-		if (categories.Count() == 0) {
-			if (request.param1 != 0) ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to get map markers, but IS NOT ALLOWED (" + ZBerryPermissions.MAP_MARKERS_PREFIX + "*)" );
-			return;
-		}
-
-		int dropped;
-		ZBerryMapMarkerArray markers = ZBerryMapMarkers.Build(categories, dropped);
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.MapMarkers, new Param2<ref ZBerryMapMarkerArray, int>(markers, dropped), true, sender );
-		ZomberryBase.DebugLog( 1, "ZomBerryDbg", Who(sender) + " - " + markers.Count() + " map markers" );
 	}
 
 	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {

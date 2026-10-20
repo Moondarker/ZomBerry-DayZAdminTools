@@ -35,8 +35,15 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 - **Only ever append RPC opcodes.**
   - Client and server must agree on `ZBerryRPCOp`, so never renumber or reuse an opcode.
   - Changing the params of an existing opcode breaks compatibility: client and server must share major.minor (`ZBerryVersion.IsCompatible`), so that needs a minor version bump.
+  - Retired opcodes are listed above the enum, and their numbers are never reused.
+- **World state goes through the streams, not new request/response pairs.**
+  - **Server side:** `ZBerryStreamServer` (`5_Mission/core/ZBerryStreamServer.c`) keeps what each admin's client subscribed to. It pushes from one timer, checks permissions on every send, and only sends what changed: roster on change, player state as deltas, marker categories by signature.
+  - **Client side:** `ZBerryStreamClient` (`GetZBerryStreams()`) keeps the latest data and raises `OnPlayersChanged`/`OnMarkersChanged`. The UI says what it shows (`SetListShown`, `SetMapShown`, `SetMarkerMask`, `SetSelected`).
+  - **Extending:** new synced data (ESP, spectating, other mods) extends these classes instead of adding another polling RPC, so bandwidth stays low.
+  - **Entities to track:** register them in `ZBerryEntityRegistry` (`4_World`) from their `EEInit`/`EEDelete`. It works on both sides: on a client it holds what the network bubble holds.
+- **Admins act only on lower ranks** for kicks and bans (`ZBerryAuth.CanActOnLevel`, the Permissions API's `CanActOn`).
+  - Functions use `ZBerryAuth.CanTarget` instead: groups shield their members with `zomberry.protect.*`, and superadmins ignore that. Mark commands that hurt or move their target as `harmful` in `AddCommand`.
 - **New permission nodes** go into `ZBerryPermissions` as a constant, into `GetFixedNodes()` (so the Permissions tab lists them) and into the README's permission table. Nodes are lower case and dot-separated, and `zomberry.*` is ZomBerry's own.
-- **Admins act only on lower ranks.** Kicks, bans and the Permissions API's `CanActOn` use `ZBerryAuth.CanActOnLevel`: admins act only on lower-ranked admins, superadmins (level 100) on everyone. New features that act on other players should follow it.
 - **Never overwrite a config file that failed to load.**
   - Load JSON with `JsonFileLoader<T>.LoadFile(path, data, error)` and log `error`.
   - On failure, keep running with safe defaults, but don't save over the file.

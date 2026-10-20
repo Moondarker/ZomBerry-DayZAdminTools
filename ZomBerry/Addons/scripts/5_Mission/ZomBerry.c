@@ -7,6 +7,7 @@ class ZomberryBase {
 	protected ref ZBerryAuth m_Auth;
 	protected ref ZBerryServerRPC m_ServerRPC;
 	protected ref ZBerryBans m_Bans;
+	protected ref ZBerryStreamServer m_Streams;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -24,6 +25,7 @@ class ZomberryBase {
 			m_Auth = new ZBerryAuth;
 			m_Bans = new ZBerryBans;
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
+			m_Streams = new ZBerryStreamServer(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
 		}
@@ -77,6 +79,11 @@ class ZomberryBase {
 	//Server only, NULL on clients
 	ZBerryBans GetBans() {
 		return m_Bans;
+	}
+
+	//Server only, NULL on clients
+	ZBerryStreamServer GetStreams() {
+		return m_Streams;
 	}
 
 	string GetRemoteVersion() {
@@ -147,6 +154,7 @@ modded class MissionGameplay {
 	void MissionGameplay() {
 		m_ZomberryBase = new ZomberryBase;
 		GetZBerryClientAuth();
+		GetZBerryStreams();
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}
@@ -161,11 +169,8 @@ modded class MissionGameplay {
 		if ( !m_ZomberryMenu ) {
 			m_ZomberryMenu = new ZomberryMenu;
 			m_ZomberryMenu.Init();
-			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncPlayers, "SyncPlayers", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctions, "SyncFunctions", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.BansData, "BansData", m_ZomberryMenu, ZBerrySPExec.Client );
-			GetZBerryRPC().AddRPC( ZBerryRPCOp.MapMarkers, "MapMarkers", m_ZomberryMenu, ZBerrySPExec.Client );
-			GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerHeadings, "PlayerHeadings", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryClientAuth().SetMenu(m_ZomberryMenu);
 		}
 

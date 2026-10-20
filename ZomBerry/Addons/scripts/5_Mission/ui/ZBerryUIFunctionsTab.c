@@ -222,6 +222,6 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 			targetId = adminId;
 		}
 
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, targetId, ZBerryUIUtils.GetCursorPos(), GetParamValues() ), true );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param4< int, int, vector, autoptr TIntArray >( funcId, targetId, ZBerryUIUtils.GetCursorPos(), GetParamValues() ), true );
 	}
 };

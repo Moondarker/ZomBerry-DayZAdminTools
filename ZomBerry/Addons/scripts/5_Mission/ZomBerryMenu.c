@@ -51,8 +51,26 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
+		GetZBerryStreams().OnPlayersChanged.Insert(OnStreamPlayers);
 
 		return layoutRoot;
+	}
+
+	void ~ZomberryMenu() {
+		if (g_ZBerryStreamClient) g_ZBerryStreamClient.OnPlayersChanged.Remove(OnStreamPlayers);
+	}
+
+	//Roster or player states arrived: the list, the map and the title
+	protected void OnStreamPlayers() {
+		ZBerryStreamClient streams = GetZBerryStreams();
+		ZBerryPlayerArray players = streams.BuildPlayers();
+
+		int upTime = streams.GetServerTime() / 1000;
+		int hours = upTime / 3600;
+		int minutes = (upTime / 60) % 60;
+		m_TxtTitle.SetText( "Players in game: " + streams.GetPlayerCount() + " | " + hours + "h " + minutes + "min | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker");
+		m_PlayersPanel.SetPlayers(players);
+		m_MapTab.SetPlayers(players);
 	}
 
 	protected void AddTab(ZBerryUITab tab, Widget parent, string layoutPath, string tabButtonName) {
@@ -84,7 +102,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		ApplyPermissions();
 		if (layoutRoot.IsVisible()) {
-			ZBerryUIPlayersPanel.RequestSync();
+			GetZBerryStreams().Reset(); //The server sends only what the new rights allow
 			m_FunctionsTab.OnMenuShow(); //Asks for the (filtered) function list again
 		}
 	}
@@ -120,7 +138,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_TxtTitle.SetText( "Players in game: ... | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker" );
 		ApplyPermissions();
 		m_PlayersPanel.UpdateListScale();
-		ZBerryUIPlayersPanel.RequestSync();
+		GetZBerryStreams().SetListShown(true);
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnMenuShow();
@@ -131,6 +149,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		super.OnHide();
 		ShowQuickbar(true);
 		m_KickBanDialog.Close();
+		GetZBerryStreams().HideAll();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnMenuHide();
@@ -147,7 +166,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	override void Update(float timeslice) {
 		if (m_ActiveTab) m_ActiveTab.Update(timeslice);
-		m_PlayersPanel.Update(timeslice, m_ActiveTab == m_MapTab);
+		m_PlayersPanel.Update(timeslice);
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {
@@ -183,23 +202,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		return true;
 	}
 
-	void SyncPlayers( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param2<ref ZBerryPlayerArray, int> playerListS;
-
-		if ( !(type == ZBerryCallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
-		if ( !ctx.Read( playerListS ) ) {
-			ZBerryUIUtils.Message("Player sync data read error - possible version mismatch");
-			return;
-		}
-
-		ZBerryPlayerArray players = playerListS.param1;
-		int sUpTime = Math.Round(playerListS.param2 / 1000);
-
-		m_TxtTitle.SetText( "Players in game: " + players.Count() + " | " + Math.Floor(sUpTime / 3600).ToString() + "h " + ((sUpTime / 60) % 60).ToString() + "min | ZomBerry Admin Tools " + ZBerryVersion.GetDisplayVersion() + " by Vaker");
-		m_PlayersPanel.SetPlayers(players);
-		m_MapTab.SetPlayers(players);
-	}
-
 	void SyncFunctions( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param1<ref ZBerryCategoryArray> catListS;
 
@@ -207,24 +209,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		if ( !ctx.Read( catListS ) ) return;
 
 		m_FunctionsTab.SetFunctions(catListS.param1);
-	}
-
-	void PlayerHeadings( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param2<ref TIntArray, ref TFloatArray> headingsS; //Session ids, yaw in degrees
-
-		if (type != ZBerryCallType.Client) return;
-		if ( !ctx.Read( headingsS ) || !headingsS.param1 || !headingsS.param2 ) return;
-
-		m_MapTab.SetHeadings(headingsS.param1, headingsS.param2);
-	}
-
-	void MapMarkers( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param2<ref ZBerryMapMarkerArray, int> markersS; //Markers, how many were left out
-
-		if (type != ZBerryCallType.Client) return;
-		if ( !ctx.Read( markersS ) || !markersS.param1 ) return;
-
-		m_MapTab.SetMarkers(markersS.param1, markersS.param2);
 	}
 
 	void BansData( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {

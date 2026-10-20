@@ -1,4 +1,4 @@
-//Player list on the left side: selection (double click), health/blood readout, kick and ban. Refreshes itself while shown.
+//Player list on the left side: selection (double click), health/blood readout, kick and ban. Fed by the streams (GetZBerryStreams).
 //In permissions mode (Permissions tab) it lists online players plus offline known admins instead,
 //in bans mode (Bans button) the ban list
 class ZBerryUIPlayersPanel extends ZBerryUIComponent {
@@ -8,12 +8,9 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
 	protected ref ZBerryScaledList m_PlayersLists;
-	static const float PLAYERS_REFRESH_INTERVAL = 5; //Seconds
-	static const float MAP_REFRESH_INTERVAL = 2; //While the map shows player markers
 	static const float BANS_REFRESH_INTERVAL = 30; //Keeps "time left" current
 
 	protected TextWidget m_PlyInfo; //Health and blood, ban or admin details of the selected row
-	protected float m_PlayersTimer = 0;
 	protected float m_BansTimer = 0;
 	protected float m_LaidOutHeight = -1;
 	protected bool m_LaidOutWithButtons;
@@ -49,16 +46,6 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_BansButton = ButtonWidget.Cast( BindWidget("PlayersBans") );
 		UpdateActionButtons();
 		m_PlyInfo = TextWidget.Cast( m_Root.FindAnyWidget("PlayerInfo") );
-	}
-
-	//The list feeds both this panel and the map markers, so either right is enough to ask for it.
-	//withHeadings: the map also wants which way players face
-	static void RequestSync(bool withHeadings = false) {
-		if (!GetZBerryClientAuth().HasAny({ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS})) return;
-
-		int flags = 0;
-		if (withHeadings) flags = ZBerryServerRPC.SYNC_HEADINGS;
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( flags ), true, NULL );
 	}
 
 	static void RequestBans() {
@@ -211,21 +198,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		return "";
 	}
 
-	//Called by the menu every frame while it's open: the one place the player list (also the map's markers) and the ban list
-	//are refreshed. Permissions mode has no timer: the tab reloads it on open and after saving
-	void Update(float tDelta, bool mapShown) {
+	//Called by the menu every frame while it's open. Players arrive by themselves (streams), the ban list is asked for
+	//every BANS_REFRESH_INTERVAL. Permissions mode has no timer: the tab reloads it on open and after saving
+	void Update(float tDelta) {
 		LayoutRows();
-
-		float playersInterval = PLAYERS_REFRESH_INTERVAL;
-		if (mapShown) playersInterval = MAP_REFRESH_INTERVAL;
-		bool listShown = !m_PermsMode && !m_BansMode;
-
-		m_PlayersTimer += tDelta;
-		if ((mapShown || listShown) && m_PlayersTimer >= playersInterval) {
-			m_PlayersTimer = 0;
-			RequestSync(mapShown);
-		}
-
 		if (!m_BansMode) return;
 
 		m_BansTimer += tDelta;
@@ -392,6 +368,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		Param4<int, bool, int, int> plyData;
 		m_PlayersList.GetItemData( selRow, 0, plyData );
 		m_SelectedPlayerId = plyData.param1;
+		GetZBerryStreams().SetSelected(m_SelectedPlayerId); //The server sends this player's health and blood
 
 		HighlightRow(selRow);
 		return true;
