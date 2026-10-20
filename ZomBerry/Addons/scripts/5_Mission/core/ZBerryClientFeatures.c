@@ -32,16 +32,6 @@ class ZBerryClientFeatures {
 		return identity.GetPlayerId();
 	}
 
-	//The connected player with this session id, NULL when they're gone (and always in singleplayer)
-	protected static PlayerIdentity FindIdentity(int sessionId) {
-		array<Man> players = new array<Man>;
-		GetGame().GetPlayers(players);
-		foreach (Man player : players) {
-			if (player && player.GetIdentity() && player.GetIdentity().GetPlayerId() == sessionId) return player.GetIdentity();
-		}
-		return NULL;
-	}
-
 	protected int FindActive(PlayerIdentity identity, string name) {
 		int sessionId = GetSessionId(identity);
 		for (int i = 0; i < m_Active.Count(); ++i) {
@@ -87,7 +77,7 @@ class ZBerryClientFeatures {
 	void Revalidate(ZBerryAuth auth) {
 		for (int i = m_Active.Count() - 1; i >= 0; --i) {
 			ZBerryActiveFeature feature = m_Active[i];
-			PlayerIdentity identity = FindIdentity(feature.SessionId);
+			PlayerIdentity identity = ZBGetIdentityById(feature.SessionId);
 			if (GetGame().IsMultiplayer() && !identity) {
 				m_Active.Remove(i); //Missed their disconnect
 				continue;
