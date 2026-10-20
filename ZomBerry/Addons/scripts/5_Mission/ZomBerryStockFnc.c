@@ -2,6 +2,7 @@ class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
 	autoptr TIntStringMap m_deleteList = new TIntStringMap;
+	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
 
 	void ZomberryStockFunctions() {
@@ -61,6 +62,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Rain", {0, 100, 0,}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
+		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true);
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {
@@ -589,6 +591,66 @@ class ZomberryStockFunctions {
 		phenomenon.SetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.SetLimits(fnMin, fnMax);
 		phenomenon.SetForecastTimeLimits(ftMin, ftMax);
+	}
+
+	static const int TP_ALL_CONFIRM_MS = 10000;
+	static const float TP_ALL_SPACING = 2; //Metres between players on the ring
+
+	//Run twice within TP_ALL_CONFIRM_MS: it moves everyone at once. Players go on a ring around the admin, so they don't
+	//end up inside each other. Skips players in vehicles and admins whose group is protected from this admin's rank
+	void TPAllToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return;
+
+		int now = GetGame().GetTime();
+		int firstPress;
+		if (!m_TPAllPending.Find(adminId, firstPress) || now - firstPress > TP_ALL_CONFIRM_MS) {
+			m_TPAllPending.Set(adminId, now);
+			MessagePlayer(admin, "This teleports every player to you. Run it again within " + (TP_ALL_CONFIRM_MS / 1000) + " seconds to confirm.");
+			return;
+		}
+		m_TPAllPending.Remove(adminId);
+
+		array<PlayerBase> targets = new array<PlayerBase>;
+		int inVehicles = 0;
+		int protectedCount = 0;
+		array<Man> players = new array<Man>;
+		GetGame().GetPlayers(players);
+		foreach (Man man : players) {
+			PlayerBase player = PlayerBase.Cast(man);
+			if (!player || player == admin || !player.IsAlive()) continue;
+			if (player.GetCommand_Vehicle()) {
+				++inVehicles;
+				continue;
+			}
+			if (admin.GetIdentity() && player.GetIdentity() && !GetZomberryPermAPI().CanTarget(admin.GetIdentity(), player.GetIdentity(), true)) {
+				++protectedCount;
+				continue;
+			}
+			targets.Insert(player);
+		}
+
+		vector center = GetPosSafe(admin);
+		for (int i = 0; i < targets.Count(); ++i) {
+			targets[i].SetPosition(GetRingPosition(center, i, targets.Count()));
+		}
+
+		string result = "Teleported " + targets.Count() + " players";
+		if (inVehicles > 0) result += ", " + inVehicles + " skipped (in vehicles)";
+		if (protectedCount > 0) result += ", " + protectedCount + " skipped (protected from your rank)";
+		MessagePlayer(admin, result);
+		ZomberryBase.Log( "ZomBerryAdmin", GetPlayerName(admin) + " teleported all players to " + center.ToString() + ": " + result );
+	}
+
+	//Evenly spread on a circle around center, TP_ALL_SPACING apart, at least 3 m out, on the surface
+	static vector GetRingPosition(vector center, int index, int count) {
+		float circumference = Math.Max(count, 1) * TP_ALL_SPACING;
+		float radius = Math.Max(3, circumference / Math.PI2);
+		float angle = Math.PI2 * index / Math.Max(count, 1);
+
+		float x = center[0] + Math.Cos(angle) * radius;
+		float z = center[2] + Math.Sin(angle) * radius;
+		return Vector(x, GetGame().SurfaceY(x, z), z);
 	}
 
 	void DeleteObj( string funcName, int adminId, int targetId, vector cursor ) {
