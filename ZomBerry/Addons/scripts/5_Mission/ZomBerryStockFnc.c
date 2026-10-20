@@ -63,6 +63,11 @@ class ZomberryStockFunctions {
 		});
 		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
 		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, "OnServer", false, {
+			new ZBerryFuncParam("Players", {0, 1, 1,}, {"Off", "On"}),
+			new ZBerryFuncParam("Vehicles", {0, 1, 0,}, {"Off", "On"}),
+			new ZBerryFuncParam("Infected, animals", {0, 1, 0,}, {"Off", "On"}),
+		});
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {
@@ -591,6 +596,24 @@ class ZomberryStockFunctions {
 		phenomenon.SetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.SetLimits(fnMin, fnMax);
 		phenomenon.SetForecastTimeLimits(ftMin, ftMax);
+	}
+
+	//Switches the ESP overlay on the admin's own client (ZBerryESPOverlay). Everything off switches it off.
+	//With players on, the server also streams everyone's position and health to that admin (ZBerryStreamServer)
+	void ESPToggle( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return;
+
+		bool on = fValues[0] != 0 || fValues[1] != 0 || fValues[2] != 0;
+		TIntArray args = {fValues[0], fValues[1], fValues[2]};
+		GetZomberryCmdAPI().SetClientFeature(admin.GetIdentity(), ZBerryESPOverlay.FEATURE, on, args, ZBerryPermissions.FunctionNode(funcName));
+		if (ZBerryStreamServer.Get()) ZBerryStreamServer.Get().SetEspActive(admin.GetIdentity(), on && fValues[0] != 0);
+
+		if (on) {
+			MessagePlayer(admin, "ESP on");
+		} else {
+			MessagePlayer(admin, "ESP off");
+		}
 	}
 
 	static const int TP_ALL_CONFIRM_MS = 10000;

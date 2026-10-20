@@ -217,11 +217,17 @@ The stock set:
 |---|---|
 | OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, repair item in hands, refuel and repair nearby vehicles |
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
-| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, teleport all players to you |
+| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, teleport all players to you, ESP |
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
+
+**ESP:** draws players through walls on your own screen. Its three options switch players, vehicles, and infected and animals on or off, and running it with all three off switches it off.
+- **Players:** a box with name, distance, health and blood, and a skeleton within 150 m. Players beyond what your game loads (about 1 km) show as a name and distance.
+- **Vehicles:** a box with the name, within 1.5 km.
+- **Infected and animals:** a box, within 300 m.
+- **Who sees what:** only you see it, and it stays on when the menu is closed. It switches off by itself if you lose the permission.
 
 **FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character.
 

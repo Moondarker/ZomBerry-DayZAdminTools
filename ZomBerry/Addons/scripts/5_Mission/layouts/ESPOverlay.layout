@@ -1,0 +1,581 @@
+FrameWidgetClass ESPOverlay {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ {
+  CanvasWidgetClass ESPCanvas {
+   ignorepointer 1
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+  }
+  TextWidgetClass ESPLabel0 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel1 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel2 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel3 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel4 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel5 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel6 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel7 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel8 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel9 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel10 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel11 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel12 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel13 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel14 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel15 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel16 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel17 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel18 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel19 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel20 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel21 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel22 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel23 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel24 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel25 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel26 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel27 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel28 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel29 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel30 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel31 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel32 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel33 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel34 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel35 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel36 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel37 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel38 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+  TextWidgetClass ESPLabel39 {
+   visible 0
+   ignorepointer 1
+   position 0 0
+   size 400 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text halign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 13
+  }
+ }
+}

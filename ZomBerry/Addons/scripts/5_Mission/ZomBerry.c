@@ -150,12 +150,14 @@ modded class MissionGameplay {
 	ref ZomberryBase m_ZomberryBase;
 	ref ZomberryMenu m_ZomberryMenu;
 	ref ZBerryTokenDialog m_ZBerryTokenDialog;
+	ref ZBerryESPOverlay m_ZBerryESP;
 
 	void MissionGameplay() {
 		m_ZomberryBase = new ZomberryBase;
 		GetZBerryClientAuth();
 		GetZBerryStreams();
 		GetZBerryClientFeatures();
+		m_ZBerryESP = new ZBerryESPOverlay;
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}
@@ -220,6 +222,7 @@ modded class MissionGameplay {
 
 	override void OnUpdate(float timeslice) {
 		super.OnUpdate(timeslice);
+		if (m_ZBerryESP) m_ZBerryESP.Update();
 
 		if (GetUApi().GetInputByName("UAZBerryOpenAdminMenu").LocalPress() && !IsTokenDialogOpen()) { //The token may contain the menu key's letter
 			ZBerryClientAuth auth = GetZBerryClientAuth();

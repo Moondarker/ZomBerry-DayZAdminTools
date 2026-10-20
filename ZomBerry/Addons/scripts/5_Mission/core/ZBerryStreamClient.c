@@ -200,6 +200,11 @@ class ZBerryStreamClient {
 		return true;
 	}
 
+	bool IsAdmin(int playerId) {
+		ZBerryRosterEntry entry = m_Roster.Get(playerId);
+		return entry && entry.IsAdmin;
+	}
+
 	string GetName(int playerId) {
 		ZBerryRosterEntry entry = m_Roster.Get(playerId);
 		if (!entry) return "";

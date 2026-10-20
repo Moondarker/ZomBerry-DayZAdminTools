@@ -35,6 +35,8 @@ class ZBerryStreamServer {
 	static const float FULL_INTERVAL = 10; //A full state now and then, deltas in between
 	static const float MARKERS_INTERVAL = 10;
 
+	protected static ZBerryStreamServer s_Instance; //Weak, owned by ZomberryBase
+
 	protected ZBerryAuth m_Auth;
 	protected ref map<int, ref ZBerrySubscriber> m_Subscribers = new map<int, ref ZBerrySubscriber>; //By session id, 0 in singleplayer
 	protected ref ZBerryRosterArray m_Roster = new ZBerryRosterArray;
@@ -44,10 +46,23 @@ class ZBerryStreamServer {
 		m_Auth = auth;
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Subscribe, "Subscribe", this, ZBerrySPExec.Client );
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Tick, TICK_MS, true);
+		GetZBerryClientFeatures().OnServerFeatureChanged.Insert(OnFeatureChanged);
+		s_Instance = this;
+	}
+
+	//Server and singleplayer, NULL on clients
+	static ZBerryStreamServer Get() {
+		return s_Instance;
+	}
+
+	//ESP switched off on the server side (permission removed): stop its data too
+	protected void OnFeatureChanged(PlayerIdentity identity, string name, bool enabled) {
+		if (name == ZBerryESPOverlay.FEATURE && !enabled) SetEspActive(identity, false);
 	}
 
 	void ~ZBerryStreamServer() {
 		if (GetGame()) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove(Tick);
+		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnServerFeatureChanged.Remove(OnFeatureChanged);
 	}
 
 	protected int GetSessionId(PlayerIdentity identity) {
