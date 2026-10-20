@@ -1,56 +1,64 @@
+//Function keybinds of this client. A key runs one function, a function has at most one key.
+//Binds are saved by function name (ZomberryConfig), since function ids can change between server restarts
 class ZomberryKeybinds {
-	protected autoptr array<ref ZBerryFuncParamArray> m_funcParams = new array<ref ZBerryFuncParamArray>;
-	protected autoptr TIntIntMap m_dKeyBindList = new TIntIntMap;
-	protected autoptr TIntStringMap m_funcIdNameMap = new TIntStringMap;
+	protected ref TIntIntMap m_KeyToFunc = new TIntIntMap; //Key -> function id
+	protected ref TIntStringMap m_FuncNames = new TIntStringMap; //Function id -> name
 
 	void OnKeyPress( int key ) {
 		int funcId;
-		if (m_dKeyBindList.Find(key, funcId)) {
-			int adminId = ZBerryUIUtils.GetLocalPlayerId(); //Also without a character (dead, respawning)
-			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
-		}
+		if (!m_KeyToFunc.Find(key, funcId)) return;
+
+		int adminId = ZBerryUIUtils.GetLocalPlayerId(); //Also without a character (dead, respawning)
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommand, new Param5< int, int, int, vector, autoptr TIntArray >( funcId, adminId, adminId, ZBerryUIUtils.GetCursorPos(), {0, 0, 0} ), true );
 	}
 
+	//The server sent a new function list
 	void ClearFuncList() {
-		m_dKeyBindList.Clear();
-		m_funcIdNameMap.Clear();
+		m_KeyToFunc.Clear();
+		m_FuncNames.Clear();
 	}
 
-	int GetFuncKey(int fId) {
-		return m_dKeyBindList.GetKeyByValue(fId);
+	void AddFunc(int funcId, string funcName) {
+		m_FuncNames.Set(funcId, funcName);
+
+		int key = ZomberryBase.GetConfig().GetKeyByFunc(funcName);
+		if (key != -1) m_KeyToFunc.Set(key, funcId);
 	}
 
-	void SetFuncKey(int fId, int keyId) {
-		if (fId != -2) {
-			ZomberryBase.Log( "ZomBerryKeybinds", "SetFuncKey: Setting " + fId + " to " + keyId );
-			int toBeDeleted = m_dKeyBindList.GetKeyByValue(fId);
-
-			if (toBeDeleted) m_dKeyBindList.ReplaceKey(toBeDeleted, keyId);
-			if (m_dKeyBindList.Contains(keyId)) {
-				m_dKeyBindList.Set(keyId, fId);
-			} else {
-				m_dKeyBindList.Insert(keyId, fId);
-			}
-			if (fId == -1) {
-				m_dKeyBindList.Remove(keyId);
-				ZomberryBase.GetConfig().UpdateKeyBind("REMOVE", keyId);
-				return;
-			}
-
-			ZomberryBase.GetConfig().UpdateKeyBind(m_funcIdNameMap.Get(fId), keyId);
-		} else {
-			m_dKeyBindList.Clear();
-			ZomberryBase.Log( "ZomBerryKeybinds", "SetFuncKey: Removing ALL keybinds!" );
-			ZomberryBase.GetConfig().UpdateKeyBind("ALL", -2);
+	//-1 when the function has no key
+	int GetKey(int funcId) {
+		foreach (int key, int boundFunc : m_KeyToFunc) {
+			if (boundFunc == funcId) return key;
 		}
+		return -1;
 	}
 
-	void AddFunc(int fId, string fName) {
-		m_funcIdNameMap.Insert(fId, fName);
+	//Replaces the function's old key, and whatever function had this key before
+	void Bind(int funcId, int key) {
+		string funcName = m_FuncNames.Get(funcId);
+		if (funcName == "") return;
 
-		int keyId = ZomberryBase.GetConfig().GetKeyByFunc(fName);
-		if (keyId == -1) return;
+		RemoveKeyOf(funcId);
+		m_KeyToFunc.Set(key, funcId);
+		ZomberryBase.GetConfig().SaveKeyBind(funcName, key);
+	}
 
-		m_dKeyBindList.Insert(keyId, fId);
+	void Unbind(int funcId) {
+		if (!RemoveKeyOf(funcId)) return;
+
+		ZomberryBase.GetConfig().RemoveKeyBind(m_FuncNames.Get(funcId));
+	}
+
+	void ClearAll() {
+		m_KeyToFunc.Clear();
+		ZomberryBase.GetConfig().ClearKeyBinds();
+	}
+
+	protected bool RemoveKeyOf(int funcId) {
+		int key = GetKey(funcId);
+		if (key == -1) return false;
+
+		m_KeyToFunc.Remove(key);
+		return true;
 	}
 }

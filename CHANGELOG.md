@@ -19,6 +19,10 @@
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
 
+### Changed
+
+- **Keybind code reworked** (#51): binding, unbinding and clearing are separate operations instead of magic values. Existing keybinds keep working.
+
 ### Fixed
 
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.

@@ -63,26 +63,37 @@ class ZomberryConfig {
 		return "";
 	}
 
-	void UpdateKeyBind(string fName, int key) {
+	//Binds are saved as function name -> key, in ZomBerryKeybinds.bin. One function per key
+	void SaveKeyBind(string funcName, int key) {
+		string previous = GetFuncByKey(key);
+		if (previous != "") m_keyBindList.Remove(previous);
+
+		m_keyBindList.Set(funcName, key);
+		WriteKeyBinds(funcName + " bound to " + key);
+	}
+
+	void RemoveKeyBind(string funcName) {
+		if (!m_keyBindList.Contains(funcName)) return;
+
+		m_keyBindList.Remove(funcName);
+		WriteKeyBinds(funcName + " unbound");
+	}
+
+	void ClearKeyBinds() {
+		m_keyBindList.Clear();
+		WriteKeyBinds("all binds removed");
+	}
+
+	protected void WriteKeyBinds(string change) {
 		FileSerializer kBindsFile = new FileSerializer();
-
-		string toBeDeleted = m_keyBindList.GetKeyByValue(key);
-		if (toBeDeleted) m_keyBindList.Remove(toBeDeleted);
-		if (m_keyBindList.Contains(fName)) m_keyBindList.Remove(fName);
-
-		if (fName != "REMOVE") m_keyBindList.Insert(fName, key);
-		if (fName == "ALL" && key == -2) m_keyBindList.Clear();
-
-		if (kBindsFile.Open(cfgPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
-			kBindsFile.Write(m_keyBindList);
-			kBindsFile.Close();
-
-			if (fName != "REMOVE" && fName != "ALL") {
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: Updated KeyBinds file: " + fName + " bind to " + key );
-			} else {
-				ZomberryBase.Log( "ZomBerryConfig", "INFO: Updated KeyBinds file: unbind functions on " + key + " key(s) " );
-			}
+		if (!kBindsFile.Open(cfgPath + "ZomBerryKeybinds.bin", FileMode.WRITE)) {
+			ZomberryBase.Log( "ZomBerryConfig", "ERROR: Can't save ZomBerryKeybinds.bin (" + change + ")" );
+			return;
 		}
+
+		kBindsFile.Write(m_keyBindList);
+		kBindsFile.Close();
+		ZomberryBase.Log( "ZomBerryConfig", "INFO: Updated KeyBinds file: " + change );
 	}
 
 	private void Configure() { //TODO: JSONize this

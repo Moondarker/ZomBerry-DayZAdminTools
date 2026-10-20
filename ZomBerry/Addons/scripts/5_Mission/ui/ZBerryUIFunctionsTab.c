@@ -12,7 +12,11 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 	protected int m_LastSelFunc = -1;
 	protected int m_ActiveParamCount = 0;
-	protected int m_BindMode = 0; //0 - idle, 1 - waiting for a key, -1 - waiting for "clear all" confirmation
+	static const int BIND_IDLE = 0;
+	static const int BIND_WAITING_FOR_KEY = 1;
+	static const int BIND_CONFIRM_CLEAR_ALL = 2; //Asked with A held, confirmed by pressing the button again with A held
+
+	protected int m_BindMode = BIND_IDLE;
 
 	void SetPlayersPanel(ZBerryUIPlayersPanel playersPanel) {
 		m_PlayersPanel = playersPanel;
@@ -108,35 +112,35 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_FunctionsList.GetItemData( selFunc, 0, funcData );
 		if (funcData.param3 == -1) return;
 		if (m_FuncParams[funcData.param3].Count() > 0) { ZBerryUIUtils.Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return; }
-		int oldKey = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcData.param1);
+		bool clearAllHeld = (KeyState(KeyCode.KC_A) & 0x00000001) != 0;
 
-		if (m_BindMode != -1 && (KeyState(KeyCode.KC_A) & 0x00000001)) {
+		if (m_BindMode != BIND_CONFIRM_CLEAR_ALL && clearAllHeld) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "CLRALL?");
-			m_BindMode = -1;
-		} else if (m_BindMode == 0) {
+			m_BindMode = BIND_CONFIRM_CLEAR_ALL;
+		} else if (m_BindMode == BIND_IDLE) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "[...]");
-			m_BindMode = 1;
-		} else if (m_BindMode == -1) {
+			m_BindMode = BIND_WAITING_FOR_KEY;
+		} else if (m_BindMode == BIND_CONFIRM_CLEAR_ALL) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
-			if (KeyState(KeyCode.KC_A) & 0x00000001) ZomberryBase.GetKeyBindsMgr().SetFuncKey(-2, -1);
-			m_BindMode = 0;
-		} else {
+			if (clearAllHeld) ZomberryBase.GetKeyBindsMgr().ClearAll();
+			m_BindMode = BIND_IDLE;
+		} else { //Pressed again while waiting for a key: remove the bind
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
-			ZomberryBase.GetKeyBindsMgr().SetFuncKey(-1, oldKey);
-			m_BindMode = 0;
+			ZomberryBase.GetKeyBindsMgr().Unbind(funcData.param1);
+			m_BindMode = BIND_IDLE;
 		}
 	}
 
 	override void OnBindKeyPress(int key) {
 		if (key == KeyCode.KC_ESCAPE) return;
-		if (m_BindMode != 1 || m_LastSelFunc == -1) return;
+		if (m_BindMode != BIND_WAITING_FOR_KEY || m_LastSelFunc == -1) return;
 
 		Param3<int, bool, int> funcData;
 		m_FunctionsList.GetItemData( m_LastSelFunc, 0, funcData );
-		ZomberryBase.GetKeyBindsMgr().SetFuncKey(funcData.param1, key);
+		ZomberryBase.GetKeyBindsMgr().Bind(funcData.param1, key);
 
 		ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(key));
-		m_BindMode = 0;
+		m_BindMode = BIND_IDLE;
 	}
 
 	protected void SelectFunction() {
@@ -158,11 +162,11 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	}
 
 	protected void UpdateBindButtonText(int funcId) {
-		int fKeyBind = ZomberryBase.GetKeyBindsMgr().GetFuncKey(funcId);
+		int fKeyBind = ZomberryBase.GetKeyBindsMgr().GetKey(funcId);
 
-		if (m_BindMode == 1) {
+		if (m_BindMode == BIND_WAITING_FOR_KEY) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "[...]");
-		} else if (fKeyBind) {
+		} else if (fKeyBind != -1) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(fKeyBind));
 		} else {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
