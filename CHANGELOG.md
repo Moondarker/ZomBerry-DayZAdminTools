@@ -2,7 +2,12 @@
 
 ## 0.7.1 (in development)
 
-Nothing yet.
+### Added
+
+- **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
+  - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).
+  - Storage and base parts are grouped per area, with a count.
+  - The server keeps track of these objects as they appear and disappear, instead of scanning the map.
 
 ## 0.7.0
 

@@ -22,7 +22,9 @@ enum ZBerryRPCOp {
 	Ban = 15, //Client -> server: session id (-1: offline), offline id, reason, duration in seconds (0: permanent)
 	Unban = 16, //Client -> server: Steam64 id or GUID
 	BansRequest = 17,
-	BansData = 18 //Server -> client: ban list, server time
+	BansData = 18, //Server -> client: ban list, server time
+	MapMarkersRequest = 19, //Client -> server: bit mask of ZBerryMapCategory values
+	MapMarkers = 20 //Server -> client: markers, how many were left out
 }
 
 //Which side received the call

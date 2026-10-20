@@ -5,6 +5,7 @@ class ZBerryPermissions {
 	static const string MAP_VIEW = "zomberry.map.view";
 	static const string MAP_PLAYER_MARKERS = "zomberry.map.player_markers";
 	static const string MAP_TELEPORT = "zomberry.map.teleport";
+	static const string MAP_MARKERS_PREFIX = "zomberry.map.markers."; //+ vehicles, tents, storage, bases, bodies
 	static const string SPAWN_GROUND = "zomberry.spawn.ground"; //Cursor and Ground targets
 	static const string SPAWN_INVENTORY = "zomberry.spawn.inventory";
 	static const string PERMISSIONS_MANAGE = "zomberry.permissions.manage";
@@ -17,9 +18,19 @@ class ZBerryPermissions {
 		return FUNCTIONS_PREFIX + funcName;
 	}
 
+	//Map markers of one ZBerryMapCategory
+	static string MapMarkerNode(int category) {
+		return MAP_MARKERS_PREFIX + ZBerryMapCategory.GetKey(category);
+	}
+
 	//Every fixed node; function nodes are added from the registered commands
 	static TStringArray GetFixedNodes() {
-		return {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE};
+		TStringArray nodes = {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT};
+		for (int category = 0; category < ZBerryMapCategory.COUNT; ++category) {
+			nodes.Insert(MapMarkerNode(category));
+		}
+		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE});
+		return nodes;
 	}
 
 	static bool Matches(string pattern, string node) {

@@ -17,6 +17,7 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Ban, "Ban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Unban, "Unban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.BansRequest, "BansRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.MapMarkersRequest, "MapMarkersRequest", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -198,6 +199,28 @@ class ZBerryServerRPC {
 
 		string result = ZBerrySpawner.Spawn(tgtParam.param1, ZBGetPlayerById(GetSenderId(sender)), tgtParam.param3, tgtParam.param4);
 		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " " + result);
+	}
+
+	//Only the requested categories the sender may see
+	void MapMarkersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< int > request; //Bit mask of ZBerryMapCategory values
+		if ( !ctx.Read( request ) ) return;
+		if (GetGame().IsMultiplayer() && (type != ZBerryCallType.Server || !GetGame().IsServer() || !sender)) return;
+
+		TIntArray categories = new TIntArray;
+		for (int category = 0; category < ZBerryMapCategory.COUNT; ++category) {
+			if ((request.param1 & (1 << category)) == 0) continue;
+			if (m_Auth.HasPermission(sender, ZBerryPermissions.MapMarkerNode(category))) categories.Insert(category);
+		}
+		if (categories.Count() == 0) {
+			if (request.param1 != 0) ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to get map markers, but IS NOT ALLOWED (" + ZBerryPermissions.MAP_MARKERS_PREFIX + "*)" );
+			return;
+		}
+
+		int dropped;
+		ZBerryMapMarkerArray markers = ZBerryMapMarkers.Build(categories, dropped);
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.MapMarkers, new Param2<ref ZBerryMapMarkerArray, int>(markers, dropped), true, sender );
+		ZomberryBase.DebugLog( 1, "ZomBerryDbg", Who(sender) + " - " + markers.Count() + " map markers" );
 	}
 
 	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
