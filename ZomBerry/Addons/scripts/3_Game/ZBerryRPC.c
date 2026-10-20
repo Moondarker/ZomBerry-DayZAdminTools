@@ -24,7 +24,8 @@ enum ZBerryRPCOp {
 	BansRequest = 17,
 	BansData = 18, //Server -> client: ban list, server time
 	MapMarkersRequest = 19, //Client -> server: bit mask of ZBerryMapCategory values
-	MapMarkers = 20 //Server -> client: markers, how many were left out
+	MapMarkers = 20, //Server -> client: markers, how many were left out
+	PlayerHeadings = 21 //Server -> client: session ids, yaw in degrees (only when SyncPlayersRequest asked for them)
 }
 
 //Which side received the call

@@ -8,6 +8,7 @@
   - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).
   - Storage and base parts are grouped per area, with a count.
   - The server keeps track of these objects as they appear and disappear, instead of scanning the map.
+- **Player orientation on the map** (#61): an arrow in front of each player marker shows which way they face.
 
 ## 0.7.0
 

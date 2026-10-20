@@ -209,6 +209,15 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_FunctionsTab.SetFunctions(catListS.param1);
 	}
 
+	void PlayerHeadings( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2<ref TIntArray, ref TFloatArray> headingsS; //Session ids, yaw in degrees
+
+		if (type != ZBerryCallType.Client) return;
+		if ( !ctx.Read( headingsS ) || !headingsS.param1 || !headingsS.param2 ) return;
+
+		m_MapTab.SetHeadings(headingsS.param1, headingsS.param2);
+	}
+
 	void MapMarkers( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param2<ref ZBerryMapMarkerArray, int> markersS; //Markers, how many were left out
 

@@ -216,7 +216,7 @@ The stock set:
 
 ### Map
 
-With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. They update every 2 seconds while the map is open.
+With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. They update every 2 seconds while the map is open.
 
 The buttons along the top of the map switch marker types on and off. Each one only appears with its permission.
 - **Players:** on by default.

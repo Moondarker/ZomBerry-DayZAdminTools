@@ -165,6 +165,7 @@ modded class MissionGameplay {
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctions, "SyncFunctions", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.BansData, "BansData", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.MapMarkers, "MapMarkers", m_ZomberryMenu, ZBerrySPExec.Client );
+			GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerHeadings, "PlayerHeadings", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryClientAuth().SetMenu(m_ZomberryMenu);
 		}
 

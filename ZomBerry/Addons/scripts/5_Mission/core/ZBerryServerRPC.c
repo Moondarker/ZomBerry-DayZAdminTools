@@ -1,6 +1,8 @@
 //Requests from the admin menu, handled on the server (or locally in singleplayer).
 //Each handler reads its request, checks CanRun, then does the work: one code path for multiplayer and singleplayer
 class ZBerryServerRPC {
+	static const int SYNC_HEADINGS = 1; //SyncPlayersRequest flag
+
 	protected ZBerryAuth m_Auth;
 	protected ZBerryBans m_Bans;
 
@@ -59,11 +61,43 @@ class ZBerryServerRPC {
 	}
 
 	void SyncPlayersRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< int > syncFlags; //SYNC_HEADINGS: also send which way players face (0.7.0 clients always send 0)
+		int flags = 0;
+		if ( ctx.Read( syncFlags ) ) flags = syncFlags.param1;
 		if (!CanRun(type, sender, {ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS}, "get the player list")) return;
 
 		ZBerryPlayerArray playerList = BuildPlayerList(sender);
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayers, new Param2<ref ZBerryPlayerArray, int> (playerList, GetGame().GetTime()), true, sender );
+		if ((flags & SYNC_HEADINGS) != 0 && m_Auth.HasPermission(sender, ZBerryPermissions.MAP_PLAYER_MARKERS)) SendPlayerHeadings(sender);
 		ZomberryBase.DebugLog( 1, "ZomBerryDbg", Who(sender) + " - player list sync"); //Every 2 seconds while the map is open
+	}
+
+	//Yaw of every player (degrees, as the vanilla map's compass shows it), matched to the list by session id.
+	//A separate message, so the player list keeps the layout 0.7.0 clients expect
+	protected void SendPlayerHeadings(PlayerIdentity recipient) {
+		TIntArray ids = new TIntArray;
+		TFloatArray headings = new TFloatArray;
+
+		array<Man> players = new array<Man>;
+		if (GetGame().IsMultiplayer()) {
+			GetGame().GetPlayers(players);
+		} else if (GetGame().GetPlayer()) {
+			players.Insert(GetGame().GetPlayer());
+		}
+
+		foreach (Man man : players) {
+			int id = 0;
+			if (GetGame().IsMultiplayer()) {
+				if (!man.GetIdentity()) continue;
+				id = man.GetIdentity().GetPlayerId();
+			}
+
+			vector yawPitchRoll = man.GetYawPitchRoll();
+			ids.Insert(id);
+			headings.Insert(yawPitchRoll[0]);
+		}
+
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerHeadings, new Param2<ref TIntArray, ref TFloatArray>(ids, headings), true, recipient );
 	}
 
 	//Positions only go to admins who see map markers, health and blood only to those who see the player list

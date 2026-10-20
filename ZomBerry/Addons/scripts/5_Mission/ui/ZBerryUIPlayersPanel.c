@@ -51,11 +51,14 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlyInfo = TextWidget.Cast( m_Root.FindAnyWidget("PlayerInfo") );
 	}
 
-	//The list feeds both this panel and the map markers, so either right is enough to ask for it
-	static void RequestSync() {
+	//The list feeds both this panel and the map markers, so either right is enough to ask for it.
+	//withHeadings: the map also wants which way players face
+	static void RequestSync(bool withHeadings = false) {
 		if (!GetZBerryClientAuth().HasAny({ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS})) return;
 
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( 0 ), true, NULL );
+		int flags = 0;
+		if (withHeadings) flags = ZBerryServerRPC.SYNC_HEADINGS;
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( flags ), true, NULL );
 	}
 
 	static void RequestBans() {
@@ -220,7 +223,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersTimer += tDelta;
 		if ((mapShown || listShown) && m_PlayersTimer >= playersInterval) {
 			m_PlayersTimer = 0;
-			RequestSync();
+			RequestSync(mapShown);
 		}
 
 		if (!m_BansMode) return;

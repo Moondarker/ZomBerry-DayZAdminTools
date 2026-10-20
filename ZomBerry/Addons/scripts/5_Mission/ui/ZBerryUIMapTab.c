@@ -1,4 +1,4 @@
-//Map with player and object markers (filter buttons on top), cursor coordinates and Alt+LMB teleport
+//Map with player and object markers (filter buttons on top), arrows for where players face, cursor coordinates and Alt+LMB teleport
 class ZBerryUIMapTab extends ZBerryUITab {
 	static const int COLOR_MARK_ADMIN = 0xFF47EB00;
 	static const int COLOR_MARK_PLAYER = 0xFF55AAFF;
@@ -16,6 +16,8 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	}
 
 	protected MapWidget m_MapWidget;
+	protected CanvasWidget m_Arrows; //Over the map, redrawn every frame (the map can move and zoom)
+	protected ref map<int, float> m_Headings = new map<int, float>; //Session id -> yaw in degrees
 	protected TextWidget m_MapText, m_MapHint;
 	protected ButtonWidget m_PlayersFilter;
 	protected ref array<ButtonWidget> m_CategoryFilters = new array<ButtonWidget>; //Per ZBerryMapCategory
@@ -36,6 +38,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		m_MapWidget = MapWidget.Cast( BindWidget("MapWidget") );
 		m_MapText = TextWidget.Cast( m_Root.FindAnyWidget("MapText") );
 		m_MapHint = TextWidget.Cast( m_Root.FindAnyWidget("MapHint") );
+		m_Arrows = CanvasWidget.Cast( m_Root.FindAnyWidget("MapArrows") );
 
 		m_PlayersFilter = ButtonWidget.Cast( BindWidget("MapFilterPlayers") );
 		TStringArray buttonNames = {"MapFilterVehicles", "MapFilterTents", "MapFilterStorage", "MapFilterBases", "MapFilterBodies"};
@@ -148,7 +151,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		SetActionButton("WIP", ZBerryUIUtils.TEXT_DEFAULT);
 
-		ZBerryUIPlayersPanel.RequestSync(); //Fresh markers right away, the players panel refreshes them from then on
+		ZBerryUIPlayersPanel.RequestSync(true); //Fresh markers right away, the players panel refreshes them from then on
 		RequestMarkers();
 	}
 
@@ -161,6 +164,52 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		m_MapDiff = false;
 	}
 
+	void SetHeadings(TIntArray ids, TFloatArray headings) {
+		m_Headings.Clear();
+		for (int i = 0; i < ids.Count() && i < headings.Count(); ++i) {
+			m_Headings.Set(ids[i], headings[i]);
+		}
+	}
+
+	//A small arrow in front of each player marker, pointing where they face. Canvas coordinates are physical pixels
+	protected void DrawArrows() {
+		if (!m_Arrows) return;
+		m_Arrows.Clear();
+		if (!m_LastPlayers || !m_ShowPlayers || !GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) return;
+
+		float canvasX, canvasY, canvasWidth, canvasHeight;
+		m_Arrows.GetScreenPos(canvasX, canvasY);
+		m_Arrows.GetScreenSize(canvasWidth, canvasHeight);
+		float size = 9 * ZBerryUIUtils.GetUIScale();
+		float lineWidth = Math.Max(1, 2 * ZBerryUIUtils.GetUIScale());
+
+		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			float heading;
+			if (!m_Headings.Find(ply.m_PlayerID, heading)) continue;
+
+			vector screenPos = m_MapWidget.MapToScreen(ply.m_PlayerPos);
+			float x = screenPos[0] - canvasX;
+			float y = screenPos[1] - canvasY;
+			if (x < 0 || y < 0 || x > canvasWidth || y > canvasHeight) continue;
+
+			//Yaw 0 is north (up), growing clockwise; screen y grows downwards
+			float angle = heading * Math.DEG2RAD;
+			float dirX = Math.Sin(angle);
+			float dirY = -Math.Cos(angle);
+			float tipX = x + dirX * size * 2.2;
+			float tipY = y + dirY * size * 2.2;
+			float baseX = x + dirX * size * 1.1;
+			float baseY = y + dirY * size * 1.1;
+			float sideX = -dirY * size * 0.6;
+			float sideY = dirX * size * 0.6;
+
+			int color = COLOR_MARK_PLAYER;
+			if (ply.m_IsAdmin) color = COLOR_MARK_ADMIN;
+			m_Arrows.DrawLine(baseX + sideX, baseY + sideY, tipX, tipY, lineWidth, color);
+			m_Arrows.DrawLine(baseX - sideX, baseY - sideY, tipX, tipY, lineWidth, color);
+		}
+	}
+
 	void SetPlayers(ZBerryPlayerArray players) {
 		m_LastPlayers = players;
 		Redraw();
@@ -171,6 +220,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		m_MarkersTimer += tDelta;
 		if (m_MarkersTimer >= MARKERS_REFRESH_INTERVAL && GetCategoryMask() != 0) RequestMarkers();
+		DrawArrows();
 
 		//Map widget resets its position after being hidden, so restore the last one
 		if (!m_MapDiff && m_MapPos && m_MapPos != m_MapWidget.GetMapPos()) {
