@@ -4,7 +4,8 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	static const int COLOR_MARK_ADMIN = 0xFF47EB00;
 	static const int COLOR_MARK_PLAYER = 0xFF55AAFF;
 	static const string MARK_ICON = "\\dz\\gear\\navigation\\data\\map_tree_ca.paa";
-	static const string HINT = "Teleport using Alt+LMB";
+	static const string HINT = "Teleport: Alt+LMB";
+	static const string HINT_PLAYERS = "Teleport: Alt+LMB, selected player: Ctrl+LMB";
 
 	//Per marker category (ZBerryEntityCategory below MARKER_COUNT)
 	static TIntArray GetCategoryColors() {
@@ -21,6 +22,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	protected ButtonWidget m_PlayersFilter;
 	protected ref array<ButtonWidget> m_CategoryFilters = new array<ButtonWidget>; //Per marker category
 
+	protected ZBerryUIPlayersPanel m_PlayersPanel; //Whom Ctrl+LMB teleports
 	protected bool m_ShowPlayers = true;
 	protected ref array<bool> m_ShowCategory = new array<bool>;
 	protected ref ZBerryPlayerArray m_LastPlayers;
@@ -77,6 +79,15 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		return mask;
 	}
 
+	void SetPlayersPanel(ZBerryUIPlayersPanel playersPanel) {
+		m_PlayersPanel = playersPanel;
+	}
+
+	protected string GetHint() {
+		if (GetZBerryClientAuth().Has(ZBerryPermissions.MAP_TELEPORT_PLAYERS)) return HINT_PLAYERS;
+		return HINT;
+	}
+
 	protected void OnMarkersChanged(int category) {
 		if (IsVisible()) Redraw();
 	}
@@ -101,9 +112,9 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		}
 
 		if (dropped > 0) {
-			m_MapHint.SetText(HINT + " | " + dropped + " markers not shown (limit)");
+			m_MapHint.SetText(GetHint() + " | " + dropped + " markers not shown (limit)");
 		} else {
-			m_MapHint.SetText(HINT);
+			m_MapHint.SetText(GetHint());
 		}
 
 		if (!m_LastPlayers || !m_ShowPlayers || !GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS)) return;
@@ -238,13 +249,27 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		vector mapXZY = m_MapWidget.ScreenToMap(Vector(sX, sY, 0));
 		m_MapText.SetText("X: " + mapXZY[0] + "  Y: " + mapXZY[2]);
 
-		if ((KeyState(KeyCode.KC_LMENU) & 0x00000001) && GetMouseState(MouseState.LEFT) < 0) { //OnClick doesn't work inside MapWidget
-			if (m_TeleportAllowed && GetZBerryClientAuth().Has(ZBerryPermissions.MAP_TELEPORT)) {
-				m_TeleportAllowed = false;
-				GetZBerryRPC().SendRPC( ZBerryRPCOp.MapTeleport, new Param1< vector >( mapXZY ), true );
-			}
-		} else {
+		//OnClick doesn't work inside MapWidget: Alt + left button teleports the admin, Ctrl + left button the selected player
+		bool clicked = GetMouseState(MouseState.LEFT) < 0;
+		bool selfTeleport = clicked && (KeyState(KeyCode.KC_LMENU) & 0x00000001);
+		bool playerTeleport = clicked && (KeyState(KeyCode.KC_LCONTROL) & 0x00000001);
+		if (!selfTeleport && !playerTeleport) {
 			m_TeleportAllowed = true;
+			return;
+		}
+		if (!m_TeleportAllowed) return;
+		m_TeleportAllowed = false;
+
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		if (selfTeleport && auth.Has(ZBerryPermissions.MAP_TELEPORT)) {
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.MapTeleport, new Param2< vector, int >( mapXZY, -1 ), true );
+		} else if (playerTeleport && auth.Has(ZBerryPermissions.MAP_TELEPORT_PLAYERS)) {
+			int playerId;
+			if (!m_PlayersPanel || !m_PlayersPanel.GetSelectedPlayerId(playerId)) {
+				ZBerryUIUtils.Message("Double-click a player in the list first");
+				return;
+			}
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.MapTeleport, new Param2< vector, int >( mapXZY, playerId ), true );
 		}
 	}
 

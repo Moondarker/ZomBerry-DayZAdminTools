@@ -18,6 +18,7 @@
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
+- **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
 - **Teleport all players to me** (#57): a new stock function. You confirm it by running it twice, and players are placed in a ring around you. It skips players in vehicles and admins protected from your rank.

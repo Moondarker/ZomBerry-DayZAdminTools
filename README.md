@@ -103,6 +103,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.map.view` | The Map tab |
 | `zomberry.map.player_markers` | Player markers on the map |
 | `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
+| `zomberry.map.teleport_players` | Teleporting the selected player with `Ctrl` + click on the map. Follows the protection nodes |
 | `zomberry.map.markers.<category>` | Object markers on the map: `vehicles`, `tents`, `storage`, `bases` or `bodies`. `zomberry.map.markers.*` grants all of them |
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
@@ -267,6 +268,7 @@ The buttons along the top of the map switch marker types on and off. Each one on
 
 Storage and base parts are grouped: one marker per 50 m square, with a count, such as "Base (23)". Objects in someone's hands or inventory aren't shown. Object markers refresh every 10 seconds, and one map shows up to 1,000 of them. If there are more, the hint below the map says how many were left out.
 - **Teleporting:** hold `Alt` and click a spot.
+- **Teleporting a player:** select them in the list, then hold `Ctrl` and click a spot.
 - **Zooming out:** double-click the map.
 
 The cursor's coordinates are shown below the map.

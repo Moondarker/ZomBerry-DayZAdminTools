@@ -181,13 +181,18 @@ class ZBerryServerRPC {
 	}
 
 	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
-		Param1< vector > teleParam;
+		Param2< vector, int > teleParam; //Map position, selected player (-1: the admin themselves)
 		if ( !ctx.Read( teleParam ) ) return;
+
+		vector position = Vector(teleParam.param1[0], GetGame().SurfaceY(teleParam.param1[0], teleParam.param1[2]), teleParam.param1[2]);
+		if (teleParam.param2 >= 0 && teleParam.param2 != GetSenderId(sender)) {
+			TeleportPlayer(type, sender, teleParam.param2, position);
+			return;
+		}
 
 		if (!CanRun(type, sender, {ZBerryPermissions.MAP_TELEPORT}, "teleport")) return;
 
 		PlayerBase adminPly = ZBGetPlayerById(GetSenderId(sender));
-		vector position = Vector(teleParam.param1[0], GetGame().SurfaceY(teleParam.param1[0], teleParam.param1[2]), teleParam.param1[2]);
 
 		if (!adminPly) {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " tried to teleport, but has no character");
@@ -197,6 +202,29 @@ class ZBerryServerRPC {
 			adminPly.SetPosition(position);
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " teleported to position " + position.ToString());
 		}
+	}
+
+	//Another player to a map position: harmful, so the rank protections apply
+	protected void TeleportPlayer(ZBerryCallType type, PlayerIdentity sender, int targetId, vector position) {
+		if (!CanRun(type, sender, {ZBerryPermissions.MAP_TELEPORT_PLAYERS}, "teleport another player")) return;
+
+		PlayerBase targetPly = ZBGetPlayerById(targetId);
+		if (!targetPly || !targetPly.GetIdentity()) {
+			Tell(sender, "Teleport failed: the player has left");
+			return;
+		}
+		if (!m_Auth.CanTarget(sender, targetPly.GetIdentity(), true)) {
+			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to teleport " + Who(targetPly.GetIdentity()) + ", refused: the target's group is protected from their rank" );
+			Tell(sender, "Can't teleport " + targetPly.GetIdentity().GetName() + ": their group is protected from your rank");
+			return;
+		}
+		if (!ZomberryStockFunctions.SetPosSafe(targetPly, position)) {
+			Tell(sender, "Teleport failed: " + targetPly.GetIdentity().GetName() + " is in a vehicle");
+			return;
+		}
+
+		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " teleported " + Who(targetPly.GetIdentity()) + " to position " + position.ToString() );
+		Tell(sender, "Teleported " + targetPly.GetIdentity().GetName());
 	}
 
 	//Why the sender may not kick or ban this player, "" if they may: admins only act on lower ranks, superadmins on everyone
