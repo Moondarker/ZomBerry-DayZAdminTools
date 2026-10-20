@@ -215,13 +215,19 @@ The stock set:
 
 | Category | Functions |
 |---|---|
-| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, repair item in hands, refuel and repair nearby vehicles |
+| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, spectate target, repair item in hands, refuel and repair nearby vehicles |
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, teleport all players to you, ESP |
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
+
+**Spectate target:** see through the selected player's eyes.
+- **Camera:** it follows where they look, including their aim up and down. While they play in third person, the camera moves over their shoulder.
+- **Your body** stays frozen where you left it.
+- **Stopping:** run the function again, or it ends by itself when they die or leave.
+- **Can't be combined:** you can't use it together with FreeCam.
 
 **ESP:** draws players through walls on your own screen. Its three options switch players, vehicles, and infected and animals on or off, and running it with all three off switches it off.
 - **Players:** a box with name, distance, health and blood, and a skeleton within 150 m. Players beyond what your game loads (about 1 km) show as a name and distance.

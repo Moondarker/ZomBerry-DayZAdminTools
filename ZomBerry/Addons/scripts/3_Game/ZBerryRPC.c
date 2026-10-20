@@ -26,7 +26,8 @@ enum ZBerryRPCOp {
 	Roster = 23, //Server -> client: who is online, when it changed
 	PlayerState = 24, //Server -> client: packed positions, headings, health (ZBerryStatePacker)
 	Markers = 25, //Server -> client: the map markers of one category, when they changed
-	ClientFeature = 26 //Server -> client: switch a client-side feature (name, on/off, arguments)
+	ClientFeature = 26, //Server -> client: switch a client-side feature (name, on/off, arguments)
+	CameraMode = 27 //Client -> server: a watched player's 1st/3rd person mode (ZBerrySpectate)
 }
 
 //Which side received the call

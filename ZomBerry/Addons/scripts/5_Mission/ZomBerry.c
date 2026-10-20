@@ -158,6 +158,7 @@ modded class MissionGameplay {
 		GetZBerryStreams();
 		GetZBerryClientFeatures();
 		m_ZBerryESP = new ZBerryESPOverlay;
+		GetZBerrySpectate(); //Registers its client features: spectating, and reporting the camera mode while watched
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}

@@ -22,6 +22,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Feed", {0, 1, 1,}, {"No", "Yes"}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false, NULL, true); //Can switch an admin's god mode off
+		m_ZomberryCmdAPI.AddCommand("Spectate target", "SpectateTarget", this, "OnTarget", true);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
@@ -493,6 +494,41 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Target blood level was set to " + fValues[0]);
 	}
 
+	//The admin's body stays where it is and doesn't react to input while they're in FreeCam or spectating
+	static void FreezeBody(PlayerBase body, bool frozen) {
+		HumanInputController input = body.GetInputController();
+		if (!input) return;
+
+		input.OverrideMovementSpeed(frozen, 0);
+		input.OverrideRaise(frozen, false);
+		input.OverrideAimChangeX(frozen, 0);
+		input.OverrideAimChangeY(frozen, 0);
+	}
+
+	//Through the selected player's eyes (or over their shoulder while they're in third person). Run it again to stop
+	void SpectateTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return;
+
+		ZBerrySpectate spectate = GetZBerrySpectate();
+		if (spectate.IsWatching(adminId)) {
+			spectate.Stop(adminId, "Returned to player body");
+			return;
+		}
+		if (m_spectatingList.Find(adminId) != -1) {
+			MessagePlayer(admin, "Leave FreeCam first");
+			return;
+		}
+
+		PlayerBase target = ZBGetPlayerById(targetId);
+		string problem;
+		if (!spectate.Start(admin, target, ZBerryPermissions.FunctionNode(funcName), problem)) {
+			MessagePlayer(admin, "Can't spectate: " + problem);
+			return;
+		}
+		MessagePlayer(admin, "Spectating " + GetPlayerName(target) + ", run Spectate target again to return");
+	}
+
 	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
 		int listId = m_spectatingList.Find(adminId);
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
@@ -500,26 +536,21 @@ class ZomberryStockFunctions {
 			if (listId != -1) m_spectatingList.Remove(listId);
 			return;
 		}
+		if (GetZBerrySpectate().IsWatching(adminId)) {
+			MessagePlayer(adminPly, "Stop spectating first");
+			return;
+		}
 
 		PlayerIdentity adminIdent = adminPly.GetIdentity();
-		HumanInputController adminInput = adminPly.GetInputController();
 
 		if (listId != -1) {
-			adminInput.OverrideMovementSpeed(false, 0);
-			adminInput.OverrideRaise(false, false);
-			adminInput.OverrideAimChangeX(false, 0);
-			adminInput.OverrideAimChangeY(false, 0);
-
+			FreezeBody(adminPly, false);
 			m_spectatingList.Remove(listId);
 
 			GetGame().SelectPlayer(adminIdent, adminPly);
 			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
 		} else {
-			adminInput.OverrideMovementSpeed(true, 0);
-			adminInput.OverrideRaise(true, false);
-			adminInput.OverrideAimChangeX(true, 0);
-			adminInput.OverrideAimChangeY(true, 0);
-
+			FreezeBody(adminPly, true);
 			m_spectatingList.Insert(adminId);
 
 			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
