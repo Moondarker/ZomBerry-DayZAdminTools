@@ -59,6 +59,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
   - `ZomberryBase.Log` is for plain lines only: startup, config, errors, details.
   - New event kinds are appended to `ZBerryEventType`.
+  - Commands are logged by the dispatcher (`ZBerryServerRPC.ExecuteCommand`). A command that does nothing reports it with `RefuseCall(reason)`, and a first run that only asks for confirmation with `AwaitConfirmation()` (stock functions: `Refuse`, `AskToConfirm`).
 - **Log through `ZomberryBase.Log(module, text)`**, with a `ZomBerry<Area>` module name and an `INFO:`, `WARN:` or `ERROR:` prefix. Log every admin action on the server with the admin, and with the target if there is one. Chatty events go through `ZomberryBase.DebugLog(level, ...)`.
 
 ## Enforce Script pitfalls

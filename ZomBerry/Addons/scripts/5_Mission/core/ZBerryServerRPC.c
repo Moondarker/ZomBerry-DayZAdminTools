@@ -112,12 +112,25 @@ class ZBerryServerRPC {
 			return;
 		}
 
+		ZomberryCmdAPI api = GetZomberryCmdAPI();
+		api.BeginCall();
 		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
 
 		int flags = 0;
 		if (cmdFunc.IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
 		string call = cmdFunc.DescribeCall(funcParam.param4);
-		if (targetId != adminId && targetPly && targetPly.GetIdentity()) {
+		bool onTarget = targetId != adminId && targetPly && targetPly.GetIdentity();
+		if (api.GetCallOutcome() == ZBerryCallOutcome.CONFIRMING) return; //The confirmed run gets logged
+		if (api.GetCallOutcome() == ZBerryCallOutcome.REFUSED) {
+			if (onTarget) {
+				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, targetPly.GetIdentity(), "{actor} tried to run " + call + " on {target}: " + api.GetCallReason() );
+			} else {
+				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to run " + call + ": " + api.GetCallReason() );
+			}
+			return;
+		}
+
+		if (onTarget) {
 			ZomberryBase.LogEvent( ZBerryEventType.FUNCTION_PLAYER, sender, targetPly.GetIdentity(), "{actor} ran " + call + " on {target}", flags );
 		} else if (cmdFunc.IsServerWide()) {
 			ZomberryBase.LogEvent( ZBerryEventType.FUNCTION_SERVER, sender, NULL, "{actor} ran " + call, flags );

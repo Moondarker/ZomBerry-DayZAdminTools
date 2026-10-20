@@ -1,6 +1,15 @@
+//How a command call ended, for the log: commands report anything but Done themselves (RefuseCall, AwaitConfirmation)
+enum ZBerryCallOutcome {
+	DONE,
+	REFUSED, //Nothing happened: logged as refused, with the reason
+	CONFIRMING //It only asked the admin to run it again: not logged, the confirmed run is
+};
+
 class ZomberryCmdAPI {
 	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
 	protected int m_lastFuncId = 0;
+	protected int m_CallOutcome = ZBerryCallOutcome.DONE;
+	protected string m_CallReason = "";
 
 	void AddCategory(string catName, int funcColor) {
 		if (m_oCategoryList.Contains(catName)) {
@@ -49,6 +58,39 @@ class ZomberryCmdAPI {
 	*/
 	void SetClientFeature(PlayerIdentity identity, string feature, bool enabled, TIntArray args = NULL, string requiredNode = "") {
 		GetZBerryClientFeatures().Set(identity, feature, enabled, args, requiredNode);
+	}
+
+	/**
+	\brief Server, from inside a command: this call did nothing (no target, the wrong target, nothing to act on).
+		The log files it as refused, with the reason, instead of as run. Tell the admin yourself (MessagePlayer)
+		\param reason \p string why, as the admin was told ("Select another player to freeze")
+	*/
+	void RefuseCall(string reason) {
+		m_CallOutcome = ZBerryCallOutcome.REFUSED;
+		m_CallReason = reason;
+	}
+
+	/**
+	\brief Server, from inside a command: this call only asked the admin to confirm by running it again.
+		It isn't logged; the confirmed run is
+	*/
+	void AwaitConfirmation() {
+		m_CallOutcome = ZBerryCallOutcome.CONFIRMING;
+		m_CallReason = "";
+	}
+
+	//ZomBerry's dispatcher, around every command call (calls run synchronously, one at a time)
+	void BeginCall() {
+		m_CallOutcome = ZBerryCallOutcome.DONE;
+		m_CallReason = "";
+	}
+
+	int GetCallOutcome() {
+		return m_CallOutcome;
+	}
+
+	string GetCallReason() {
+		return m_CallReason;
 	}
 
 	//Server: is the feature on for this player's client

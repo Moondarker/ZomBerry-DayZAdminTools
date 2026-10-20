@@ -343,6 +343,21 @@ Commands without parameters may leave out the `fValues` argument.
 Helpers:
 - **`ZBGetPlayerById(int sessionId)`** returns the `PlayerBase` of a session id, or `NULL` if that player is gone.
 - **`ZomberryStockFunctions.MessagePlayer(PlayerBase player, string message)`** shows a `[ZomBerry]` chat message to one player.
+- **`GetZomberryCmdAPI().RefuseCall(string reason)`**: call it from your command when it does nothing (no valid target, nothing to act on). The admin log then files the call as refused, with the reason, instead of as run. Tell the admin yourself with `MessagePlayer`.
+- **`GetZomberryCmdAPI().AwaitConfirmation()`**: call it when this run only asked the admin to run the command again to confirm. That run isn't logged; the confirmed one is.
+
+```c
+void MyModHeal( string funcName, int adminId, int targetId, vector cursor ) {
+	PlayerBase admin = ZBGetPlayerById(adminId);
+	PlayerBase target = ZBGetPlayerById(targetId);
+	if (!target || !target.IsAlive()) {
+		ZomberryStockFunctions.MessagePlayer(admin, "Select a living player");
+		GetZomberryCmdAPI().RefuseCall("Select a living player");
+		return;
+	}
+	//...
+}
+```
 
 Working examples are in [ZomBerryStockFnc.c](ZomBerry/Addons/scripts/5_Mission/ZomBerryStockFnc.c), with all stock commands, and [Examples/missionExample.chernarusplus/init.c](Examples/missionExample.chernarusplus/init.c), with commands added from a mission.
 

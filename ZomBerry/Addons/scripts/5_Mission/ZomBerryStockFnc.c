@@ -93,6 +93,18 @@ class ZomberryStockFunctions {
 		}
 	}
 
+	//Tells the admin why nothing happened, and has the call logged as refused instead of as run
+	protected void Refuse(PlayerBase admin, string message) {
+		MessagePlayer(admin, message);
+		m_ZomberryCmdAPI.RefuseCall(message);
+	}
+
+	//The first of two runs: the call isn't logged, the confirmed one is
+	protected void AskToConfirm(PlayerBase admin, string message) {
+		MessagePlayer(admin, message);
+		m_ZomberryCmdAPI.AwaitConfirmation();
+	}
+
 	//Looks both players up; returns false when the admin has no character (dead, respawning),
 	//tells the admin and returns false when the target is gone
 	protected bool GetTargets(int adminId, int targetId, out PlayerBase admin, out PlayerBase target) {
@@ -100,11 +112,12 @@ class ZomberryStockFunctions {
 		target = ZBGetPlayerById(targetId);
 		if (!admin) {
 			ZomberryBase.Log( "ZomBerryFnc", "WARN: " + ZBDescribePlayer(ZBGetIdentityById(adminId)) + " has no character, function skipped" );
+			m_ZomberryCmdAPI.RefuseCall("No character (dead or respawning)");
 			return false;
 		}
 		if (target) return true;
 
-		MessagePlayer(admin, "Target not found (probably disconnected?)");
+		Refuse(admin, "Target not found (probably disconnected?)");
 		return false;
 	}
 
@@ -151,7 +164,7 @@ class ZomberryStockFunctions {
 		targetPos[1] = GetGame().SurfaceY(targetPos[0], targetPos[2]);
 
 		if (!SetPosSafe(admin, targetPos)) {
-			MessagePlayer(admin, "Unable to teleport: admin in vehicle");
+			Refuse(admin, "Unable to teleport: admin in vehicle");
 		}
 	}
 
@@ -162,7 +175,7 @@ class ZomberryStockFunctions {
 		if (SetPosSafe(target, cursor)) {
 			MessagePlayer(admin, "Target teleported");
 		} else {
-			MessagePlayer(admin, "Unable to teleport: target in vehicle");
+			Refuse(admin, "Unable to teleport: target in vehicle");
 		}
 	}
 
@@ -173,7 +186,7 @@ class ZomberryStockFunctions {
 		if (SetPosSafe(admin, GetPosSafe(target))) {
 			MessagePlayer(admin, "Teleported to target");
 		} else {
-			MessagePlayer(admin, "Unable to teleport: get out of vehicle!");
+			Refuse(admin, "Unable to teleport: get out of vehicle!");
 		}
 	}
 
@@ -184,7 +197,7 @@ class ZomberryStockFunctions {
 		if (SetPosSafe(target, GetPosSafe(admin))) {
 			MessagePlayer(admin, "Target teleported");
 		} else {
-			MessagePlayer(admin, "Unable to teleport: target in vehicle");
+			Refuse(admin, "Unable to teleport: target in vehicle");
 		}
 	}
 
@@ -288,7 +301,7 @@ class ZomberryStockFunctions {
 		InventoryItem target_item = target.GetItemInHands();
 
 		if (!target_item) {
-			MessagePlayer(admin, "No item in target's hands");
+			Refuse(admin, "No item in target's hands");
 			return;
 		}
 
@@ -452,14 +465,14 @@ class ZomberryStockFunctions {
 		if (!target.GetCommand_Vehicle()) {
 			SymptomBase symptom = target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
 			if (!symptom) {
-				MessagePlayer(admin, "Target can't vomit right now (already sick?)");
+				Refuse(admin, "Target can't vomit right now (already sick?)");
 				return;
 			}
 
 			symptom.SetDuration(fValues[0]);
 			MessagePlayer(admin, "Target is gonna be sick for " + fValues[0] + " seconds");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -471,7 +484,7 @@ class ZomberryStockFunctions {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_LAUGHTER);
 			MessagePlayer(admin, "Target is laughing...");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -483,7 +496,7 @@ class ZomberryStockFunctions {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_SNEEZE);
 			MessagePlayer(admin, "Target sneezed");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -522,7 +535,7 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 		if (target == admin) {
-			MessagePlayer(admin, "Select another player to freeze");
+			Refuse(admin, "Select another player to freeze");
 			return;
 		}
 
@@ -580,14 +593,14 @@ class ZomberryStockFunctions {
 			return;
 		}
 		if (m_spectatingList.Find(adminId) != -1) {
-			MessagePlayer(admin, "Leave FreeCam first");
+			Refuse(admin, "Leave FreeCam first");
 			return;
 		}
 
 		PlayerBase target = ZBGetPlayerById(targetId);
 		string problem;
 		if (!spectate.Start(admin, target, ZBerryPermissions.FunctionNode(funcName), problem)) {
-			MessagePlayer(admin, "Can't spectate: " + problem);
+			Refuse(admin, "Can't spectate: " + problem);
 			return;
 		}
 		MessagePlayer(admin, "Spectating " + GetPlayerName(target) + ", run Spectate target again to return");
@@ -601,7 +614,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 		if (GetZBerrySpectate().IsWatching(adminId)) {
-			MessagePlayer(adminPly, "Stop spectating first");
+			Refuse(adminPly, "Stop spectating first");
 			return;
 		}
 
@@ -741,7 +754,7 @@ class ZomberryStockFunctions {
 		int firstPress;
 		if (!m_TPAllPending.Find(adminId, firstPress) || now - firstPress > TP_ALL_CONFIRM_MS) {
 			m_TPAllPending.Set(adminId, now);
-			MessagePlayer(admin, "This teleports every player to you. Run it again within " + (TP_ALL_CONFIRM_MS / 1000) + " seconds to confirm.");
+			AskToConfirm(admin, "This teleports every player to you. Run it again within " + (TP_ALL_CONFIRM_MS / 1000) + " seconds to confirm.");
 			return;
 		}
 		m_TPAllPending.Remove(adminId);
@@ -814,7 +827,7 @@ class ZomberryStockFunctions {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		EntityAI entity = ZBerryWorldTools.PickAt(cursor, 1.0);
 		if (!entity) {
-			MessagePlayer(admin, "Nothing to delete under the cursor (map objects and living players can't be deleted)");
+			Refuse(admin, "Nothing to delete under the cursor (map objects and living players can't be deleted)");
 			return;
 		}
 
@@ -822,7 +835,7 @@ class ZomberryStockFunctions {
 		entity.GetNetworkID(low, high);
 		string description = entity.GetDisplayName() + " (" + entity.GetType() + ")";
 		if (!IsConfirmed(adminId, "delete:" + low + ":" + high)) {
-			MessagePlayer(admin, "Delete " + description + "? Run it again within " + (CONFIRM_MS / 1000) + " seconds on the same object to confirm.");
+			AskToConfirm(admin, "Delete " + description + "? Run it again within " + (CONFIRM_MS / 1000) + " seconds on the same object to confirm.");
 			return;
 		}
 
@@ -842,7 +855,7 @@ class ZomberryStockFunctions {
 
 		array<EntityAI> found = ZBerryWorldTools.FindForCleanup(cursor, radius, kind);
 		if (found.Count() == 0) {
-			MessagePlayer(admin, "No " + kindName + " within " + radius + " m");
+			Refuse(admin, "No " + kindName + " within " + radius + " m");
 			return;
 		}
 
@@ -852,7 +865,7 @@ class ZomberryStockFunctions {
 		int cellX = Math.Floor(x / 10);
 		int cellZ = Math.Floor(z / 10);
 		if (!IsConfirmed(adminId, "clean:" + kind + ":" + radius + ":" + cellX + ":" + cellZ)) {
-			MessagePlayer(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
+			AskToConfirm(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
 			return;
 		}
 
@@ -868,13 +881,13 @@ class ZomberryStockFunctions {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		Transport vehicle = Transport.Cast(ZBerryWorldTools.PickAt(cursor, 5, true));
 		if (!vehicle) {
-			MessagePlayer(admin, "No vehicle near the cursor");
+			Refuse(admin, "No vehicle near the cursor");
 			return;
 		}
 
 		string problem = ZBerryWorldTools.FlipVehicle(vehicle);
 		if (problem != "") {
-			MessagePlayer(admin, "Can't flip " + vehicle.GetDisplayName() + ": " + problem);
+			Refuse(admin, "Can't flip " + vehicle.GetDisplayName() + ": " + problem);
 			return;
 		}
 
