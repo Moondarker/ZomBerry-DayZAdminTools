@@ -38,6 +38,35 @@ class ZomberryCmdAPI {
 		}
 	}
 
+	/**
+	\brief Server: switch a client-side feature on or off for one player's client. Typically called from a command after
+		ZomBerry checked its permission (and rank): the client runs what RegisterClientFeature registered under this name
+		\param identity \p PlayerIdentity whose client runs it (NULL in singleplayer)
+		\param feature \p string name both sides agree on, like "mymod_overlay"
+		\param args \p TIntArray passed to the client's handler (NULL: none)
+		\param requiredNode \p string permission that keeps it on: it's switched off when the player loses it ("" for none)
+	*/
+	void SetClientFeature(PlayerIdentity identity, string feature, bool enabled, TIntArray args = NULL, string requiredNode = "") {
+		GetZBerryClientFeatures().Set(identity, feature, enabled, args, requiredNode);
+	}
+
+	//Server: is the feature on for this player's client
+	bool IsClientFeatureActive(PlayerIdentity identity, string feature) {
+		return GetZBerryClientFeatures().IsActive(identity, feature);
+	}
+
+	/**
+	\brief Client: what runs when the server switches this feature: void funcName(bool enabled, TIntArray args)
+	*/
+	void RegisterClientFeature(string feature, Class instance, string funcName) {
+		GetZBerryClientFeatures().Register(feature, instance, funcName);
+	}
+
+	//Client: did the server switch this feature on for us
+	bool IsClientFeatureEnabled(string feature) {
+		return GetZBerryClientFeatures().IsEnabledLocally(feature);
+	}
+
 	ZBerryFunction GetFunc(int funcId) {
 		for (int i = 0; i < m_oCategoryList.Count(); ++i) {
 			if (m_oCategoryList.Get(i).IsAvailable(funcId)) {

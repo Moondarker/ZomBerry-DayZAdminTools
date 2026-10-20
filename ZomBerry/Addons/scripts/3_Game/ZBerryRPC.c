@@ -25,7 +25,8 @@ enum ZBerryRPCOp {
 	Subscribe = 22, //Client -> server: what this client shows (ZBerryStreamFlags, marker categories, selected player, view)
 	Roster = 23, //Server -> client: who is online, when it changed
 	PlayerState = 24, //Server -> client: packed positions, headings, health (ZBerryStatePacker)
-	Markers = 25 //Server -> client: the map markers of one category, when they changed
+	Markers = 25, //Server -> client: the map markers of one category, when they changed
+	ClientFeature = 26 //Server -> client: switch a client-side feature (name, on/off, arguments)
 }
 
 //Which side received the call

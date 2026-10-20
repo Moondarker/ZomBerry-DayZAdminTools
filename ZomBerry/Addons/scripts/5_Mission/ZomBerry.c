@@ -155,6 +155,7 @@ modded class MissionGameplay {
 		m_ZomberryBase = new ZomberryBase;
 		GetZBerryClientAuth();
 		GetZBerryStreams();
+		GetZBerryClientFeatures();
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}

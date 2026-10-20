@@ -323,6 +323,39 @@ Working examples are in [ZomBerryStockFnc.c](ZomBerry/Addons/scripts/5_Mission/Z
 
 Every command gets the permission node `zomberry.functions.<functionName>` by itself, so groups can be given it in the Permissions tab.
 
+### Client-side functions
+
+Commands run on the server. When a command needs something on the admin's own game, such as an overlay, a camera or a sound, it can switch a **client feature** on that client. ZomBerry's ESP and spectating work this way.
+- **Server:** the command (after ZomBerry checked its permission) calls `SetClientFeature`.
+- **Client:** whatever was registered under the same name runs, with the arguments.
+
+| Method | Side | Does |
+|---|---|---|
+| `SetClientFeature(PlayerIdentity identity, string feature, bool enabled, TIntArray args = NULL, string requiredNode = "")` | Server | Switches the feature on that player's client. With `requiredNode`, it's switched off by itself when the player loses that permission |
+| `bool IsClientFeatureActive(PlayerIdentity identity, string feature)` | Server | Whether it's on for that player |
+| `RegisterClientFeature(string feature, Class instance, string funcName)` | Client | What runs when the server switches it: `void funcName(bool enabled, TIntArray args)` |
+| `bool IsClientFeatureEnabled(string feature)` | Client | Whether the server switched it on for this client |
+
+```c
+//Both sides load this mod. Server: a command that switches an overlay on the admin's client
+void MyModOverlayCmd( string funcName, int adminId, int targetId, vector cursor ) {
+	PlayerBase admin = ZBGetPlayerById(adminId);
+	if (!admin) return;
+
+	bool on = !GetZomberryCmdAPI().IsClientFeatureActive(admin.GetIdentity(), "mymod_overlay");
+	GetZomberryCmdAPI().SetClientFeature(admin.GetIdentity(), "mymod_overlay", on, NULL, ZBerryPermissions.FunctionNode(funcName));
+}
+
+//Client, at startup
+GetZomberryCmdAPI().RegisterClientFeature("mymod_overlay", this, "MyModOnOverlay");
+
+void MyModOnOverlay(bool enabled, TIntArray args) {
+	m_Overlay.Show(enabled);
+}
+```
+
+The server only decides whether a feature is *offered*: a modified client can always draw whatever its own game knows. Keep data the player shouldn't have on the server, and send it only while the feature is on.
+
 ### Permissions API
 
 Mods and missions can use ZomBerry's admin groups for their own features, so server owners manage everything in one place, instead of keeping a separate admin list per mod. `GetZomberryPermAPI()` works like `GetZomberryCmdAPI()`, and the code is in [ZBerryPermAPI.c](ZomBerry/Addons/scripts/5_Mission/core/ZBerryPermAPI.c).

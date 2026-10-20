@@ -18,6 +18,7 @@
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
+- **Client-side functions for mods** (#38): server code can switch a named feature on one client (`SetClientFeature`), and that client runs the handler registered for it (`RegisterClientFeature`). Features with a required permission switch off by themselves when it's removed.
 
 ### Changed
 

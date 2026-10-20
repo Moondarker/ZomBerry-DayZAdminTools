@@ -318,6 +318,7 @@ class ZBerryAuth {
 		foreach (Man player : players) {
 			if (player.GetIdentity()) PushAuthState(player.GetIdentity());
 		}
+		GetZBerryClientFeatures().Revalidate(this); //Rights may be gone: switch off what they allowed
 	}
 
 	protected bool IsServerCall(ZBerryCallType type, PlayerIdentity sender) {
