@@ -104,7 +104,8 @@ class ZBerryClientFeatures {
 
 		TIntArray args = data.param3;
 		if (!args) args = new TIntArray;
-		GetGame().GameScript.CallFunctionParams( handler.GetInstance(), handler.GetFuncName(), NULL, new Param2<bool, ref TIntArray>(data.param2, args) );
+		Param2<bool, ref TIntArray> callData = new Param2<bool, ref TIntArray>(data.param2, args); //Local: a temporary gets freed during the call
+		GetGame().GameScript.CallFunctionParams( handler.GetInstance(), handler.GetFuncName(), NULL, callData );
 	}
 };
 
