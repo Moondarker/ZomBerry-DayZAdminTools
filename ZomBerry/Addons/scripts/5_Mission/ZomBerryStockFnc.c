@@ -3,10 +3,14 @@ class ZomberryStockFunctions {
 	autoptr TIntArray m_spectatingList = new TIntArray;
 	autoptr TIntStringMap m_deleteList = new TIntStringMap;
 	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
+	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
+
+	static const string FEATURE_FREEZE = "zomberry_freeze";
 
 	void ZomberryStockFunctions() {
 		m_ZomberryCmdAPI = GetZomberryCmdAPI();
+		m_ZomberryCmdAPI.RegisterClientFeature(FEATURE_FREEZE, this, "OnFreezeFeature"); //Client side of freezing
 	}
 
 	void Init() {
@@ -23,6 +27,7 @@ class ZomberryStockFunctions {
 		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false, NULL, true); //Can switch an admin's god mode off
 		m_ZomberryCmdAPI.AddCommand("Spectate target", "SpectateTarget", this, "OnTarget", true);
+		m_ZomberryCmdAPI.AddCommand("Toggle freeze", "FreezeTarget", this, "OnTarget", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
@@ -503,6 +508,59 @@ class ZomberryStockFunctions {
 		input.OverrideRaise(frozen, false);
 		input.OverrideAimChangeX(frozen, 0);
 		input.OverrideAimChangeY(frozen, 0);
+	}
+
+	//The selected player can't move, turn or raise their hands until unfrozen: on the server (their body's input)
+	//and on their client (FEATURE_FREEZE), which drives their movement. Survives relogs, see ReapplyFreeze
+	void FreezeTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+		if (target == admin) {
+			MessagePlayer(admin, "Select another player to freeze");
+			return;
+		}
+
+		string steamId = GetSteamId(target);
+		bool freeze = m_Frozen.Find(steamId) == -1;
+		SetFrozen(target, freeze);
+
+		if (freeze) {
+			MessagePlayer(admin, GetPlayerName(target) + " is frozen, run Toggle freeze again to release them");
+		} else {
+			MessagePlayer(admin, GetPlayerName(target) + " is released");
+		}
+	}
+
+	protected void SetFrozen(PlayerBase target, bool freeze) {
+		string steamId = GetSteamId(target);
+		m_Frozen.RemoveItem(steamId);
+		if (freeze) m_Frozen.Insert(steamId);
+
+		FreezeBody(target, freeze);
+		m_ZomberryCmdAPI.SetClientFeature(target.GetIdentity(), FEATURE_FREEZE, freeze);
+		if (freeze) {
+			MessagePlayer(target, "An admin froze you, please wait");
+		} else {
+			MessagePlayer(target, "An admin released you");
+		}
+	}
+
+	protected static string GetSteamId(PlayerBase player) {
+		if (!player.GetIdentity()) return "";
+		return player.GetIdentity().GetPlainId();
+	}
+
+	//A frozen player who relogged: freeze them again (their client lost the feature with the old session)
+	void ReapplyFreeze(PlayerBase player) {
+		if (!player || m_Frozen.Find(GetSteamId(player)) == -1) return;
+
+		SetFrozen(player, true);
+	}
+
+	//Client side of FreezeTarget
+	void OnFreezeFeature(bool enabled, TIntArray args) {
+		PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+		if (player) FreezeBody(player, enabled);
 	}
 
 	//Through the selected player's eyes (or over their shoulder while they're in third person). Run it again to stop

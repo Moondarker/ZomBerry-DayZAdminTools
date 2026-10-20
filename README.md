@@ -216,13 +216,15 @@ The stock set:
 
 | Category | Functions |
 |---|---|
-| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, spectate target, repair item in hands, refuel and repair nearby vehicles |
+| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, spectate target, toggle freeze, repair item in hands, refuel and repair nearby vehicles |
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, teleport all players to you, ESP |
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
+
+**Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
 **Spectate target:** see through the selected player's eyes.
 - **Camera:** it follows where they look, including their aim up and down. While they play in third person, the camera moves over their shoulder.

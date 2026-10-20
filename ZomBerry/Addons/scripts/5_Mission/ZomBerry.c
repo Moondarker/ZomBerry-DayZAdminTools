@@ -136,6 +136,9 @@ modded class MissionServer {
 
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (ban) m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+
+		//Frozen players stay frozen across relogs; a moment later, so their client is ready for the feature
+		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);
 	}
 
 	protected ZBerryBanEntry FindZBerryBan(PlayerIdentity identity) {
