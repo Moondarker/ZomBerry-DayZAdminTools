@@ -845,7 +845,7 @@ class ZomberryStockFunctions {
 			if (entity) GetGame().ObjectDelete(entity);
 		}
 		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + cursor.ToString() );
-		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName.ToLower());
+		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName);
 	}
 
 	//The car or boat nearest to the cursor (within 5 m of its body), back on its wheels
