@@ -13,8 +13,9 @@ class ZBerryLogEntry {
 
 typedef array<ref ZBerryLogEntry> ZBerryLogEntryArray;
 
-//In-game admin log (#10 of the essentials list): what admins did and who killed whom, searchable. Server side it keeps the
-//last MAX_ENTRIES in memory (the ZomBerry log file keeps everything), and answers LogRequest from admins with
+//In-game admin log: what admins did and who killed whom, searchable. It's fed only by ZomberryLogger (log through
+//ZomberryBase.Log, never into this directly): server side it keeps the last MAX_ENTRIES lines of the admin, ban, auth
+//and kill modules in memory (the ZomBerry log file keeps everything) and answers LogRequest from admins with
 //zomberry.logs.view. Client side it keeps the last answer and raises OnLogData, for the log view to draw
 class ZBerryActivityLog {
 	static const int KIND_ADMIN = 0; //Admin actions: functions, spawning, teleports, permission changes
@@ -37,11 +38,6 @@ class ZBerryActivityLog {
 	void ZBerryActivityLog() {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LogRequest, "LogRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LogData, "LogData", this, ZBerrySPExec.Client );
-		ZBerryKillFeed.OnPlayerKilled.Insert(OnPlayerKilled);
-	}
-
-	void ~ZBerryActivityLog() {
-		ZBerryKillFeed.OnPlayerKilled.Remove(OnPlayerKilled);
 	}
 
 	//Server: called by ZomberryBase once auth exists
@@ -49,21 +45,22 @@ class ZBerryActivityLog {
 		m_Auth = auth;
 	}
 
-	//Which kind a ZomberryBase.Log module goes to, -1 for modules the in-game log doesn't keep
+	//Which kind a log module goes to, -1 for modules the in-game log doesn't keep
 	static int GetKindOfModule(string module) {
-		if (module == "ZomBerryAdmin") return KIND_ADMIN;
-		if (module == "ZomBerryBans") return KIND_BANS;
-		if (module == "ZomBerryAuth") return KIND_AUTH;
+		if (module == ZomberryLogger.MODULE_ADMIN) return KIND_ADMIN;
+		if (module == ZomberryLogger.MODULE_BANS) return KIND_BANS;
+		if (module == ZomberryLogger.MODULE_AUTH) return KIND_AUTH;
+		if (module == ZomberryLogger.MODULE_KILLS) return KIND_KILLS;
 		return -1;
 	}
 
-	//Server: from ZomberryBase.Log
-	void AddFromModule(string module, string text) {
+	//Server, from ZomberryLogger.Log only
+	void Record(string module, string text) {
 		int kind = GetKindOfModule(module);
 		if (kind != -1) Add(kind, text);
 	}
 
-	void Add(int kind, string text) {
+	protected void Add(int kind, string text) {
 		m_Entries.Insert(new ZBerryLogEntry(ZBerryTime.Now(), kind, text));
 		while (m_Entries.Count() > MAX_ENTRIES) m_Entries.RemoveOrdered(0);
 	}
@@ -114,12 +111,11 @@ class ZBerryActivityLog {
 		return text + " was killed by " + killerEntity.GetDisplayName();
 	}
 
-	//Server, from the 4_World hook
-	protected void OnPlayerKilled(PlayerBase victim, Object killer) {
+	//Server, from the 4_World hook. Static: deaths are logged once, through ZomberryBase.Log, however many instances exist
+	static void OnPlayerKilled(PlayerBase victim, Object killer) {
 		if (!GetGame().IsServer() || !victim) return;
 
-		string text = DescribeKill(victim, killer);
-		Add(KIND_KILLS, text + " at " + victim.GetPosition().ToString());
+		ZomberryBase.Log( ZomberryLogger.MODULE_KILLS, DescribeKill(victim, killer) + " at " + victim.GetPosition().ToString() );
 	}
 
 	//Server
@@ -165,7 +161,10 @@ class ZBerryActivityLog {
 static ref ZBerryActivityLog g_ZBerryActivityLog;
 
 static ZBerryActivityLog GetZBerryActivityLog() {
-	if (!g_ZBerryActivityLog) g_ZBerryActivityLog = new ZBerryActivityLog();
+	if (!g_ZBerryActivityLog) {
+		g_ZBerryActivityLog = new ZBerryActivityLog();
+		ZBerryKillFeed.OnPlayerKilled.Insert(ZBerryActivityLog.OnPlayerKilled);
+	}
 
 	return g_ZBerryActivityLog;
 }

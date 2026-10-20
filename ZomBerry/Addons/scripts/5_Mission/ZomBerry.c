@@ -62,7 +62,6 @@ class ZomberryBase {
 
 	static void Log( string module, string toLog ) {
 		GetLogger().Log( module, toLog );
-		if (GetGame() && GetGame().IsServer()) GetZBerryActivityLog().AddFromModule(module, toLog); //In-game log: admin, ban and auth lines
 	}
 
 	static void DebugLog( int dLvl, string module, string toLog ) {
