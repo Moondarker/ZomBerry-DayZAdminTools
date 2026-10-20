@@ -701,8 +701,10 @@ class ZomberryStockFunctions {
 
 		bool on = fValues[0] != 0 || fValues[1] != 0 || fValues[2] != 0;
 		TIntArray args = {fValues[0], fValues[1], fValues[2]};
-		GetZomberryCmdAPI().SetClientFeature(admin.GetIdentity(), ZBerryESPOverlay.FEATURE, on, args, ZBerryPermissions.FunctionNode(funcName));
-		if (ZBerryStreamServer.Get()) ZBerryStreamServer.Get().SetEspActive(admin.GetIdentity(), on && fValues[0] != 0);
+		PlayerIdentity identity = admin.GetIdentity();
+		GetZomberryCmdAPI().SetClientFeature(identity, ZBerryESPOverlay.FEATURE, on, args, ZBerryPermissions.FunctionNode(funcName));
+		ZBerryStreamServer streams = ZBerryStreamServer.Get();
+		if (streams) streams.SetEspActive(identity, on && fValues[0] != 0);
 
 		if (on) {
 			MessagePlayer(admin, "ESP on");

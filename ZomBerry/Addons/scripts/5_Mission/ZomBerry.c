@@ -184,6 +184,7 @@ modded class MissionServer {
 
 	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed) {
 		GetZBerryEventLog().OnPlayerDisconnected(identity); //Before super: the identity may be gone after it
+		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnPlayerDisconnected(identity);
 		super.OnClientDisconnectedEvent(identity, player, logoutTime, authFailed);
 	}
 
