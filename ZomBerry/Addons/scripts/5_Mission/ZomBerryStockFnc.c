@@ -10,37 +10,37 @@ class ZomberryStockFunctions {
 
 	void Init() {
 		m_ZomberryCmdAPI.AddCategory("OnTarget", 0xFF42AAFF);
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget", false, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Partial heal", "HealTargetPart", this, "OnTarget", false, {
 			new ZBerryFuncParam("Heal diseases", {0, 1, 1,}, {"No", "Yes"}),
 			new ZBerryFuncParam("Heal wounds", {0, 1, 1,}, {"No", "Yes"}),
 			new ZBerryFuncParam("Feed", {0, 1, 1,}, {"No", "Yes"}),
 		});
-		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false, NULL, true); //Can switch an admin's god mode off
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
 
 		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
-		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "==");
+		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "==", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Bite", "BiteTarget", this, "==", true, {
 			new ZBerryFuncParam("Bites", {1, 25, 1,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, "==");
+		}, true);
+		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, "==", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Induce vomiting", "RejectBellyTarget", this, "==", true, {
 			new ZBerryFuncParam("Seconds", {5, 30, 5,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "==");
-		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "==");
+		}, true);
+		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "==", true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "==", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Set health", "SetHealthTarget", this, "==", true, {
 			new ZBerryFuncParam("Health", {1, 100, 100,}),
-		});
+		}, true);
 		m_ZomberryCmdAPI.AddCommand("Set blood", "SetBloodTarget", this, "==", true, {
 			new ZBerryFuncParam("Blood", {1, 5000, 5000,}),
-		});
+		}, true);
 
 		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
 		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, "OnServer", false);

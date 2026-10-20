@@ -14,7 +14,9 @@ class ZomberryCmdAPI {
 		ZomberryBase.Log( "ZomBerryCmdAPI", "INFO: Added category " + catName);
 	}
 
-	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL) {
+	//harmful: the function hurts, moves or otherwise works against its target. Groups can protect their members
+	//from harmful functions run by lower-ranked or same-level admins (zomberry.protect.lower.harm, zomberry.protect.same.harm)
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false) {
 		if (m_oCategoryList.Contains(catName)) {
 			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
 				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Adding " + funcName + ", but function with same name already exists.");
@@ -25,7 +27,7 @@ class ZomberryCmdAPI {
 			ZBerryFuncParamArray params = funcParams; //Local keeps the new empty array alive, arguments are weak references
 			if (!params) params = new ZBerryFuncParamArray;
 
-			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params);
+			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful);
 			++m_lastFuncId;
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);

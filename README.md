@@ -72,6 +72,26 @@ Each admin belongs to one group, and each group has a level, permission patterns
 
 The `superadmin` group is always level 100, and level 100 may change everything, including itself. So a level 90 admin can manage moderators, but not fellow level 90 admins and not superadmins.
 
+#### Protecting admins from functions
+
+By default, any admin may run any function they have on anyone, including higher-ranked admins. A group can shield its members with these permissions:
+- **`zomberry.protect.lower`:** lower-ranked admins can't run any function on them.
+- **`zomberry.protect.lower.harm`:** lower-ranked admins can't run *harmful* functions on them, but can still heal or repair them.
+- **`zomberry.protect.same`** and **`zomberry.protect.same.harm`:** the same, against admins of the same level.
+
+Harmful functions are the ones that hurt, move or work against the target:
+- teleport target to cursor, and teleport target to you;
+- toggle god mode;
+- kill, bite and strip;
+- vomiting, laughter and sneezing;
+- set health and set blood.
+
+Commands added by mods decide for themselves (see [Adding commands](#adding-commands)).
+- **Superadmins ignore protections:** level 100 can always act on everyone.
+- **Groups with `*`** (superadmin, and the `admin` group from an imported `admins.cfg`) are protected automatically.
+- **Running a function on yourself** is always allowed.
+- **Kicks and bans** keep their own stricter rule, described below.
+
 #### Permissions
 
 | Permission | Allows |
@@ -87,6 +107,7 @@ The `superadmin` group is always level 100, and level 100 may change everything,
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
 | `zomberry.permissions.manage` | The Permissions tab |
+| `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
 
 Other mods and missions can add their own nodes through the [Permissions API](#permissions-api). These are listed after ZomBerry's own in the Permissions tab.
@@ -261,13 +282,14 @@ The function list lives on the server and is sent to admins when they open the m
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL)** adds a command:
+**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false)** adds a command:
 - `displayName`: shown in the function list.
 - `functionName`: the method to call on `instance`.
 - `instance`: the object that has the method. Keep it alive for as long as the command exists.
 - `categoryName`: an existing category.
 - `targetRequired`: if `true`, the admin must select a player first. If `false`, the admin is the target when nobody is selected.
 - `functionParams`: up to 3 integer parameters, shown as sliders with an exact-value box. A parameter can name its values: the box then shows the name, and admins can type either a name or a number. With as many names as values, each value gets its own name. With fewer names, the range is split evenly between them. The function still receives the number.
+- `harmful`: set it to `true` if the command hurts, moves or works against its target. Groups with `zomberry.protect.lower.harm` or `zomberry.protect.same.harm` are then shielded from it.
 
 ```c
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);
@@ -324,6 +346,7 @@ GetZomberryPermAPI().RegisterNode("mymod.vip.teleport");
 | `int GetLevel(PlayerIdentity identity)` | Group level, 0 to 100 (100 is superadmin), or -1 for players who aren't admins |
 | `string GetGroup(PlayerIdentity identity)` | Group name, or `""` |
 | `bool CanActOn(PlayerIdentity actor, PlayerIdentity target)` | ZomBerry's rank rule, the one kicks and bans use: admins can only act on lower-ranked admins, and superadmins on everyone. Players who aren't admins and the actor themselves are always allowed |
+| `bool CanTarget(PlayerIdentity actor, PlayerIdentity target, bool harmful)` | The rule functions use: whether the target's group is protected from the actor's rank (`zomberry.protect.*`). Superadmins and the actor themselves are always allowed |
 | `bool CanSpawn(PlayerIdentity identity, string className)` | Whether the player's spawn rules allow the class |
 
 ```c

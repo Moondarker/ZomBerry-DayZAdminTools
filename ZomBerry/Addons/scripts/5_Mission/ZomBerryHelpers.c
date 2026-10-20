@@ -131,8 +131,10 @@ class ZBerryFunction {
     protected int m_DisplayColor;
 	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
+	protected bool m_Harmful; //Hurts or moves the target: groups can protect their members from it (zomberry.protect.*.harm)
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false ) {
+		m_Harmful = harmful;
 		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
@@ -169,6 +171,10 @@ class ZBerryFunction {
 
 	bool IsTargetRequired() {
 		return m_OnTarget;
+	}
+
+	bool IsHarmful() {
+		return m_Harmful;
 	}
 
 	ref ZBerryFuncParamArray GetParams() {

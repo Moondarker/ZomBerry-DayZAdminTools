@@ -190,9 +190,15 @@ class ZBerryServerRPC {
 
 		int adminId = GetSenderId(sender);
 		int targetId = funcParam.param3;
+		PlayerBase targetPly = ZBGetPlayerById(targetId);
+		if (targetId != adminId && targetPly && targetPly.GetIdentity() && !m_Auth.CanTarget(sender, targetPly.GetIdentity(), cmdFunc.IsHarmful())) {
+			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to execute " + cmdFunc.GetName() + " on " + Who(targetPly.GetIdentity()) + ", refused: the target's group is protected from their rank" );
+			Tell(sender, "Can't run " + cmdFunc.GetDisplayName() + " on " + targetPly.GetIdentity().GetName() + ": their group is protected from your rank");
+			return;
+		}
+
 		RunFunction(cmdFunc, adminId, targetId, funcParam.param4, funcParam.param5);
 
-		PlayerBase targetPly = ZBGetPlayerById(targetId);
 		if (targetId != adminId && targetPly && targetPly.GetIdentity()) {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " executed " + cmdFunc.GetName() + " on target " + Who(targetPly.GetIdentity()));
 		} else {

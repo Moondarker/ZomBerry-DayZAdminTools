@@ -12,6 +12,13 @@
   - The server keeps track of these objects as they appear and disappear, instead of scanning the map.
 - **Player orientation on the map** (#61): an arrow in front of each player marker shows which way they face.
 
+- **Protection from lower-ranked admins** (#46): groups can shield their members from functions run by lower-ranked or same-level admins.
+  - `zomberry.protect.lower` and `zomberry.protect.same` block all functions; `.lower.harm` and `.same.harm` only block harmful ones.
+  - Harmful stock functions: kill, bite, strip, symptoms, set health or blood, god mode toggle, and teleporting the target.
+  - Superadmins ignore protections.
+  - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
+- **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, and the Permissions API has `CanTarget()`.
+
 ### Fixed
 
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.

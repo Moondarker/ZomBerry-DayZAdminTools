@@ -217,6 +217,30 @@ class ZBerryAuth {
 		return group.Level;
 	}
 
+	//Functions: may an admin of actorLevel run a (harmful) function on a target of targetLevel, whose group grants
+	//targetPermissions? Targets shield themselves with zomberry.protect.* nodes, level 100 ignores those
+	static bool CanTargetLevels(int actorLevel, int targetLevel, TStringArray targetPermissions, bool harmful) {
+		if (targetLevel < 0 || actorLevel >= ZBerryPermGroup.SUPERADMIN_LEVEL || targetLevel < actorLevel) return true;
+
+		string allNode = ZBerryPermissions.PROTECT_LOWER;
+		string harmNode = ZBerryPermissions.PROTECT_LOWER_HARM;
+		if (targetLevel == actorLevel) {
+			allNode = ZBerryPermissions.PROTECT_SAME;
+			harmNode = ZBerryPermissions.PROTECT_SAME_HARM;
+		}
+
+		if (ZBerryPermissions.IsGranted(targetPermissions, allNode)) return false;
+		return !harmful || !ZBerryPermissions.IsGranted(targetPermissions, harmNode);
+	}
+
+	bool CanTarget(PlayerIdentity actor, PlayerIdentity target, bool harmful) {
+		if (!GetGame().IsMultiplayer() || !actor || !target) return true;
+		if (actor.GetPlainId() == target.GetPlainId()) return true;
+
+		TStringArray targetPermissions = GetPermissions(target);
+		return CanTargetLevels(GetLevel(actor), GetLevel(target), targetPermissions, harmful);
+	}
+
 	//Kicks and bans: admins can only act on admins ranked below them, superadmins on everyone
 	static bool CanActOnLevel(int actorLevel, int targetLevel) {
 		if (targetLevel < 0) return true;

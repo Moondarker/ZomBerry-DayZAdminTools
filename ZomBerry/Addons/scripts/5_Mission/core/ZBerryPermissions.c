@@ -9,6 +9,11 @@ class ZBerryPermissions {
 	static const string SPAWN_GROUND = "zomberry.spawn.ground"; //Cursor and Ground targets
 	static const string SPAWN_INVENTORY = "zomberry.spawn.inventory";
 	static const string PERMISSIONS_MANAGE = "zomberry.permissions.manage";
+	//Granted to a group, these shield its members from functions run by other admins (level 100 ignores them)
+	static const string PROTECT_LOWER = "zomberry.protect.lower"; //Lower-ranked admins can't run any function on them
+	static const string PROTECT_LOWER_HARM = "zomberry.protect.lower.harm"; //... no harmful ones
+	static const string PROTECT_SAME = "zomberry.protect.same"; //Same-level admins can't run any function on them
+	static const string PROTECT_SAME_HARM = "zomberry.protect.same.harm"; //... no harmful ones
 	static const string PLAYERS_KICK = "zomberry.players.kick";
 	static const string PLAYERS_BAN = "zomberry.players.ban";
 	static const string PLAYERS_UNBAN = "zomberry.players.unban"; //Also shows the ban list
@@ -29,7 +34,7 @@ class ZBerryPermissions {
 		for (int category = 0; category < ZBerryMapCategory.COUNT; ++category) {
 			nodes.Insert(MapMarkerNode(category));
 		}
-		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE});
+		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
 		return nodes;
 	}
 
