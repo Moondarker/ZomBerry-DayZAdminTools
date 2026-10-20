@@ -617,7 +617,10 @@ class ZomberryStockFunctions {
 			FreezeBody(adminPly, true);
 			m_spectatingList.Insert(adminId);
 
-			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
+			vector facing = adminPly.GetDirection();
+			facing[1] = 0;
+			facing.Normalize();
+			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", adminPly.GetPosition() - facing * 1.2 + Vector(0, 2, 0)); //Behind the head, not inside it
 			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
 		}
 	}
