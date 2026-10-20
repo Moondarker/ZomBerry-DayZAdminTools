@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.7.1 (in development)
+## 0.8.0 (in development)
+
+0.7.x and 0.8.x clients and servers can't talk to each other: update both sides.
 
 ### Added
 
