@@ -2,11 +2,15 @@
 class ZBerryUISpawnTab extends ZBerryUITab {
 	static const int COLOR_CATEGORY = 0xFFBCCDE8;
 	static const int COLOR_CATEGORY_HIDDEN = 0xFF6767E0;
+	static const float DROPUP_LINGER = 0.25; //Seconds the target drop-up stays open after the mouse left it and the button
 
 	protected TextListboxWidget m_ObjectsList; //The visible variant of m_ObjectsLists
 	protected ref ZBerryScaledList m_ObjectsLists;
 	protected EditBoxWidget m_SearchInput;
 	protected ButtonWidget m_TargetButton;
+	protected Widget m_TargetDropup;
+	protected ref array<ButtonWidget> m_TargetButtons = new array<ButtonWidget>; //Drop-up rows, one per m_Targets entry
+	protected ref TStringArray m_Targets = new TStringArray;
 	protected ref array<ButtonWidget> m_FilterButtons = new array<ButtonWidget>;
 
 	protected ref ZBerryJsonSpawnMenuGroupArray m_SpawnMenuGroups;
@@ -17,6 +21,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected ZBerryUIPlayersPanel m_PlayersPanel; //For the selected player's spawn targets
 	protected bool m_ExpertMode = false;
 	protected bool m_MouseOnSearch = false;
+	protected bool m_MouseOnTargets = false; //On the target button or its drop-up
+	protected float m_DropupTimer = 0; //Seconds since the mouse left them
 	protected bool m_ListDirty = true;
 
 	protected override void OnInit() {
@@ -25,6 +31,14 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_ObjectsList = m_ObjectsLists.GetActive();
 		m_SearchInput = EditBoxWidget.Cast( BindWidget("SearchInput") );
 		m_TargetButton = ButtonWidget.Cast( BindWidget("TargetButton") );
+		m_TargetDropup = BindWidget("TargetDropup"); //Bound too: the gaps between its rows keep it open
+
+		TStringArray targets = {"Cursor", "Ground", "Inventory", "Player's feet", "Player's inv."};
+		TStringArray rowNames = {"TargetCursor", "TargetGround", "TargetInventory", "TargetPlayerFeet", "TargetPlayerInv"};
+		for (int i = 0; i < rowNames.Count(); ++i) {
+			m_Targets.Insert(targets[i]);
+			m_TargetButtons.Insert( ButtonWidget.Cast( BindWidget(rowNames[i]) ) );
+		}
 
 		m_FilterButtons.Insert( ButtonWidget.Cast( BindWidget("ItemsButton") ) );
 		m_FilterButtons.Insert( ButtonWidget.Cast( BindWidget("ObjectsButton") ) );
@@ -34,6 +48,21 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected override void OnActivate() {
 		UpdateModeButton();
 		if (m_ListDirty) UpdateObjList();
+	}
+
+	protected override void OnDeactivate() {
+		ShowDropup(false);
+	}
+
+	override void OnMenuHide() {
+		ShowDropup(false);
+	}
+
+	override void Update(float tDelta) {
+		if (!m_TargetDropup || !m_TargetDropup.IsVisible() || m_MouseOnTargets) return;
+
+		m_DropupTimer += tDelta;
+		if (m_DropupTimer >= DROPUP_LINGER) ShowDropup(false);
 	}
 
 	override void OnMenuShow() {
@@ -76,19 +105,80 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			return true;
 		}
 
-		if (w == m_TargetButton) {
-			m_ObjTarget = NextAllowedTarget(m_ObjTarget);
+		int targetIdx = -1;
+		if (btn) targetIdx = m_TargetButtons.Find(btn);
+		if (targetIdx != -1) {
+			m_ObjTarget = m_Targets[targetIdx];
 			ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
+			ShowDropup(false);
+			return true;
+		}
+
+		if (w == m_TargetButton) { //Hovering opens it already, a click brings it back after picking a target
+			ShowDropup(true);
 			return true;
 		}
 		return false;
+	}
+
+	//Hidden widgets don't always get a mouse leave, so closing also forgets the mouse
+	protected void ShowDropup(bool show) {
+		if (!m_TargetDropup) return;
+
+		if (show) LayoutDropup();
+		m_TargetDropup.Show(show);
+		m_DropupTimer = 0;
+		if (!show) m_MouseOnTargets = false;
+	}
+
+	//Only the targets the admin may use, stacked from the top, the drop-up's bottom edge on the button's top edge
+	protected void LayoutDropup() {
+		float screenWidth = 0;
+		float screenHeight = 0;
+		m_Root.GetScreenSize(screenWidth, screenHeight);
+		if (screenWidth <= 0) return;
+
+		//SetPos/SetSize take physical pixels, the offsets below are layout units: the wrapper is exactly 600 units wide
+		float u = screenWidth / 600;
+		int rows = 0;
+		for (int i = 0; i < m_TargetButtons.Count(); ++i) {
+			ButtonWidget row = m_TargetButtons[i];
+			if (!row) continue;
+
+			bool allowed = IsTargetAllowed(m_Targets[i]);
+			row.Show(allowed);
+			if (!allowed) continue;
+
+			row.SetPos(4 * u, (4 + rows * 34) * u);
+			ZBerryUIUtils.SetButtonActive(row, m_Targets[i] == m_ObjTarget);
+			++rows;
+		}
+
+		float height = (4 + rows * 34) * u;
+		m_TargetDropup.SetSize(183 * u, height);
+
+		float buttonX = 0;
+		float buttonY = 0;
+		float parentX = 0;
+		float parentY = 0;
+		m_TargetButton.GetScreenPos(buttonX, buttonY);
+		m_TargetDropup.GetParent().GetScreenPos(parentX, parentY);
+		m_TargetDropup.SetPos(buttonX - parentX - 4 * u, buttonY - parentY - height);
+	}
+
+	protected bool IsTargetWidget(Widget w) {
+		if (!w) return false;
+		if (w == m_TargetButton || w == m_TargetDropup) return true;
+
+		ButtonWidget btn = ButtonWidget.Cast(w);
+		return btn && m_TargetButtons.Find(btn) != -1;
 	}
 
 	void SetPlayersPanel(ZBerryUIPlayersPanel playersPanel) {
 		m_PlayersPanel = playersPanel;
 	}
 
-	//Ground -> Cursor -> Inventory -> Player's feet -> Player's inv. -> Ground, skipping targets the admin may not use
+	//The first allowed target after current: Ground -> Cursor -> Inventory -> Player's feet -> Player's inv. -> Ground
 	protected string NextAllowedTarget(string current) {
 		TStringArray order = {"Ground", "Cursor", "Inventory", "Player's feet", "Player's inv."};
 		int index = order.Find(current);
@@ -113,6 +203,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	override void OnPermissionsChanged() {
 		if (!IsTargetAllowed(m_ObjTarget)) m_ObjTarget = NextAllowedTarget(m_ObjTarget);
 		ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
+		if (m_TargetDropup && m_TargetDropup.IsVisible()) LayoutDropup();
 
 		m_ListDirty = true;
 		if (IsVisible()) UpdateObjList();
@@ -164,10 +255,16 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		return false;
 	}
 
+	//Moving between the target button, the drop-up and its rows keeps the drop-up open
 	override bool OnMouseEnter(Widget w, int x, int y) {
 		if (w == m_SearchInput) {
 			m_MouseOnSearch = true;
 			return true;
+		}
+		if (IsTargetWidget(w)) {
+			if (m_TargetDropup && !m_TargetDropup.IsVisible()) ShowDropup(true);
+			m_MouseOnTargets = true;
+			m_DropupTimer = 0;
 		}
 		return false;
 	}
@@ -176,6 +273,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		if (w == m_SearchInput) {
 			m_MouseOnSearch = false;
 			return true;
+		}
+		if (IsTargetWidget(w) && !IsTargetWidget(enterW)) {
+			m_MouseOnTargets = false;
+			m_DropupTimer = 0;
 		}
 		return false;
 	}

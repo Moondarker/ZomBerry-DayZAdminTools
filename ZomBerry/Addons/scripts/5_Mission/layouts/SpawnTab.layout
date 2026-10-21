@@ -223,6 +223,155 @@ PanelWidgetClass SpawnWrapper {
       }
      }
     }
+    PanelWidgetClass TargetDropup {
+     visible 0
+     color 0 0 0 0.95
+     position 6 0
+     size 183 174
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 100
+     style rover_sim_colorable
+     {
+     ButtonWidgetClass TargetCursor {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 4
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetCursorLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Cursor"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetGround {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 38
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetGroundLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Ground"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetInventory {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 72
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetInventoryLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Inventory"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetPlayerFeet {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 106
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetPlayerFeetLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Player's feet"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetPlayerInv {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 140
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetPlayerInvLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Player's inv."
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     }
+    }
    }
   }
  }

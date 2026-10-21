@@ -52,6 +52,7 @@
 ### Changed
 
 - **Keybind code reworked** (#51): binding, unbinding and clearing are separate operations instead of magic values. Existing keybinds keep working.
+- **Spawn target picker:** hovering over the Spawn tab's target button opens a list of places above it, instead of clicking through them one by one. It closes when the mouse leaves.
 - **Much less network traffic for the player list and the map.** Clients now tell the server what they show, and the server only sends that, only when it changed.
   - **The roster** (names, admins, what players hold) is only sent when it changes.
   - **Positions, headings, and the selected player's health** go out as about 12 bytes per player. After the first update only changes are sent, plus a full update every 10 seconds.
