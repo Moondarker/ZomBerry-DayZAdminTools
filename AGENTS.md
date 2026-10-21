@@ -17,12 +17,12 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 | `config.cpp` | CfgPatches/CfgMods: script modules, inputs, the mod version |
 | `Common/` | `#define ZOMBERRY_AT`, visible to every module. Other mods use it to check whether ZomBerry is loaded |
 | `3_Game/ZBerryRPC.c` | Own RPC layer: one engine RPC ID (`74635`), every message starts with an opcode (`ZBerryRPCOp`) |
-| `4_World/` | `PlayerBase` god mode (`ZBIsGod`/`ZBSetGod`, used by other mods), FreeCam and spectator cameras |
-| `5_Mission/ZomBerry.c` | `ZomberryBase`, the `MissionServer`/`MissionGameplay` hooks, menu and dialog opening |
-| `5_Mission/core/` | Server auth and permissions (`ZBerryAuth`, `ZBerryPermissions`), client auth (`ZBerryClientAuth`), request handlers (`ZBerryServerRPC`), bans, spawning, version and build info, the Permissions API |
-| `5_Mission/ui/` | Admin menu components: one class per tab, panel or dialog |
+| `4_World/` | `PlayerBase` god mode (`ZBIsGod`/`ZBSetGod`, used by other mods) and its kill/hit hooks for the event log, FreeCam and spectator cameras, the entity registry (`ZBerryEntityRegistry`), ESP drawing maths (`ZBerryESPDraw`) |
+| `5_Mission/ZomBerry.c` | `ZomberryBase`, the `MissionServer`/`MissionGameplay` hooks, menu and dialog opening, `LogEvent` |
+| `5_Mission/core/` | Server auth and permissions (`ZBerryAuth`, `ZBerryPermissions`), client auth (`ZBerryClientAuth`), request handlers (`ZBerryServerRPC`), streams (`ZBerryStreams`, `ZBerryStreamServer`, `ZBerryStreamClient`, `ZBerryMapMarkers`), client features (`ZBerryClientFeatures`), spectating, the event log (`ZBerryEventLog`), bans, spawning, world tools, version and build info, the Permissions API |
+| `5_Mission/ui/` | Admin menu components: one class per tab, panel or dialog, plus the ESP overlay |
 | `5_Mission/layouts/` | `.layout` files of the menu and its components |
-| `5_Mission/*.c` | Command API (`GetZomberryCmdAPI`), stock functions, config, logger, keybinds, helpers |
+| `5_Mission/*.c` | Command API (`GetZomberryCmdAPI`), stock functions, config, logger, keybinds, helpers, the admin menu (`ZomberryMenu`) and the log view's debug preview (`ZomberryLogMenu`, F9 with `DebugLevel` 1+) |
 
 `Examples/` has a mission that adds commands and a permission node, and a minimal offline mission for testing without a server.
 
@@ -41,6 +41,13 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - **Client side:** `ZBerryStreamClient` (`GetZBerryStreams()`) keeps the latest data and raises `OnPlayersChanged`/`OnMarkersChanged`. The UI says what it shows (`SetListShown`, `SetMapShown`, `SetMarkerMask`, `SetSelected`).
   - **Extending:** new synced data (ESP, spectating, other mods) extends these classes instead of adding another polling RPC, so bandwidth stays low.
   - **Entities to track:** register them in `ZBerryEntityRegistry` (`4_World`) from their `EEInit`/`EEDelete`. It works on both sides: on a client it holds what the network bubble holds.
+- **Client-side behaviour the server switches on goes through client features.**
+  - **Server side:** `GetZomberryCmdAPI().SetClientFeature(identity, name, enabled, args, requiredNode)`, after the usual permission and rank checks.
+  - **Client side:** the handler registered with `RegisterClientFeature` does the work. ESP, spectating and freezing all work this way.
+  - **Turning off:** `ZBerryClientFeatures` switches features off when the player disconnects or loses `requiredNode`. Don't add separate on/off RPCs.
+- **Find players by session id, never by reference.**
+  - Store `PlayerIdentity.GetPlayerId()`, and look players up again with `ZBGetIdentityById`/`ZBGetPlayerById`.
+  - Never compare `PlayerIdentity` objects by reference: the same player can come back as a different object.
 - **Admins act only on lower ranks** for kicks and bans (`ZBerryAuth.CanActOnLevel`, the Permissions API's `CanActOn`).
   - Functions use `ZBerryAuth.CanTarget` instead: groups shield their members with `zomberry.protect.*`, and superadmins ignore that. Mark commands that hurt or move their target as `harmful` in `AddCommand`.
 - **New permission nodes** go into `ZBerryPermissions` as a constant, into `GetFixedNodes()` (so the Permissions tab lists them) and into the README's permission table. Nodes are lower case and dot-separated, and `zomberry.*` is ZomBerry's own.
@@ -51,9 +58,10 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 - **Keep public APIs stable.** Other mods and missions use:
   - `GetZomberryCmdAPI()`, `GetZomberryPermAPI()`, `ZBGetPlayerById()` and `ZomberryStockFunctions.MessagePlayer()`;
   - `#define ZOMBERRY_AT` with `PlayerBase.ZBIsGod()` and `ZBSetGod()`, so mods that switch damage themselves (safe zones) can leave god mode alone. God mode has to stay a server-side flag on `PlayerBase` that goes together with `SetAllowDamage`.
-  - **Public means exactly these.** That's the APIs listed here, plus the client-feature methods of the command API, all documented in the README's "For developers" section.
+  - **Public means exactly these.** That's the APIs listed here, plus the command API's client-feature and call outcome methods, all documented in the README's "For developers" section.
     - Keep them backwards compatible: add methods and append optional parameters, but don't remove or change existing ones.
     - Everything else (UI components, keybinds, config, RPC opcodes and handlers) is internal and may change freely.
+    - The command API's call outcome helpers (`RefuseCall`, `AwaitConfirmation`) are documented, but new in 0.8.0. They may still change before 0.8.0 is released (see #66).
 - **Log players as `ZBDescribePlayer(identity)`**, "Name (Steam64 id)", so every log line can be matched by the same id. Use `GetId()` (the BattlEye GUID) only for matching legacy GUID entries, never in logs. Write positions as `ZBDescribePosition(vector)`, map coordinates in whole metres.
 - **Admin actions, kicks, bans, kills and refusals are events:** `ZomberryBase.LogEvent(type, actor, target, "{actor} did X to {target}", flags)`, or `LogEventRaw` for players who may be offline.
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
@@ -65,7 +73,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 ## Enforce Script pitfalls
 
 These cost real debugging time on this project:
-- **`func` is a reserved word.** Don't use it as a name.
+- **Reserved words:** `func`, `local` and `protected` can't be used as names. Neither can engine class names like `Weapon`, as variables. The compiler's error doesn't always say so.
 - **Temporaries passed to weak references get freed.** A `new` array passed straight into a `Param` constructor or a method argument may be gone by the time it's used. Hold it in a local first (see `ZBerryServerRPC.RunFunction`).
 - **Mixed arithmetic isn't plain integer maths.** Expressions mixing array elements, method results and literals can give unexpected results. Use typed `float` locals and `Math.Floor`/`Math.Ceil` (see `ZBerryFuncParam.GetValueName`). Plain `int / int` is integer division, so write `100.0` when you want a fraction.
 - **Strings:** `string.Trim()` returns a copy, but `ToLower()`, `ToUpper()` and `Replace()` change the string in place.
@@ -73,6 +81,20 @@ These cost real debugging time on this project:
 - **A `modded class` must live in the same script module (`3_Game`/`4_World`/`5_Mission`) as the class it mods.** Fields of a modded class should be declared in the file that uses them: the order modded classes in different files are compiled in isn't something to rely on.
 - **Load layouts by their full literal path** (`"ZomBerry/AT/scripts/5_Mission/layouts/X.layout"`). With the path built at runtime, the engine once returned the wrong layout tree.
 - **Use typed locals for `out` parameters**, and initialise them, as in `ZBerryTime`.
+- **Clock functions:** `GetHourMinuteSecond`/`GetYearMonthDay` return local time, and the `...UTC` variants return UTC. Event times are stored as UTC, and the log view shows them in each admin's local time (`ZBerryTime.GetLocalOffset`).
+
+## DayZ engine notes
+
+These are engine behaviours that were confirmed while building ZomBerry:
+- **Weather:**
+  - `WeatherPhenomenon.Set(value, time, minDuration)` holds a value.
+  - Don't call `SetNextChange` after it: the world's `WeatherOnBeforeChange` then replaces the value straight away.
+  - Rain only starts while overcast is at or above the world's threshold (0.6 on Chernarus). Below it, the world stops the rain over about a minute, so set overcast and rain together, in the right order (see `ZomberryStockFunctions.ApplyWeather`).
+- **Bounding boxes:**
+  - `ClippingInfo` is far too large for characters.
+  - Use bone positions for `Human` (`ZBerryESPDraw.GetBoneBounds`).
+  - For other objects, use `GetCollisionBox`.
+- **Screenshots:** `MakeScreenshot` writes no files in the retail client. Use a screen recording to check visuals in automated runs.
 
 ## DayZ UI rules
 
@@ -93,8 +115,12 @@ There's no unit test runner, since Enforce Script only runs inside the game or a
    - Check that ZomBerry logs "Starting Server side".
    - Client-only code compiles on the server too, as `5_Mission` is shared.
 2. **Server-side tests:** a throwaway test mod that's never shipped. It holds a `modded class MissionServer` whose `OnInit` schedules a test method (`CallLater`). That method checks results and prints `PASS`/`FAIL` lines into the script log. This works well for pure logic: permission matching, time maths, JSON save/load, version parsing.
-3. **Singleplayer:** `Examples/offlineTest.chernarusplus`, started directly without BattlEye. In singleplayer the local player has every permission.
-4. **In-game on a server:** anything involving the UI, other players (kicks, bans, targets) or scaling at several resolutions.
+3. **Scripted client run:** a second throwaway test mod, loaded on both a local server and a client.
+   - **The client half** drives the menu (opens tabs, runs functions, reads the widgets) and prints `PASS`/`FAIL` lines.
+   - **The server half** spawns fixtures and answers queries about server state.
+   - **Recording:** record the screen during the run, to check what a log can't show (ESP boxes, cameras, weather).
+4. **Singleplayer:** `Examples/offlineTest.chernarusplus`, started directly without BattlEye. In singleplayer the local player has every permission.
+5. **In-game on a server:** anything involving other real players (kicks, bans, targets, rank protection), or scaling at several resolutions.
 
 Say which of these a change has been through. Don't claim in-game behaviour that wasn't tested in-game.
 
