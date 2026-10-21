@@ -1,10 +1,16 @@
 //Message dialog over the admin menu: a private message to the selected player, or an announcement to everyone.
-//Like the kick/ban dialog it's part of the menu's own layout; while it's open the menu key and Esc don't close the menu
+//Like the kick/ban dialog it's part of the menu's own layout; while it's open the menu key and Esc don't close the menu.
+//The text area looks like the notification players get. Typing goes into an invisible edit box over it, focused while
+//the mouse is over the area: the engine still turns keys into characters (any keyboard layout, paste), and the
+//area shows the whole message wrapped. The multi-line edit box was no option: it sends no change events and doesn't wrap
 class ZBerryUIMessageDialog extends ZBerryUIComponent {
 	static const int COLOR_PLACEHOLDER = 0xFF808080;
+	static const string CARET = "|"; //At the end: the hidden box's own caret can't be seen, so arrow keys are blocked
 
-	protected TextWidget m_Length, m_Preview;
-	protected EditBoxWidget m_Input; //One line: the multi-line box sends no change events and doesn't wrap. Enter sends
+	protected TextWidget m_Length;
+	protected RichTextWidget m_Preview;
+	protected EditBoxWidget m_Input; //Invisible, over the preview
+	protected bool m_Hovering;
 	protected ButtonWidget m_RecipientButton, m_SendButton, m_CancelButton;
 
 	protected ref TIntArray m_Recipients = new TIntArray; //Session ids the button steps through, -1 for everyone
@@ -15,7 +21,7 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/MessageDialog.layout", parent)) return;
 
 		m_Length = TextWidget.Cast( m_Root.FindAnyWidget("MessageLength") );
-		m_Preview = TextWidget.Cast( m_Root.FindAnyWidget("MessagePreview") );
+		m_Preview = RichTextWidget.Cast( m_Root.FindAnyWidget("MessagePreview") );
 		m_Input = EditBoxWidget.Cast( BindWidget("MessageInput") );
 		m_RecipientButton = ButtonWidget.Cast( BindWidget("MessageRecipient") );
 		m_SendButton = ButtonWidget.Cast( BindWidget("MessageSend") );
@@ -50,16 +56,16 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 
 		m_RecipientIndex = 0;
 		UpdateRecipient();
+		m_Hovering = false;
 		m_Input.SetText("");
 		UpdateLength();
-
 		Show(true);
-		SetFocus(m_Input);
 	}
 
 	void Close() {
 		if (!IsVisible()) return;
 
+		m_Hovering = false;
 		Show(false);
 		SetFocus(NULL);
 	}
@@ -87,9 +93,12 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 			m_Length.SetColor(ZBerryUIUtils.TEXT_DEFAULT);
 		}
 
-		if (length == 0) {
-			m_Preview.SetText("The whole message shows here, as players will see it");
+		if (length == 0 && !m_Hovering) {
+			m_Preview.SetText("Point here and type your message");
 			m_Preview.SetColor(COLOR_PLACEHOLDER);
+		} else if (m_Hovering) {
+			m_Preview.SetText(text + CARET);
+			m_Preview.SetColor(ZBerryUIUtils.TEXT_DEFAULT);
 		} else {
 			m_Preview.SetText(text);
 			m_Preview.SetColor(ZBerryUIUtils.TEXT_DEFAULT);
@@ -97,14 +106,12 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 	}
 
 	protected void Submit() {
+		if (!IsVisible()) return; //Enter can arrive both as a key and as the box's "finished"
+
 		string text = m_Input.GetText().Trim();
-		if (text == "") {
-			SetFocus(m_Input);
-			return;
-		}
+		if (text == "") return;
 		if (text.Length() > ZBerryMessages.MAX_LENGTH) {
 			ZBerryUIUtils.Message("The message is too long: " + text.Length() + " of " + ZBerryMessages.MAX_LENGTH + " characters");
-			SetFocus(m_Input);
 			return;
 		}
 
@@ -129,11 +136,41 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		return false;
 	}
 
+	//"finished" also comes when the box loses focus: only Enter while pointing at the area sends
 	override bool OnChange(Widget w, int x, int y, bool finished) {
 		if (w != m_Input) return false;
 
 		UpdateLength();
-		if (finished) Submit();
+		if (finished && m_Hovering) Submit();
+		return true;
+	}
+
+	override bool OnKeyDown(Widget w, int x, int y, int key) {
+		if (w != m_Input) return false;
+
+		if (key == KeyCode.KC_RETURN || key == KeyCode.KC_NUMPADENTER) {
+			Submit();
+			return true;
+		}
+		//The caret is drawn at the end, so it can't be moved elsewhere
+		return key == KeyCode.KC_LEFT || key == KeyCode.KC_RIGHT || key == KeyCode.KC_HOME || key == KeyCode.KC_END || key == KeyCode.KC_UP || key == KeyCode.KC_DOWN;
+	}
+
+	override bool OnMouseEnter(Widget w, int x, int y) {
+		if (w != m_Input) return false;
+
+		m_Hovering = true;
+		SetFocus(m_Input);
+		UpdateLength();
+		return true;
+	}
+
+	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y) {
+		if (w != m_Input) return false;
+
+		m_Hovering = false;
+		SetFocus(NULL);
+		UpdateLength();
 		return true;
 	}
 };
