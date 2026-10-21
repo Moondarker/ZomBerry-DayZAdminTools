@@ -22,7 +22,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 | `5_Mission/core/` | Server auth and permissions (`ZBerryAuth`, `ZBerryPermissions`), client auth (`ZBerryClientAuth`), request handlers (`ZBerryServerRPC`), streams (`ZBerryStreams`, `ZBerryStreamServer`, `ZBerryStreamClient`, `ZBerryMapMarkers`), client features (`ZBerryClientFeatures`), spectating, the event log (`ZBerryEventLog`), bans, spawning, world tools, version and build info, the Permissions API |
 | `5_Mission/ui/` | Admin menu components: one class per tab, panel or dialog, plus the ESP overlay |
 | `5_Mission/layouts/` | `.layout` files of the menu and its components |
-| `5_Mission/*.c` | Command API (`GetZomberryCmdAPI`), stock functions, config, logger, keybinds, helpers, the admin menu (`ZomberryMenu`) and the log view's debug preview (`ZomberryLogMenu`, F9 with `DebugLevel` 1+) |
+| `5_Mission/*.c` | Command API (`GetZomberryCmdAPI`), stock functions, config, logger, keybinds, helpers, the admin menu (`ZomberryMenu`) |
 
 `Examples/` has a mission that adds commands and a permission node, and a minimal offline mission for testing without a server.
 

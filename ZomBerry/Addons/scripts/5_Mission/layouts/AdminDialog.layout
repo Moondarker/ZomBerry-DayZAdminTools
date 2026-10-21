@@ -198,6 +198,33 @@ PanelWidgetClass AdminMenu {
           }
          }
         }
+        ButtonWidgetClass LogsButton {
+         color 0.3255 0.3255 0.3255 0.7843
+         position 370 10
+         size 115 36
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Colorable
+         {
+          TextWidgetClass LogsButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Logs"
+           font "gui/fonts/Metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
         ButtonWidgetClass BindButton {
          color 0.3255 0.3255 0.3255 0.7843
          position 10 10

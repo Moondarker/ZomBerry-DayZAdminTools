@@ -109,7 +109,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.spawn.inventory` | Spawning into your inventory |
 | `zomberry.spawn.player` | Spawning for the selected player: at their feet or into their inventory (together with `zomberry.spawn.ground` or `.inventory`). Follows the protection nodes |
 | `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
-| `zomberry.logs.view` | The in-game admin and kill log (its view comes in a later version) |
+| `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
 
@@ -280,6 +280,14 @@ Storage and base parts are grouped: one marker per 50 m square, with a count, su
 - **Zooming out:** double-click the map.
 
 The cursor's coordinates are shown below the map.
+
+### Logs
+
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, kicks, bans, permission changes, refused attempts, logins and logouts, kills, and damage between players. Times are in your local time.
+- **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
+- **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
+- **Live and Paused:** the header button stops the list from updating while you read it.
+- **Details:** select a row to see it in full below the list.
 
 ### Permissions
 

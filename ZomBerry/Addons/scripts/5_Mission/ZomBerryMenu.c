@@ -17,6 +17,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUISpawnTab m_SpawnTab;
 	protected ref ZBerryUIMapTab m_MapTab;
 	protected ref ZBerryUIPermsTab m_PermsTab;
+	protected ref ZBerryUILogsTab m_LogsTab;
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
@@ -62,6 +63,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		AddTab(m_PermsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/PermsTab.layout", "PermsButton");
 		m_PermsTab.SetPlayersPanel(m_PlayersPanel);
 
+		m_LogsTab = new ZBerryUILogsTab();
+		m_LogsTab.SetSideParent(contentWrapper); //Its player pane replaces the players panel while it's open
+		AddTab(m_LogsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/LogsTab.layout", "LogsButton");
+
 		m_KickBanDialog = new ZBerryUIKickBanDialog();
 		m_KickBanDialog.Init(layoutRoot); //Last: drawn above everything else
 		m_PlayersPanel.SetDialog(m_KickBanDialog);
@@ -101,6 +106,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		ShowTabButton(m_SpawnTab, auth.HasAny({ZBerryPermissions.SPAWN_GROUND, ZBerryPermissions.SPAWN_INVENTORY}));
 		ShowTabButton(m_MapTab, auth.Has(ZBerryPermissions.MAP_VIEW));
 		ShowTabButton(m_PermsTab, auth.CanManagePermissions());
+		ShowTabButton(m_LogsTab, auth.Has(ZBerryPermissions.LOGS_VIEW));
 		if (m_GearButton) m_GearButton.Show(auth.CanManagePermissions()); //Its dropdown's only entry for now
 		if (!auth.CanManagePermissions()) ShowDropdown(false);
 
@@ -144,6 +150,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		}
 
 		m_ActiveTab = tab;
+		m_PlayersPanel.Show(!tab.HasSidePane());
 		m_ActiveTab.Activate();
 		ShowDropdown(false);
 		UpdateGearIcon();

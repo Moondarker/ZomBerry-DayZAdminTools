@@ -115,6 +115,10 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		return m_MouseOnSearch;
 	}
 
+	override bool HasSidePane() {
+		return m_Players != NULL;
+	}
+
 	override void OnActionButtonClick() {
 		m_Live = !m_Live;
 		UpdateLiveButton();
