@@ -234,6 +234,14 @@ modded class MissionGameplay {
 		return m_ZomberryMenu;
 	}
 
+	//The menu key, Esc and the menu's close button. Callers check GetCloseClearance where a stray key could close it
+	void CloseZomberryMenu() {
+		if (!m_ZomberryMenu || !m_ZomberryMenu.GetLayoutRoot() || !m_ZomberryMenu.GetLayoutRoot().IsVisible()) return;
+
+		GetUIManager().HideScriptedMenu( m_ZomberryMenu );
+		PlayerControlEnable(false);
+	}
+
 	private bool IsLogMenuOpen() {
 		return m_ZomberryLogMenu && m_ZomberryLogMenu.GetLayoutRoot() && m_ZomberryLogMenu.GetLayoutRoot().IsVisible();
 	}
@@ -318,8 +326,7 @@ modded class MissionGameplay {
 				GetUIManager().ShowScriptedMenu( GetZomberryMenu(), NULL );
 				PlayerControlDisable(INPUT_EXCLUDE_ALL);
 			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
-				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
-				PlayerControlEnable(false);
+				CloseZomberryMenu();
 			} else if (!ZBerryVersion.IsCompatible(r_zbryVer, g_zbryVer)) {
 				DisplayMessage("[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer);
 			} else if (!menu && auth.IsSetupPending()) {
@@ -337,8 +344,7 @@ modded class MissionGameplay {
 			if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().CloseDialogs()) {
 				//Only the dialog
 			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
-				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
-				PlayerControlEnable(false);
+				CloseZomberryMenu();
 			}
 			CloseTokenDialog();
 			if (IsLogMenuOpen() && m_ZomberryLogMenu.GetCloseClearance()) {

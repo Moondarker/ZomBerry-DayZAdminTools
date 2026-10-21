@@ -22,7 +22,7 @@ ZomBerry is a client **and** server mod. Admins need it loaded on their game, an
 2. **Accept the signature on the server.** Copy `Keys/Vaker.bikey` into the server's `keys` folder.
 3. **Start the server with a profile folder.** Use `-profiles=<folder>`; ZomBerry keeps its configuration and logs in `<profiles>/ZomBerry/`.
 4. **Become the first admin.** Start the server, take the setup token from its log, join, press `O` and enter it. See [First start](#first-start).
-5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab.
+5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab, under the gear icon in the header.
 
 Client and server must run the same major and minor version (for example 0.7.x on both). Otherwise the client refuses to open the menu and says why in chat.
 
@@ -108,7 +108,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
 | `zomberry.spawn.player` | Spawning for the selected player: at their feet or into their inventory (together with `zomberry.spawn.ground` or `.inventory`). Follows the protection nodes |
-| `zomberry.permissions.manage` | The Permissions tab |
+| `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
 | `zomberry.logs.view` | The in-game admin and kill log (its view comes in a later version) |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
@@ -195,7 +195,10 @@ Keybinds only work while no menu is open, so they don't fire while you type in c
 
 ## Using the menu
 
-Open and close the menu with `O`, or close it with `Esc`. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
+Open and close the menu with `O`, or close it with `Esc` or the **×** in the header's top-right corner. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
+
+- **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu. When the kick or ban dialog is open, it closes the dialog first, like `Esc`.
+- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions, for now. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
 
 ### Players
 
@@ -280,7 +283,7 @@ The cursor's coordinates are shown below the map.
 
 ### Permissions
 
-Admins with `zomberry.permissions.manage` get this tab, which edits groups, permissions and spawn rules. See [In-game editor](#in-game-editor).
+Admins with `zomberry.permissions.manage` open this tab from the gear icon in the header. It edits groups, permissions and spawn rules. See [In-game editor](#in-game-editor).
 
 ## Troubleshooting
 

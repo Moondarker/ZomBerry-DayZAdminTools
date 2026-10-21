@@ -31,7 +31,7 @@ PanelWidgetClass AdminMenu {
      {
       TextWidgetClass TitleText {
        position 0.01 0
-       size 0.98 1
+       size 0.86 1
        hexactpos 0
        vexactpos 1
        hexactsize 0
@@ -41,6 +41,60 @@ PanelWidgetClass AdminMenu {
        "exact text" 1
        "text valign" center
        "exact text size" 22
+      }
+      ButtonWidgetClass GearButton {
+       color 1 1 1 0
+       position 50 0
+       size 36 36
+       halign right_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Empty
+       {
+        ImageWidgetClass GearIcon {
+         ignorepointer 1
+         size 0.8 0.8
+         halign center_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         image0 "set:dayz_gui image:settings"
+         mode blend
+         "src alpha" 1
+        }
+       }
+      }
+      ButtonWidgetClass CloseButton {
+       color 1 1 1 0
+       position 8 0
+       size 36 36
+       halign right_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Empty
+       {
+        ImageWidgetClass CloseIcon {
+         ignorepointer 1
+         size 0.7 0.7
+         halign center_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         image0 "set:dayz_gui image:icon_x"
+         mode blend
+         "src alpha" 1
+        }
+       }
       }
      }
     }
@@ -144,33 +198,6 @@ PanelWidgetClass AdminMenu {
           }
          }
         }
-        ButtonWidgetClass PermsButton {
-         color 0.3255 0.3255 0.3255 0.7843
-         position 370 10
-         size 115 36
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Colorable
-         {
-          TextWidgetClass PermsButtonLabel {
-           ignorepointer 1
-           position 0 0
-           size 1 1
-           hexactpos 1
-           vexactpos 1
-           hexactsize 0
-           vexactsize 0
-           text "Permissions"
-           font "gui/fonts/Metron16"
-           "exact text" 1
-           "exact text size" 16
-           "text halign" center
-           "text valign" center
-          }
-         }
-        }
         ButtonWidgetClass BindButton {
          color 0.3255 0.3255 0.3255 0.7843
          position 10 10
@@ -201,6 +228,48 @@ PanelWidgetClass AdminMenu {
         }
        }
       }
+     }
+    }
+    PanelWidgetClass GearDropdown {
+     visible 0
+     color 0 0 0 0.95
+     position 50 0.05
+     size 125 46
+     halign right_ref
+     hexactpos 1
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     priority 10
+     style rover_sim_colorable
+     {
+    ButtonWidgetClass PermsButton {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 5 5
+     size 115 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass PermsButtonLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Permissions"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
      }
     }
    }

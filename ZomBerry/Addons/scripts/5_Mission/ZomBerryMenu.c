@@ -1,7 +1,16 @@
 //Menu shell: title, tab switching, shared header button and RPC routing. All page logic lives in 5_Mission/ui components
 class ZomberryMenu extends UIScriptedMenu {
+	static const float DROPDOWN_LINGER = 0.75; //Seconds the gear dropdown stays open after the mouse left it and the gear
+	static const int ICON_DEFAULT = 0xFFC8C8C8;
+	static const int ICON_HOVER = 0xFFFFFFFF;
+
 	protected TextWidget m_TxtTitle;
 	protected ButtonWidget m_ActionButton;
+	protected ButtonWidget m_CloseButton, m_GearButton;
+	protected ImageWidget m_CloseIcon, m_GearIcon;
+	protected Widget m_GearDropdown;
+	protected bool m_MouseOnDropdown = false; //Over the gear or its dropdown
+	protected float m_DropdownTimer = 0; //Seconds since the mouse left them
 
 	protected ref ZBerryUIPlayersPanel m_PlayersPanel;
 	protected ref ZBerryUIFunctionsTab m_FunctionsTab;
@@ -24,6 +33,12 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_TxtTitle = TextWidget.Cast( layoutRoot.FindAnyWidget("TitleText") );
 		m_ActionButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("BindButton") );
+		m_CloseButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("CloseButton") );
+		m_CloseIcon = ImageWidget.Cast( layoutRoot.FindAnyWidget("CloseIcon") );
+		m_GearButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("GearButton") );
+		m_GearIcon = ImageWidget.Cast( layoutRoot.FindAnyWidget("GearIcon") );
+		m_GearDropdown = layoutRoot.FindAnyWidget("GearDropdown");
+		if (m_CloseIcon) m_CloseIcon.SetColor(ICON_DEFAULT);
 
 		Widget contentWrapper = layoutRoot.FindAnyWidget("ContentWrapper");
 		Widget sectionWrapper = layoutRoot.FindAnyWidget("SectionWrapper");
@@ -86,6 +101,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		ShowTabButton(m_SpawnTab, auth.HasAny({ZBerryPermissions.SPAWN_GROUND, ZBerryPermissions.SPAWN_INVENTORY}));
 		ShowTabButton(m_MapTab, auth.Has(ZBerryPermissions.MAP_VIEW));
 		ShowTabButton(m_PermsTab, auth.CanManagePermissions());
+		if (m_GearButton) m_GearButton.Show(auth.CanManagePermissions()); //Its dropdown's only entry for now
+		if (!auth.CanManagePermissions()) ShowDropdown(false);
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnPermissionsChanged();
@@ -128,6 +145,50 @@ class ZomberryMenu extends UIScriptedMenu {
 
 		m_ActiveTab = tab;
 		m_ActiveTab.Activate();
+		ShowDropdown(false);
+		UpdateGearIcon();
+	}
+
+	//The gear's dropdown holds pages that don't need a tab of their own (Permissions)
+	protected void ShowDropdown(bool show) {
+		if (!m_GearDropdown) return;
+
+		m_GearDropdown.Show(show);
+		m_DropdownTimer = 0;
+	}
+
+	//Green while one of its pages is open, like an active tab's caption
+	protected void UpdateGearIcon() {
+		if (!m_GearIcon) return;
+
+		if (m_ActiveTab && m_ActiveTab == m_PermsTab) {
+			m_GearIcon.SetColor(COLOR_GREEN);
+		} else if (m_MouseOnDropdown) {
+			m_GearIcon.SetColor(ICON_HOVER);
+		} else {
+			m_GearIcon.SetColor(ICON_DEFAULT);
+		}
+	}
+
+	protected bool IsDropdownWidget(Widget w) {
+		if (!w || !m_GearDropdown) return false;
+		if (w == m_GearButton || w == m_GearDropdown) return true;
+
+		Widget parent = w.GetParent();
+		while (parent) {
+			if (parent == m_GearDropdown) return true;
+			parent = parent.GetParent();
+		}
+		return false;
+	}
+
+	//Clicking works whatever GetCloseClearance says: a click can't be a stray keystroke while typing. An open dialog
+	//closes first, as with Esc
+	protected void CloseByButton() {
+		if (CloseDialogs()) return;
+
+		MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
+		if (mission) mission.CloseZomberryMenu();
 	}
 
 	//Input focus is taken and released by UIScriptedMenu itself (LockControls/UnlockControls in super.OnShow/OnHide).
@@ -151,6 +212,10 @@ class ZomberryMenu extends UIScriptedMenu {
 		super.OnHide();
 		ShowQuickbar(true);
 		m_KickBanDialog.Close();
+		ShowDropdown(false);
+		m_MouseOnDropdown = false;
+		UpdateGearIcon();
+		if (m_CloseIcon) m_CloseIcon.SetColor(ICON_DEFAULT);
 		GetZBerryStreams().HideAll();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
@@ -169,9 +234,24 @@ class ZomberryMenu extends UIScriptedMenu {
 	override void Update(float timeslice) {
 		if (m_ActiveTab) m_ActiveTab.Update(timeslice);
 		m_PlayersPanel.Update(timeslice);
+
+		if (m_GearDropdown && m_GearDropdown.IsVisible() && !m_MouseOnDropdown) {
+			m_DropdownTimer += timeslice;
+			if (m_DropdownTimer >= DROPDOWN_LINGER) ShowDropdown(false);
+		}
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button ) {
+		if ( w == m_CloseButton ) {
+			CloseByButton();
+			return true;
+		}
+
+		if ( w == m_GearButton ) {
+			ShowDropdown(!m_GearDropdown.IsVisible());
+			return true;
+		}
+
 		if ( w == m_ActionButton ) {
 			if (m_ActiveTab) m_ActiveTab.OnActionButtonClick();
 			return true;
@@ -184,6 +264,27 @@ class ZomberryMenu extends UIScriptedMenu {
 			}
 		}
 
+		return false;
+	}
+
+	//Leaving one of the gear's widgets for another (the dropdown, its buttons) keeps the dropdown open
+	override bool OnMouseEnter( Widget w, int x, int y ) {
+		if (w == m_CloseButton && m_CloseIcon) m_CloseIcon.SetColor(ICON_HOVER);
+		if (IsDropdownWidget(w)) {
+			m_MouseOnDropdown = true;
+			m_DropdownTimer = 0;
+			UpdateGearIcon();
+		}
+		return false;
+	}
+
+	override bool OnMouseLeave( Widget w, Widget enterW, int x, int y ) {
+		if (w == m_CloseButton && m_CloseIcon) m_CloseIcon.SetColor(ICON_DEFAULT);
+		if (IsDropdownWidget(w) && !IsDropdownWidget(enterW)) {
+			m_MouseOnDropdown = false;
+			m_DropdownTimer = 0;
+			UpdateGearIcon();
+		}
 		return false;
 	}
 

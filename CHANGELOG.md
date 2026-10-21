@@ -56,6 +56,7 @@
   - **Before**, every open menu fetched the whole player list every 2–5 seconds, and every map marker every 10 seconds.
 - **Every log line names players the same way**, "Name (Steam64 id)". Function, spawn, teleport, kick and ban lines used the BattlEye GUID before. Offline bans by GUID still log the GUID, the only ID they have.
 - **Function and spawn requests** no longer carry the admin's ID, which the server ignored anyway (#52).
+- **A close button and a settings menu in the header** (#55): the **×** in the top-right corner closes the admin menu with the mouse, so the menu can be left even when the keyboard stops reaching it. The gear icon next to it opens a dropdown, which now holds the Permissions tab.
 
 - **The log says what a permission change changed:** one line per change.
   - **Groups:** added, removed, level changes, permissions and spawn rules added or removed.
