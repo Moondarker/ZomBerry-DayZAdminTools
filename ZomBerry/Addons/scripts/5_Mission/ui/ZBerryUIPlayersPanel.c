@@ -159,8 +159,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		float listY = 10 * u;
 		float listHeight = Math.Max(60 * u, infoY - 8 * u - listY);
 
+		//Lines a mode doesn't use are hidden: placed below the first line, they'd cover the button row
 		for (int line = 0; line < m_InfoLines.Count(); ++line) {
 			m_InfoLines[line].SetPos(4 * u, infoY + line * INFO_LINE_HEIGHT * u);
+			m_InfoLines[line].Show(line < infoLines);
 		}
 		float copyWidth, copyHeight;
 		m_CopyIdButton.GetSize(copyWidth, copyHeight);
