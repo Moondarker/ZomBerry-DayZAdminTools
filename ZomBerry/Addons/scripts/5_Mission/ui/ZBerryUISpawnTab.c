@@ -114,7 +114,9 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			return true;
 		}
 
-		if (w == m_TargetButton) { //Hovering opens it already
+		if (w == m_TargetButton) { //Clicking still steps through the targets, in the drop-up's order
+			m_ObjTarget = NextAllowedTarget(m_ObjTarget);
+			ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
 			ShowDropup(true);
 			return true;
 		}
@@ -178,13 +180,12 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_PlayersPanel = playersPanel;
 	}
 
-	//The first allowed target after current: Ground -> Cursor -> Inventory -> Player's feet -> Player's inv. -> Ground
+	//The first allowed target after current, top to bottom in the drop-up, then from the top again
 	protected string NextAllowedTarget(string current) {
-		TStringArray order = {"Ground", "Cursor", "Inventory", "Player's feet", "Player's inv."};
-		int index = order.Find(current);
+		int index = m_Targets.Find(current);
 
-		for (int step = 1; step <= order.Count(); ++step) {
-			string candidate = order[(index + step) % order.Count()];
+		for (int step = 1; step <= m_Targets.Count(); ++step) {
+			string candidate = m_Targets[(index + step) % m_Targets.Count()];
 			if (IsTargetAllowed(candidate)) return candidate;
 		}
 
