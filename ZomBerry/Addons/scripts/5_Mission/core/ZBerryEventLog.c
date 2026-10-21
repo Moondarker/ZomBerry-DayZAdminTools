@@ -54,9 +54,10 @@ class ZBerryLogEvent {
 	string TargetName;
 	string Text;
 
-	//As the log file writes it: players as "Name (Steam64 id)"
-	string Format() {
-		string text = Text;
+	//As the log file writes it: players as "Name (Steam64 id)". Game names (ZBerryLocText tags) in this game's language,
+	//or with translate false in the server's, as the event was logged
+	string Format(bool translate = true) {
+		string text = ZBerryLocText.Resolve(Text, translate); //Before the players: their names can't make tags
 		text.Replace("{actor}", DescribeParty(ActorName, ActorId));
 		text.Replace("{target}", DescribeParty(TargetName, TargetId));
 		return text;
@@ -64,7 +65,7 @@ class ZBerryLogEvent {
 
 	//Names only, for the log view's rows (the ids are in Format)
 	string FormatNames() {
-		string text = Text;
+		string text = ZBerryLocText.Resolve(Text, true);
 		text.Replace("{actor}", ActorName);
 		text.Replace("{target}", TargetName);
 		return text;
@@ -365,14 +366,14 @@ class ZBerryEventLog {
 		if (vehicle) {
 			PlayerBase driver = PlayerBase.Cast(vehicle.CrewDriver());
 			if (driver && driver != victim) {
-				ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + vehicle.GetDisplayName() + where);
+				ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + ZBerryLocText.Name(vehicle) + where);
 				return;
 			}
 		}
 
 		if (killerPlayer && killerPlayer != victim) {
 			string text = "{target} was killed by {actor}";
-			if (killerEntity != killerPlayer) text += " with " + killerEntity.GetDisplayName();
+			if (killerEntity != killerPlayer) text += " with " + ZBerryLocText.Name(killerEntity);
 			float distance = vector.Distance(victim.GetPosition(), killerPlayer.GetPosition());
 			ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(killerPlayer), GetName(killerPlayer), GetSteamId(victim), GetName(victim), text + " from " + Math.Round(distance) + " m" + where);
 			return;
@@ -386,7 +387,7 @@ class ZBerryEventLog {
 		if (!GetGame().IsServer() || !victim || !attacker || victim == attacker) return;
 
 		string weapon = "Fists";
-		if (source && source != attacker) weapon = source.GetDisplayName();
+		if (source && source != attacker) weapon = ZBerryLocText.Name(source); //A tag: resolved where the record is shown
 		GetZBerryEventLog().AddHit(victim, attacker, weapon, damage);
 	}
 
@@ -935,7 +936,7 @@ class ZBerryEventLog {
 		damage = damageTenths / 10.0;
 		int weaponIndex = m_ClientDamage[slot + 5];
 		weapon = "";
-		if (weaponIndex >= 0 && weaponIndex < m_ClientWeapons.Count()) weapon = m_ClientWeapons[weaponIndex];
+		if (weaponIndex >= 0 && weaponIndex < m_ClientWeapons.Count()) weapon = ZBerryLocText.Resolve(m_ClientWeapons[weaponIndex], true);
 		distance = m_ClientDamage[slot + 6];
 		return true;
 	}

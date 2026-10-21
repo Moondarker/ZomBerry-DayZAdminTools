@@ -1,6 +1,6 @@
 //Why a player died, in words, for the admin log's kill events (server side). Kills by another player are worded by the
 //log itself; this covers everything else: infected, animals, vehicles without a driver, explosions, suicide, falls,
-//drowning, fire, barbed wire, bleeding, poisoning, thirst and hunger
+//drowning, fire, barbed wire, bleeding, poisoning, thirst and hunger. Game names are ZBerryLocText tags
 class ZBerryDeathCause {
 	static const int RECENT_MS = 10000; //A hit this recent explains a death without a killer (a fall, fire)
 	static const int CONTEXT_MS = 300000; //One this recent is mentioned after slower causes ("bled out, last hurt by...")
@@ -13,9 +13,9 @@ class ZBerryDeathCause {
 		EntityAI killerEntity = EntityAI.Cast(killer);
 		if (killerEntity && killerEntity != victim) {
 			string name = DescribeSource(killerEntity);
-			if (killerEntity.IsInherited(ExplosivesBase)) return " was killed by an explosion (" + killerEntity.GetDisplayName() + ")";
+			if (killerEntity.IsInherited(ExplosivesBase)) return " was killed by an explosion (" + ZBerryLocText.Name(killerEntity) + ")";
 			if (killerEntity.IsInherited(Transport)) return " was run over by " + name;
-			if (killerEntity.GetHierarchyRootPlayer() == victim) return " killed themselves with " + killerEntity.GetDisplayName();
+			if (killerEntity.GetHierarchyRootPlayer() == victim) return " killed themselves with " + ZBerryLocText.Name(killerEntity);
 			return " was killed by " + name;
 		}
 
@@ -51,8 +51,7 @@ class ZBerryDeathCause {
 		if (!source) return "something";
 		if (source.IsInherited(ZombieBase)) return "an infected";
 
-		string name = source.GetDisplayName();
-		if (name == "") name = source.GetType();
+		string name = ZBerryLocText.Name(source);
 		if (source.IsInherited(AnimalBase) || source.IsInherited(Transport)) return "a " + name;
 		return name;
 	}

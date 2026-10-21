@@ -66,6 +66,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 - **Admin actions, kicks, bans, kills and refusals are events:** `ZomberryBase.LogEvent(type, actor, target, "{actor} did X to {target}", flags)`, or `LogEventRaw` for players who may be offline.
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
   - `ZomberryBase.Log` is for plain lines only: startup, config, errors, details.
+  - Game names (objects, animals, vehicles, weapons) go into event texts as `ZBerryLocText.Name(entity)`, not `GetDisplayName()`. It writes a string-table tag that each admin's client translates, while the log file gets the server's name. Chat messages keep `GetDisplayName()`: they aren't resolved.
   - New event kinds are appended to `ZBerryEventType`.
   - The log survives restarts: a snapshot plus a journal appended to as events are stored (`ZBerryEventLog.Save`, `JournalEvent`). Old files are read by every later version, so the formats only grow: new fields go at the end, under a new `FILE_VERSION` that still reads the old ones. `FileSerializer.Read` doesn't fail at the end of a file, which is why every journal entry and the snapshot end with `END_MARK`.
   - Commands are logged by the dispatcher (`ZBerryServerRPC.ExecuteCommand`, `LogCall`), one event per call. Each call has its own `ZBerryCall`, from `BeginCall` to `EndCall`.
@@ -79,6 +80,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 These cost real debugging time on this project:
 - **Reserved words:** `func`, `local` and `protected` can't be used as names. Neither can engine class names like `Weapon`, as variables. The compiler's error doesn't always say so.
 - **Temporaries passed to weak references get freed.** A `new` array passed straight into a `Param` constructor or a method argument may be gone by the time it's used. Hold it in a local first (see `ZBerryServerRPC.RunFunction`).
+- **String temporaries can be overwritten by nested calls.** In `a.Substring(...) + F()`, a `Substring` inside `F` once replaced the pending left part. Put each piece in its own local before concatenating (see `ZBerryLocText.Resolve`).
 - **Mixed arithmetic isn't plain integer maths.** Expressions mixing array elements, method results and literals can give unexpected results. Use typed `float` locals and `Math.Floor`/`Math.Ceil` (see `ZBerryFuncParam.GetValueName`). Plain `int / int` is integer division, so write `100.0` when you want a fraction.
 - **Strings:** `string.Trim()` returns a copy, but `ToLower()`, `ToUpper()` and `Replace()` change the string in place.
 - **You can't call a method on `new X()` in the same expression.** Assign it first.

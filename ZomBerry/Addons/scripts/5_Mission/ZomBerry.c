@@ -87,7 +87,7 @@ class ZomberryBase {
 		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags);
 		if (ZBerryEventType.IsInGameOnly(type)) return;
 
-		string line = logEvent.Format();
+		string line = logEvent.Format(false); //The server's language
 		if (type == ZBerryEventType.REFUSED) line = "WARN: " + line;
 		GetLogger().Log( ZBerryEventType.GetModule(type), line );
 	}

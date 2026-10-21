@@ -26,6 +26,7 @@
   - **Size:** the server keeps the last 2048 events and 10486 damage records.
   - **Kept across restarts:** in `ZomBerryEventLog.bin`, plus a journal of the newest additions, so even a crash loses nothing that was already logged. A full log takes about 0.5–1.3 MB on disk, and never more than about 11 MB. Server starts and clean stops are logged too, as a new event type, "Server".
   - **Long event texts** are cut at 1024 bytes.
+  - **Game names in your own language:** animals, vehicles, weapons and objects in the Logs tab show in each admin's game language. The log file keeps the server's.
   - **Deaths say why:**
     - **Killed:** by a player (weapon and distance), by an infected or an animal, run over (naming the driver), or by an explosion.
     - **Died:** by suicide, from a fall, by drowning, burning or barbed wire, or of bleeding, chemical poisoning, thirst or hunger. The last thing that hurt them is mentioned when it was recent.
