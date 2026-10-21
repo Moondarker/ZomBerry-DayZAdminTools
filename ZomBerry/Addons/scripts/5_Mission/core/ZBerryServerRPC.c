@@ -16,6 +16,7 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Ban, "Ban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Unban, "Unban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.BansRequest, "BansRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.Message, "Message", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -396,6 +397,36 @@ class ZBerryServerRPC {
 		if (!CanRunOnServer(type, sender, ZBerryPermissions.PLAYERS_UNBAN, "see the ban list")) return;
 
 		SendBans(sender);
+	}
+
+	//Talking to players isn't a function on them, so the rank protections don't apply: any admin may be messaged
+	void Message( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2< int, string > msgParam; //Recipient's session id (-1: everyone), text
+		if ( !ctx.Read( msgParam ) ) return;
+
+		string text = ZBerryMessages.Clean(msgParam.param2);
+		if (msgParam.param1 < 0) {
+			if (!CanRun(type, sender, {ZBerryPermissions.MESSAGES_ANNOUNCE}, "send an announcement")) return;
+			if (text == "") return;
+
+			int count = ZBerryMessages.Announce(text);
+			ZomberryBase.LogEvent( ZBerryEventType.MESSAGE, sender, NULL, "{actor} announced to everyone: " + ZBerryMessages.ForLog(text) );
+			Tell(sender, "Announcement sent to " + count + " players");
+			return;
+		}
+
+		if (!CanRun(type, sender, {ZBerryPermissions.MESSAGES_PRIVATE}, "send a private message")) return;
+		if (text == "") return;
+
+		PlayerBase recipient = ZBGetPlayerById(msgParam.param1);
+		if (!recipient || (GetGame().IsMultiplayer() && !recipient.GetIdentity())) {
+			Tell(sender, "Message not sent: the player has left");
+			return;
+		}
+
+		ZBerryMessages.SendPrivate(recipient, text);
+		ZomberryBase.LogEvent( ZBerryEventType.MESSAGE, sender, recipient.GetIdentity(), "{actor} messaged {target}: " + ZBerryMessages.ForLog(text) );
+		if (recipient.GetIdentity()) Tell(sender, "Message sent to " + recipient.GetIdentity().GetName());
 	}
 
 	protected void SendBans(PlayerIdentity recipient) {

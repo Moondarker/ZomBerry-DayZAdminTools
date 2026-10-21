@@ -1,0 +1,185 @@
+FrameWidgetClass MessageDialog {
+ visible 0
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ priority 10
+ {
+  PanelWidgetClass MessageShade {
+   color 0 0 0 0.5
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass MessageBox {
+   color 0 0 0 0.9
+   size 560 240
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass MessageTitle {
+     position 15 12
+     size 530 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Send message"
+     "text valign" center
+     font "gui/fonts/Metron22"
+     "exact text" 1
+     "exact text size" 22
+    }
+    TextWidgetClass MessageToTitle {
+     position 15 52
+     size 60 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "To:"
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    ButtonWidgetClass MessageRecipient {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 80 52
+     size 465 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MessageRecipientLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Everyone"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    TextWidgetClass MessageTextTitle {
+     position 15 92
+     size 530 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Message:"
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    EditBoxWidgetClass MessageInput {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 116
+     size 530 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    TextWidgetClass MessageLength {
+     position 15 148
+     size 530 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     "text halign" right
+     "text valign" center
+     font "gui/fonts/Metron12"
+     "exact text" 1
+     "exact text size" 12
+    }
+    ButtonWidgetClass MessageCancel {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MessageCancelLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Cancel"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MessageSend {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 165 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MessageSendLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Send"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

@@ -55,6 +55,7 @@
   Players beyond the admin's network range still show by name and distance, streamed by the server.
 
   **Switching and settings** (#68): running the function switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on an **ESP tab** under the header's gear: each player detail, far players, vehicles, infected, animals and two ranges. The settings are saved per computer in `ZomBerryESP.json`. The server only streams everyone's position and health while those settings use them.
+- **Messages** (#62): a **Message** button on the players panel sends a private message to the selected player (`zomberry.messages.private`) or an announcement to everyone (`zomberry.messages.announce`). Players get a notification and the same text in chat. Messages are logged with their text, as a new event type, "Message".
 - **Client-side functions for mods** (#38): server code can switch a named feature on one client (`SetClientFeature`), and that client runs the handler registered for it (`RegisterClientFeature`). Features with a required permission switch off by themselves when it's removed.
 
 ### Changed

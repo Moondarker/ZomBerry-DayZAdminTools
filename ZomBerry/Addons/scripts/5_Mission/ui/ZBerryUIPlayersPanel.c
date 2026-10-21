@@ -9,13 +9,17 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
 	protected ref ZBerryScaledList m_PlayersLists;
 	static const float BANS_REFRESH_INTERVAL = 30; //Keeps "time left" current
+	static const float BUTTON_WIDTH = 83; //Layout units: four buttons and three gaps fill the 350 wide panel
+	static const float BUTTON_GAP = 6;
 
 	protected TextWidget m_PlyInfo; //Health and blood, ban or admin details of the selected row
 	protected float m_BansTimer = 0;
 	protected float m_LaidOutHeight = -1;
-	protected bool m_LaidOutWithButtons;
-	protected ButtonWidget m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
+	protected int m_LaidOutButtons = -1; //Bit per shown button of m_RowButtons
+	protected ButtonWidget m_MessageButton, m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
+	protected ref array<ButtonWidget> m_RowButtons = new array<ButtonWidget>; //Bottom row, left to right
 	protected ZBerryUIKickBanDialog m_Dialog;
+	protected ZBerryUIMessageDialog m_MessageDialog;
 
 	protected int m_SelectedPlayerId = -1;
 	protected ref ZBerryPlayerArray m_LastPlayers;
@@ -40,10 +44,16 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersLists = new ZBerryScaledList(m_Root, "PlayerList", this);
 		m_PlayersLists.Pick();
 		m_PlayersList = m_PlayersLists.GetActive();
+		m_MessageButton = ButtonWidget.Cast( BindWidget("PlayersMessage") );
 		m_KickButton = ButtonWidget.Cast( BindWidget("PlayersKick") );
 		m_BanButton = ButtonWidget.Cast( BindWidget("PlayersBan") );
 		m_UnbanButton = ButtonWidget.Cast( BindWidget("PlayersUnban") );
 		m_BansButton = ButtonWidget.Cast( BindWidget("PlayersBans") );
+		m_RowButtons.Insert(m_MessageButton);
+		m_RowButtons.Insert(m_UnbanButton);
+		m_RowButtons.Insert(m_KickButton);
+		m_RowButtons.Insert(m_BanButton);
+		m_RowButtons.Insert(m_BansButton);
 		UpdateActionButtons();
 		m_PlyInfo = TextWidget.Cast( m_Root.FindAnyWidget("PlayerInfo") );
 	}
@@ -56,6 +66,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	void SetDialog(ZBerryUIKickBanDialog dialog) {
 		m_Dialog = dialog;
+	}
+
+	void SetMessageDialog(ZBerryUIMessageDialog dialog) {
+		m_MessageDialog = dialog;
 	}
 
 	//Menu shown: the resolution may have changed since
@@ -77,11 +91,13 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		UpdateActionButtons();
 	}
 
-	//Kick, ban and the ban list need a server and the matching right; none of them in permissions mode
+	//Kick, ban and the ban list need a server and the matching right; none of them in permissions mode.
+	//Messages work in singleplayer too
 	protected void UpdateActionButtons() {
 		ZBerryClientAuth auth = GetZBerryClientAuth();
 		bool shown = GetGame().IsMultiplayer() && !m_PermsMode;
 
+		m_MessageButton.Show(!m_PermsMode && !m_BansMode && ZBerryUIMessageDialog.CanSend());
 		m_KickButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_KICK));
 		m_BanButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_BAN));
 		m_UnbanButton.Show(shown && m_BansMode);
@@ -95,19 +111,34 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	}
 
 	//Layouts can't pin a widget to both the top and the bottom of its parent, so the bottom is laid out here, bottom up:
-	//the button row (when any button is shown) 10 units above the bottom, the info line 8 above it, the list down to 8 above that
+	//the button row (when any button is shown) 10 units above the bottom, the info line 8 above it, the list down to 8 above that.
+	//The shown buttons are packed to the left, so hidden ones leave no gaps
 	protected void LayoutRows() {
 		float screenWidth, screenHeight;
 		m_Root.GetScreenSize(screenWidth, screenHeight);
 		if (screenWidth <= 0 || screenHeight <= 0) return;
 
-		bool withButtons = m_KickButton.IsVisible() || m_BanButton.IsVisible() || m_UnbanButton.IsVisible() || m_BansButton.IsVisible();
-		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5 && withButtons == m_LaidOutWithButtons) return;
+		int shownButtons = 0;
+		for (int i = 0; i < m_RowButtons.Count(); ++i) {
+			if (m_RowButtons[i].IsVisible()) shownButtons = shownButtons | (1 << i);
+		}
+		bool withButtons = shownButtons != 0;
+		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5 && shownButtons == m_LaidOutButtons) return;
 		m_LaidOutHeight = screenHeight;
-		m_LaidOutWithButtons = withButtons;
+		m_LaidOutButtons = shownButtons;
 
 		//SetPos/SetSize take physical pixels, the offsets below are layout units: the panel is exactly 350 units wide
 		float u = screenWidth / 350;
+		float buttonX = 0;
+		foreach (ButtonWidget rowButton : m_RowButtons) {
+			if (!rowButton.IsVisible()) continue;
+
+			float oldX, buttonY;
+			rowButton.GetPos(oldX, buttonY);
+			rowButton.SetPos(buttonX, buttonY);
+			buttonX += (BUTTON_WIDTH + BUTTON_GAP) * u;
+		}
+
 		float rowBottom = screenHeight - 10 * u;
 		if (withButtons) rowBottom -= (36 + 8) * u;
 		float infoY = rowBottom - 20 * u;
@@ -324,6 +355,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 			OpenDialog(w == m_BanButton);
 			return true;
 		}
+		if (w == m_MessageButton) {
+			OpenMessageDialog();
+			return true;
+		}
 		if (w == m_UnbanButton) {
 			if (m_SelectedBanId == "") {
 				ZBerryUIUtils.Message("Double-click a ban in the list first");
@@ -351,6 +386,18 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 			m_Dialog.OpenKick(playerId, GetPlayerName(playerId));
 		} else {
 			ZBerryUIUtils.Message("Double-click a player in the list first");
+		}
+	}
+
+	//To the selected player, or to everyone when nobody is selected
+	protected void OpenMessageDialog() {
+		if (!m_MessageDialog) return;
+
+		int playerId;
+		if (GetSelectedPlayerId(playerId)) {
+			m_MessageDialog.Open(playerId, GetZBerryStreams().GetName(playerId)); //Without the item in hands
+		} else {
+			m_MessageDialog.Open(-1, "");
 		}
 	}
 

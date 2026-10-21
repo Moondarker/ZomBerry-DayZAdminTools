@@ -16,9 +16,10 @@ class ZBerryEventType {
 	static const int AUTH = 14; //Setup token, versions
 	static const int REFUSED = 15; //Something an admin may not do, or a wrong setup token
 	static const int SERVER = 16; //Server started or stopping
+	static const int MESSAGE = 17; //Announcements and private messages from admins
 
 	static string GetName(int type) {
-		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused", "Server"};
+		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused", "Server", "Message"};
 		if (type < 0 || type >= names.Count()) return "";
 		return names[type];
 	}

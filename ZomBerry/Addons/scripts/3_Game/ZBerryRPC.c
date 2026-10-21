@@ -29,7 +29,8 @@ enum ZBerryRPCOp {
 	ClientFeature = 26, //Server -> client: switch a client-side feature (name, on/off, arguments)
 	CameraMode = 27, //Client -> server: a watched player's 1st/3rd person mode (ZBerrySpectate)
 	LogEvents = 28, //Server -> client: start over, a batch of log events (ZBerryEventLog)
-	LogDamage = 29 //Server -> client: start over, new player and weapon names, a batch of damage records
+	LogDamage = 29, //Server -> client: start over, new player and weapon names, a batch of damage records
+	Message = 30 //Client -> server: recipient's session id (-1: everyone), text
 }
 
 //Which side received the call

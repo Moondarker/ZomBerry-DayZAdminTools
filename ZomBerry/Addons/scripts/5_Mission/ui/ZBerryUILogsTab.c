@@ -2,8 +2,8 @@
 //name or Steam64 id, filter by type (dropdown) and by player (its own left pane, ZBerryUILogsPlayers, shown instead of
 //the players panel). The header action button pauses and resumes live updates
 class ZBerryUILogsTab extends ZBerryUITab {
-	static const int TYPE_DAMAGE = 17; //Filter bit of the damage queue, after the event types
-	static const int ALL_TYPES = 262142; //Bits 1..17
+	static const int TYPE_DAMAGE = 18; //Filter bit of the damage queue, after the event types
+	static const int ALL_TYPES = 524286; //Bits 1..18
 	static const int MAX_ROWS = 300; //Newest matches shown, a listbox gets slow with thousands
 	static const float SEARCH_DELAY = 0.3; //After the last keystroke
 	static const float REFRESH_INTERVAL = 1; //While the log keeps arriving, at most one rebuild per second
@@ -16,6 +16,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	static const int COLOR_SESSION = 0xFF909090;
 	static const int COLOR_PERMISSIONS = 0xFF80C0FF;
 	static const int COLOR_SERVER = 0xFFC8A0FF;
+	static const int COLOR_MESSAGE = 0xFF70E0E0;
 	static const int COLOR_TYPE_ON = 0xFF47EB00;
 
 	protected TextListboxWidget m_List; //The visible variant of m_Lists
@@ -425,6 +426,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 			case ZBerryEventType.PERMISSIONS:
 			case ZBerryEventType.AUTH: return COLOR_PERMISSIONS;
 			case ZBerryEventType.SERVER: return COLOR_SERVER;
+			case ZBerryEventType.MESSAGE: return COLOR_MESSAGE;
 		}
 		if ((logEvent.Flags & ZBerryEventFlags.HARMFUL) != 0) return COLOR_HARMFUL;
 		return ZBerryUIUtils.TEXT_DEFAULT;

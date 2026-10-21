@@ -21,6 +21,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIESPTab m_EspTab;
 	protected ref array<ZBerryUITab> m_DropdownTabs = new array<ZBerryUITab>; //Pages under the gear
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
+	protected ref ZBerryUIMessageDialog m_MessageDialog;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -78,6 +79,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_KickBanDialog = new ZBerryUIKickBanDialog();
 		m_KickBanDialog.Init(layoutRoot); //Last: drawn above everything else
 		m_PlayersPanel.SetDialog(m_KickBanDialog);
+		m_MessageDialog = new ZBerryUIMessageDialog();
+		m_MessageDialog.Init(layoutRoot);
+		m_PlayersPanel.SetMessageDialog(m_MessageDialog);
 
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
@@ -164,6 +168,10 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	//Esc: closes an open dialog first, returns false if there was none
 	bool CloseDialogs() {
+		if (m_MessageDialog && m_MessageDialog.IsVisible()) {
+			m_MessageDialog.Close();
+			return true;
+		}
 		if (!m_KickBanDialog || !m_KickBanDialog.IsVisible()) return false;
 
 		m_KickBanDialog.Close();
@@ -215,8 +223,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		return false;
 	}
 
-	//Clicking works whatever GetCloseClearance says: a click can't be a stray keystroke while typing. The kick/ban
-	//dialog takes the mouse while it's open and has its own Cancel, so the button can't be reached then
+	//Clicking works whatever GetCloseClearance says: a click can't be a stray keystroke while typing. The dialogs
+	//take the mouse while they're open and have their own Cancel, so the button can't be reached then
 	protected void CloseByButton() {
 		MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
 		if (mission) mission.CloseZomberryMenu();
@@ -243,6 +251,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		super.OnHide();
 		ShowQuickbar(true);
 		m_KickBanDialog.Close();
+		m_MessageDialog.Close();
 		ShowDropdown(false);
 		m_MouseOnDropdown = false;
 		UpdateGearIcon();
@@ -329,6 +338,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	bool GetCloseClearance() {
 		if (m_KickBanDialog && m_KickBanDialog.IsVisible()) return false; //Typing a reason
+		if (m_MessageDialog && m_MessageDialog.IsVisible()) return false;
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			if (tab.BlocksClose()) return false;

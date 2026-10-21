@@ -100,6 +100,8 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.players.kick` | Kicking players |
 | `zomberry.players.ban` | Banning players, also offline ones by ID |
 | `zomberry.players.unban` | The ban list, and unbanning |
+| `zomberry.messages.private` | Private messages to the selected player |
+| `zomberry.messages.announce` | Announcements to everyone online |
 | `zomberry.map.view` | The Map tab |
 | `zomberry.map.player_markers` | Player markers on the map |
 | `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
@@ -206,6 +208,7 @@ The left panel lists everyone online. Admins are green, and the item in a player
 - **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and their health and blood are shown below the list.
 - **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
+- **Message:** sends a private message to the selected player, or an announcement to everyone. The **To** button switches between the two (with nobody selected, it's an announcement). Players see it as a notification at the side of the screen for 15 seconds, and in chat. Messages are up to 300 characters, and every one is logged with its text.
 - **Bans:** switches the list to the ban list, showing time left. Double-click a ban to see who banned them and why, then press **Unban** to lift it. **Players** switches back.
 
 ### Functions
@@ -283,7 +286,7 @@ The cursor's coordinates are shown below the map.
 
 ### Logs
 
-Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
 - **Kept across restarts:** the server keeps the last 2048 events and 10486 damage records in `ZomBerryEventLog.bin` in its `ZomBerry` profile folder, with the newest additions in `ZomBerryEventLog.bin.journal`.
   - Each start logs "Server started", with how much it restored, and whether the previous run stopped without a clean shutdown. A clean shutdown logs "Server stopping".
   - Even after a crash, everything logged up to it is kept.

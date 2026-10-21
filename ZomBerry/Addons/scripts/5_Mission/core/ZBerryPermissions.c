@@ -20,6 +20,8 @@ class ZBerryPermissions {
 	static const string PLAYERS_KICK = "zomberry.players.kick";
 	static const string PLAYERS_BAN = "zomberry.players.ban";
 	static const string PLAYERS_UNBAN = "zomberry.players.unban"; //Also shows the ban list
+	static const string MESSAGES_ANNOUNCE = "zomberry.messages.announce"; //To everyone online
+	static const string MESSAGES_PRIVATE = "zomberry.messages.private"; //To the selected player
 	static const string FUNCTIONS_PREFIX = "zomberry.functions.";
 
 	static string FunctionNode(string funcName) {
@@ -33,7 +35,7 @@ class ZBerryPermissions {
 
 	//Every fixed node; function nodes are added from the registered commands
 	static TStringArray GetFixedNodes() {
-		TStringArray nodes = {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, MAP_TELEPORT_PLAYERS};
+		TStringArray nodes = {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MESSAGES_ANNOUNCE, MESSAGES_PRIVATE, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, MAP_TELEPORT_PLAYERS};
 		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
 			nodes.Insert(MapMarkerNode(category));
 		}
