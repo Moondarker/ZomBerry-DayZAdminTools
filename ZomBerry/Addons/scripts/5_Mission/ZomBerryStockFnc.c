@@ -668,7 +668,8 @@ class ZomberryStockFunctions {
 
 	void SetWeather( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
 		ApplyWeather(fValues[0], fValues[1], fValues[2]);
-		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+		int holdMinutes = WEATHER_HOLD / 60;
+		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed, it holds for " + holdMinutes + " minutes");
 	}
 
 	static const float WEATHER_HOLD = 360; //Seconds the admin's weather lasts before the server's own weather takes over
