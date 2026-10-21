@@ -61,13 +61,16 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - **Public means exactly these.** That's the APIs listed here, plus the command API's client-feature and call outcome methods, all documented in the README's "For developers" section.
     - Keep them backwards compatible: add methods and append optional parameters, but don't remove or change existing ones.
     - Everything else (UI components, keybinds, config, RPC opcodes and handlers) is internal and may change freely.
-    - The command API's call outcome helpers (`RefuseCall`, `AwaitConfirmation`) are documented, but new in 0.8.0. They may still change before 0.8.0 is released (see #66).
+    - The command API's call helpers (`RefuseCall`, `AwaitConfirmation`, `DescribeCall`, `GetCurrentCall`) are documented, but new in 0.8.0. They may still change before 0.8.0 is released.
 - **Log players as `ZBDescribePlayer(identity)`**, "Name (Steam64 id)", so every log line can be matched by the same id. Use `GetId()` (the BattlEye GUID) only for matching legacy GUID entries, never in logs. Write positions as `ZBDescribePosition(vector)`, map coordinates in whole metres.
 - **Admin actions, kicks, bans, kills and refusals are events:** `ZomberryBase.LogEvent(type, actor, target, "{actor} did X to {target}", flags)`, or `LogEventRaw` for players who may be offline.
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
   - `ZomberryBase.Log` is for plain lines only: startup, config, errors, details.
   - New event kinds are appended to `ZBerryEventType`.
-  - Commands are logged by the dispatcher (`ZBerryServerRPC.ExecuteCommand`). A command that does nothing reports it with `RefuseCall(reason)`, and a first run that only asks for confirmation with `AwaitConfirmation()` (stock functions: `Refuse`, `AskToConfirm`).
+  - Commands are logged by the dispatcher (`ZBerryServerRPC.ExecuteCommand`, `LogCall`), one event per call. Each call has its own `ZBerryCall`, from `BeginCall` to `EndCall`.
+    - A command that does nothing reports it with `RefuseCall(reason)`, and a first run that only asks for confirmation with `AwaitConfirmation()` (stock functions: `Refuse`, `AskToConfirm`).
+    - A command that can say what it did uses `DescribeCall("{actor} flipped X at Y")` instead of a `ZomberryBase.Log` detail line. Toggles say which way they switched ("{actor} switched ESP on"); stock functions on a selected player can use `DescribeOnTarget`.
+    - These only work while the call runs. From a `CallLater` callback they log a warning and change nothing.
 - **Log through `ZomberryBase.Log(module, text)`**, with a `ZomBerry<Area>` module name and an `INFO:`, `WARN:` or `ERROR:` prefix. Log every admin action on the server with the admin, and with the target if there is one. Chatty events go through `ZomberryBase.DebugLog(level, ...)`.
 
 ## Enforce Script pitfalls

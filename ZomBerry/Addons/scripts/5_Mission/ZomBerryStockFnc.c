@@ -101,6 +101,15 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AwaitConfirmation();
 	}
 
+	//"{actor} <what> for {target}", or "for themselves" when the admin selected themselves
+	protected void DescribeOnTarget(int adminId, int targetId, string what) {
+		if (adminId == targetId) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} " + what + " for themselves");
+		} else {
+			m_ZomberryCmdAPI.DescribeCall("{actor} " + what + " for {target}");
+		}
+	}
+
 	//Looks both players up; returns false when the admin has no character (dead, respawning),
 	//tells the admin and returns false when the target is gone
 	protected bool GetTargets(int adminId, int targetId, out PlayerBase admin, out PlayerBase target) {
@@ -280,6 +289,7 @@ class ZomberryStockFunctions {
 			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + GetPlayerName(target));
+			DescribeOnTarget(adminId, targetId, "switched god mode off");
 
 		} else {
 			HealPlayer(target, true, true, true);
@@ -287,6 +297,7 @@ class ZomberryStockFunctions {
 			target.ZBSetGod(true);
 			MessagePlayer(target, "God mode activated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + GetPlayerName(target));
+			DescribeOnTarget(adminId, targetId, "switched god mode on");
 		}
 	}
 
@@ -541,8 +552,10 @@ class ZomberryStockFunctions {
 
 		if (freeze) {
 			MessagePlayer(admin, GetPlayerName(target) + " is frozen, run Toggle freeze again to release them");
+			m_ZomberryCmdAPI.DescribeCall("{actor} froze {target}");
 		} else {
 			MessagePlayer(admin, GetPlayerName(target) + " is released");
+			m_ZomberryCmdAPI.DescribeCall("{actor} released {target}");
 		}
 	}
 
@@ -586,6 +599,7 @@ class ZomberryStockFunctions {
 		ZBerrySpectate spectate = GetZBerrySpectate();
 		if (spectate.IsWatching(adminId)) {
 			spectate.Stop(adminId, "Returned to player body");
+			m_ZomberryCmdAPI.DescribeCall("{actor} stopped spectating");
 			return;
 		}
 		if (m_spectatingList.Find(adminId) != -1) {
@@ -600,6 +614,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 		MessagePlayer(admin, "Spectating " + GetPlayerName(target) + ", run Spectate target again to return");
+		m_ZomberryCmdAPI.DescribeCall("{actor} started spectating {target}");
 	}
 
 	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
@@ -622,6 +637,7 @@ class ZomberryStockFunctions {
 
 			GetGame().SelectPlayer(adminIdent, adminPly);
 			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
+			m_ZomberryCmdAPI.DescribeCall("{actor} left FreeCam");
 		} else {
 			FreezeBody(adminPly, true);
 			m_spectatingList.Insert(adminId);
@@ -631,6 +647,7 @@ class ZomberryStockFunctions {
 			facing.Normalize();
 			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", adminPly.GetPosition() - facing * 1.2 + Vector(0, 2, 0)); //Behind the head, not inside it
 			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
+			m_ZomberryCmdAPI.DescribeCall("{actor} entered FreeCam");
 		}
 	}
 
@@ -733,8 +750,10 @@ class ZomberryStockFunctions {
 
 		if (on) {
 			MessagePlayer(admin, "ESP on");
+			m_ZomberryCmdAPI.DescribeCall("{actor} switched ESP on");
 		} else {
 			MessagePlayer(admin, "ESP off");
+			m_ZomberryCmdAPI.DescribeCall("{actor} switched ESP off");
 		}
 	}
 
@@ -780,11 +799,11 @@ class ZomberryStockFunctions {
 			targets[i].SetPosition(GetRingPosition(center, i, targets.Count()));
 		}
 
-		string result = "Teleported " + targets.Count() + " players";
-		if (inVehicles > 0) result += ", " + inVehicles + " skipped (in vehicles)";
-		if (protectedCount > 0) result += ", " + protectedCount + " skipped (protected from your rank)";
-		MessagePlayer(admin, result);
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(admin.GetIdentity()) + " teleported all players to " + ZBDescribePosition(center) + ": " + result );
+		string skipped = "";
+		if (inVehicles > 0) skipped += ", " + inVehicles + " skipped (in vehicles)";
+		if (protectedCount > 0) skipped += ", " + protectedCount + " skipped (protected from your rank)";
+		MessagePlayer(admin, "Teleported " + targets.Count() + " players" + skipped);
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players to " + ZBDescribePosition(center) + ": " + targets.Count() + " moved" + skipped);
 	}
 
 	//Evenly spread on a circle around center, TP_ALL_SPACING apart, at least 3 m out, on the surface
@@ -836,7 +855,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " deleted " + description + " at " + ZBDescribePosition(entity.GetPosition()) );
+		m_ZomberryCmdAPI.DescribeCall("{actor} deleted " + description + " at " + ZBDescribePosition(entity.GetPosition()));
 		GetGame().ObjectDelete(entity);
 		MessagePlayer(admin, "Deleted " + description);
 	}
@@ -869,7 +888,7 @@ class ZomberryStockFunctions {
 		foreach (EntityAI entity : found) {
 			if (entity) GetGame().ObjectDelete(entity);
 		}
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor) );
+		m_ZomberryCmdAPI.DescribeCall("{actor} cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor));
 		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName);
 	}
 
@@ -888,7 +907,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", ZBDescribePlayer(ZBGetIdentityById(adminId)) + " flipped " + vehicle.GetDisplayName() + " at " + ZBDescribePosition(vehicle.GetPosition()) );
+		m_ZomberryCmdAPI.DescribeCall("{actor} flipped " + vehicle.GetDisplayName() + " at " + ZBDescribePosition(vehicle.GetPosition()));
 		MessagePlayer(admin, vehicle.GetDisplayName() + " is back on its wheels");
 	}
 };

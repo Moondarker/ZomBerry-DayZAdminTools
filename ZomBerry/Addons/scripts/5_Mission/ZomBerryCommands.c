@@ -5,11 +5,65 @@ enum ZBerryCallOutcome {
 	CONFIRMING //It only asked the admin to run it again: not logged, the confirmed run is
 };
 
+//One run of a command, from the dispatcher's BeginCall to its EndCall: who ran what on whom, and how it ended.
+//Commands reach it through GetZomberryCmdAPI().GetCurrentCall(), or the RefuseCall/AwaitConfirmation/DescribeCall shortcuts
+class ZBerryCall {
+	protected ZBerryFunction m_Function;
+	protected PlayerIdentity m_Admin, m_Target; //Target: NULL when run on the admin themselves or on nobody
+	protected int m_Outcome = ZBerryCallOutcome.DONE;
+	protected string m_Reason = "";
+	protected string m_Description = "";
+
+	void ZBerryCall(ZBerryFunction function, PlayerIdentity admin, PlayerIdentity target) {
+		m_Function = function;
+		m_Admin = admin;
+		m_Target = target;
+	}
+
+	ZBerryFunction GetFunction() {
+		return m_Function;
+	}
+
+	PlayerIdentity GetAdmin() {
+		return m_Admin;
+	}
+
+	PlayerIdentity GetTarget() {
+		return m_Target;
+	}
+
+	int GetOutcome() {
+		return m_Outcome;
+	}
+
+	string GetReason() {
+		return m_Reason;
+	}
+
+	//"" when the command didn't describe itself: the log then says "ran <function>"
+	string GetDescription() {
+		return m_Description;
+	}
+
+	void Refuse(string reason) {
+		m_Outcome = ZBerryCallOutcome.REFUSED;
+		m_Reason = reason;
+	}
+
+	void AwaitConfirmation() {
+		m_Outcome = ZBerryCallOutcome.CONFIRMING;
+		m_Reason = "";
+	}
+
+	void Describe(string text) {
+		m_Description = text;
+	}
+};
+
 class ZomberryCmdAPI {
 	protected ref ZBerryCategoryArray m_oCategoryList = new ZBerryCategoryArray;
 	protected int m_lastFuncId = 0;
-	protected int m_CallOutcome = ZBerryCallOutcome.DONE;
-	protected string m_CallReason = "";
+	protected ref array<ref ZBerryCall> m_Calls = new array<ref ZBerryCall>; //Running calls, innermost last
 
 	void AddCategory(string catName, int funcColor) {
 		if (m_oCategoryList.Contains(catName)) {
@@ -66,8 +120,12 @@ class ZomberryCmdAPI {
 		\param reason \p string why, as the admin was told ("Select another player to freeze")
 	*/
 	void RefuseCall(string reason) {
-		m_CallOutcome = ZBerryCallOutcome.REFUSED;
-		m_CallReason = reason;
+		ZBerryCall call = GetCurrentCall();
+		if (!call) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: RefuseCall outside a command call, not logged as refused: " + reason );
+			return;
+		}
+		call.Refuse(reason);
 	}
 
 	/**
@@ -75,22 +133,47 @@ class ZomberryCmdAPI {
 		It isn't logged; the confirmed run is
 	*/
 	void AwaitConfirmation() {
-		m_CallOutcome = ZBerryCallOutcome.CONFIRMING;
-		m_CallReason = "";
+		ZBerryCall call = GetCurrentCall();
+		if (!call) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: AwaitConfirmation outside a command call, ignored" );
+			return;
+		}
+		call.AwaitConfirmation();
 	}
 
-	//ZomBerry's dispatcher, around every command call (calls run synchronously, one at a time)
-	void BeginCall() {
-		m_CallOutcome = ZBerryCallOutcome.DONE;
-		m_CallReason = "";
+	/**
+	\brief Server, from inside a command: what this call did, logged instead of "{actor} ran <function>". Same event type,
+		harmful flag and target as that line would have had
+		\param text \p string with {actor} for the admin and {target} for the selected player, as in
+			"{actor} flipped Ada 4x4 at X 9872 Y 2170" or "{actor} froze {target}"
+	*/
+	void DescribeCall(string text) {
+		ZBerryCall call = GetCurrentCall();
+		if (!call) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: DescribeCall outside a command call, ignored: " + text );
+			return;
+		}
+		call.Describe(text);
 	}
 
-	int GetCallOutcome() {
-		return m_CallOutcome;
+	//The command call running right now, NULL outside one (a CallLater callback runs after its call has ended)
+	ZBerryCall GetCurrentCall() {
+		if (m_Calls.Count() == 0) return NULL;
+		return m_Calls[m_Calls.Count() - 1];
 	}
 
-	string GetCallReason() {
-		return m_CallReason;
+	//ZomBerry's dispatcher, around every command call. Calls can nest: each has its own outcome
+	ZBerryCall BeginCall(ZBerryFunction function, PlayerIdentity admin, PlayerIdentity target) {
+		ZBerryCall call = new ZBerryCall(function, admin, target);
+		m_Calls.Insert(call);
+		return call;
+	}
+
+	void EndCall(ZBerryCall call) {
+		int index = m_Calls.Find(call);
+		if (index == -1) return;
+
+		m_Calls.RemoveOrdered(index); //The caller still holds the call: it reads the outcome afterwards
 	}
 
 	//Server: is the feature on for this player's client

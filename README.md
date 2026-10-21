@@ -366,6 +366,10 @@ Helpers:
 - **`ZomberryStockFunctions.MessagePlayer(PlayerBase player, string message)`** shows a `[ZomBerry]` chat message to one player.
 - **`GetZomberryCmdAPI().RefuseCall(string reason)`**: call it from your command when it does nothing (no valid target, nothing to act on). The admin log then files the call as refused, with the reason, instead of as run. Tell the admin yourself with `MessagePlayer`.
 - **`GetZomberryCmdAPI().AwaitConfirmation()`**: call it when this run only asked the admin to run the command again to confirm. That run isn't logged; the confirmed one is.
+- **`GetZomberryCmdAPI().DescribeCall(string text)`**: what this run did, logged instead of "AdminName ran My command". Write `{actor}` for the admin and `{target}` for the selected player, e.g. `"{actor} gave {target} a medkit"` or `"{actor} switched night vision on"`. The log view highlights both names.
+- **`GetZomberryCmdAPI().GetCurrentCall()`**: the running call (`ZBerryCall`): `GetFunction()`, `GetAdmin()` and `GetTarget()` (identities, the target is `NULL` when the admin selected themselves).
+
+The three helpers above only work while your command runs. Called later, from a `CallLater` callback, they write a warning to the log and change nothing.
 
 ```c
 void MyModHeal( string funcName, int adminId, int targetId, vector cursor ) {

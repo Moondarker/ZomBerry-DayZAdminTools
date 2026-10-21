@@ -112,31 +112,46 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		ZomberryCmdAPI api = GetZomberryCmdAPI();
-		api.BeginCall();
-		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
-
-		int flags = 0;
-		if (cmdFunc.IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
-		string call = cmdFunc.DescribeCall(funcParam.param4);
 		bool onTarget = targetId != adminId && targetPly && targetPly.GetIdentity();
-		if (api.GetCallOutcome() == ZBerryCallOutcome.CONFIRMING) return; //The confirmed run gets logged
-		if (api.GetCallOutcome() == ZBerryCallOutcome.REFUSED) {
-			if (onTarget) {
-				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, targetPly.GetIdentity(), "{actor} tried to run " + call + " on {target}: " + api.GetCallReason() );
+		PlayerIdentity targetIdentity = NULL;
+		if (onTarget) targetIdentity = targetPly.GetIdentity();
+
+		ZomberryCmdAPI api = GetZomberryCmdAPI();
+		ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
+		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
+		api.EndCall(cmdCall);
+		LogCall(cmdCall, cmdFunc.DescribeCall(funcParam.param4));
+	}
+
+	//One event per call: refused (with the reason), the command's own description, or "ran <function>".
+	//Confirmation prompts aren't logged, the confirmed run is
+	protected void LogCall(ZBerryCall cmdCall, string call) {
+		PlayerIdentity admin = cmdCall.GetAdmin();
+		PlayerIdentity target = cmdCall.GetTarget();
+		if (cmdCall.GetOutcome() == ZBerryCallOutcome.CONFIRMING) return;
+		if (cmdCall.GetOutcome() == ZBerryCallOutcome.REFUSED) {
+			if (target) {
+				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, admin, target, "{actor} tried to run " + call + " on {target}: " + cmdCall.GetReason() );
 			} else {
-				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to run " + call + ": " + api.GetCallReason() );
+				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, admin, NULL, "{actor} tried to run " + call + ": " + cmdCall.GetReason() );
 			}
 			return;
 		}
 
-		if (onTarget) {
-			ZomberryBase.LogEvent( ZBerryEventType.FUNCTION_PLAYER, sender, targetPly.GetIdentity(), "{actor} ran " + call + " on {target}", flags );
-		} else if (cmdFunc.IsServerWide()) {
-			ZomberryBase.LogEvent( ZBerryEventType.FUNCTION_SERVER, sender, NULL, "{actor} ran " + call, flags );
-		} else {
-			ZomberryBase.LogEvent( ZBerryEventType.FUNCTION_SELF, sender, NULL, "{actor} ran " + call + " on themselves", flags );
+		int flags = 0;
+		if (cmdCall.GetFunction().IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
+		int type = ZBerryEventType.FUNCTION_SELF;
+		string text = "{actor} ran " + call + " on themselves";
+		if (target) {
+			type = ZBerryEventType.FUNCTION_PLAYER;
+			text = "{actor} ran " + call + " on {target}";
+		} else if (cmdCall.GetFunction().IsServerWide()) {
+			type = ZBerryEventType.FUNCTION_SERVER;
+			text = "{actor} ran " + call;
 		}
+		if (cmdCall.GetDescription() != "") text = cmdCall.GetDescription();
+
+		ZomberryBase.LogEvent( type, admin, target, text, flags );
 	}
 
 	//Calls the function with the (funcName, adminId, targetId, cursor, values) signature

@@ -17,7 +17,7 @@
   - Harmful stock functions: kill, bite, strip, symptoms, set health or blood, god mode toggle, and teleporting the target.
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
-- **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`) or only asked for confirmation (`AwaitConfirmation()`).
+- **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`), only asked for confirmation (`AwaitConfirmation()`), or describe what they did in the log (`DescribeCall()`, `GetCurrentCall()`).
 - **Admin event log, with a Logs tab in the menu** (needs `zomberry.logs.view`). The tab takes the Permissions tab's old place, which moved under the gear icon.
   - **View:** everyone the log mentions on the left (double-click one to see only their events), a search by text, name or Steam64 id, a type filter, and live updates you can pause.
   - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, logouts, kills, auth problems and refused attempts.
@@ -29,6 +29,7 @@
   - **Times** show in each admin's local time. The server keeps them in UTC.
   - **Positions** are written as map coordinates in whole metres ("X 9871 Y 2144"), here and in the log file.
   - **Function calls that did nothing** (no valid target, nothing under the cursor, a player in a vehicle) are logged as refused, with the reason. A first run that only asks for confirmation isn't logged; the confirmed run is. Commands from other mods can do the same with `RefuseCall()` and `AwaitConfirmation()`.
+  - **Functions say what they did** (#66): one line each, in the log file and the in-game log, instead of "ran …" plus a separate detail line. Toggles say which way they switched: "switched ESP on", "entered FreeCam", "froze PlayerName", "switched god mode off for themselves". Flip, clean up, delete and teleport all name the vehicle, the count or the object, and the place. Commands from other mods can do the same with `DescribeCall()`.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
