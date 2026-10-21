@@ -75,11 +75,7 @@ class ZomberryStockFunctions {
 		}, false, true);
 		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, "OnServer", false, NULL, false, true);
 		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, "OnServer", false, NULL, true, true);
-		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, "OnServer", false, {
-			new ZBerryFuncParam("Players", {0, 1, 1,}, {"Off", "On"}),
-			new ZBerryFuncParam("Vehicles", {0, 1, 0,}, {"Off", "On"}),
-			new ZBerryFuncParam("Infected, animals", {0, 1, 0,}, {"Off", "On"}),
-		});
+		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, "OnServer", false); //No parameters, so it can be keybound
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {
@@ -722,18 +718,18 @@ class ZomberryStockFunctions {
 		phenomenon.SetForecastTimeLimits(ftMin, ftMax);
 	}
 
-	//Switches the ESP overlay on the admin's own client (ZBerryESPOverlay). Everything off switches it off.
-	//With players on, the server also streams everyone's position and health to that admin (ZBerryStreamServer)
-	void ESPToggle( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
+	//Switches the ESP overlay on the admin's own client on or off (ZBerryESPOverlay). What it draws is set on that
+	//client's ESP tab; while it's on, the server streams everyone's position and health to that admin if those
+	//settings use them (ZBerryStreamServer.WantsEsp)
+	void ESPToggle( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		if (!admin) return;
 
-		bool on = fValues[0] != 0 || fValues[1] != 0 || fValues[2] != 0;
-		TIntArray args = {fValues[0], fValues[1], fValues[2]};
 		PlayerIdentity identity = admin.GetIdentity();
-		GetZomberryCmdAPI().SetClientFeature(identity, ZBerryESPOverlay.FEATURE, on, args, ZBerryPermissions.FunctionNode(funcName));
+		bool on = !GetZomberryCmdAPI().IsClientFeatureActive(identity, ZBerryESPOverlay.FEATURE);
+		GetZomberryCmdAPI().SetClientFeature(identity, ZBerryESPOverlay.FEATURE, on, NULL, ZBerryPermissions.FunctionNode(funcName));
 		ZBerryStreamServer streams = ZBerryStreamServer.Get();
-		if (streams) streams.SetEspActive(identity, on && fValues[0] != 0);
+		if (streams) streams.SetEspActive(identity, on);
 
 		if (on) {
 			MessagePlayer(admin, "ESP on");

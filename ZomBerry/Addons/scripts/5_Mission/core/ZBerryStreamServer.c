@@ -7,7 +7,7 @@ class ZBerrySubscriber {
 	int MarkerMask; //Bit per ZBerryEntityCategory below MARKER_COUNT
 	int SelectedId = -1; //Gets health and blood
 	int ViewFlags; //ZBerryStreamFlags.VIEW_*
-	bool EspActive; //Set by the ESP function, not by the client: faster state, everyone's health
+	bool EspActive; //Set by the ESP function, not by the client. Its data also needs the client's ESP_PLAYERS (WantsEsp)
 
 	int RosterVersionSent = -1;
 	float StateTimer = 1000; //Due right away
@@ -23,6 +23,11 @@ class ZBerrySubscriber {
 
 	bool IsEmpty() {
 		return Streams == 0 && MarkerMask == 0 && !EspActive;
+	}
+
+	//ESP data needs both: the server switched ESP on, and the client's ESP settings use far players or health
+	bool WantsEsp() {
+		return EspActive && (Streams & ZBerryStreamFlags.ESP_PLAYERS) != 0;
 	}
 };
 
@@ -95,6 +100,7 @@ class ZBerryStreamServer {
 		ZBerrySubscriber subscriber = GetSubscriber(sender, true);
 		int addedMarkers = request.param2 & ~subscriber.MarkerMask;
 		bool selectionChanged = subscriber.SelectedId != request.param3;
+		bool espAdded = (request.param1 & ZBerryStreamFlags.ESP_PLAYERS) != 0 && (subscriber.Streams & ZBerryStreamFlags.ESP_PLAYERS) == 0;
 		bool viewChanged = subscriber.ViewFlags != request.param4;
 
 		subscriber.Streams = request.param1;
@@ -103,7 +109,7 @@ class ZBerryStreamServer {
 		subscriber.ViewFlags = request.param4;
 
 		if (addedMarkers != 0) subscriber.MarkersTimer = MARKERS_INTERVAL; //Newly shown categories right away
-		if (selectionChanged || viewChanged) subscriber.StateTimer = MAP_INTERVAL; //Sooner, for the new selection or view
+		if (selectionChanged || viewChanged || espAdded) subscriber.StateTimer = MAP_INTERVAL; //Sooner, for the new selection or view
 		DropIfEmpty(sender);
 	}
 
@@ -157,7 +163,7 @@ class ZBerryStreamServer {
 	}
 
 	protected float GetStateInterval(ZBerrySubscriber subscriber) {
-		if (subscriber.EspActive) return ESP_INTERVAL;
+		if (subscriber.WantsEsp()) return ESP_INTERVAL;
 		if ((subscriber.ViewFlags & ZBerryStreamFlags.VIEW_MAP) != 0) return MAP_INTERVAL;
 		return LIST_INTERVAL;
 	}
@@ -208,11 +214,11 @@ class ZBerryStreamServer {
 	}
 
 	protected bool CanSeePlayers(ZBerrySubscriber subscriber) {
-		return m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST) || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS) || subscriber.EspActive;
+		return m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST) || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS) || subscriber.WantsEsp();
 	}
 
 	protected void SendRoster(ZBerrySubscriber subscriber) {
-		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 && !subscriber.EspActive) return;
+		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 && !subscriber.WantsEsp()) return;
 		if (subscriber.RosterVersionSent == m_RosterVersion || !CanSeePlayers(subscriber)) return;
 
 		subscriber.RosterVersionSent = m_RosterVersion;
@@ -223,10 +229,10 @@ class ZBerryStreamServer {
 	//Positions only for admins who see map markers (or use ESP), health and blood only for the selected player
 	//(with the player list right) and for everyone while ESP is on. Deltas, plus a full state every FULL_INTERVAL
 	protected void SendState(ZBerrySubscriber subscriber, map<int, PlayerBase> players) {
-		if ((subscriber.Streams & ZBerryStreamFlags.STATE) == 0 && !subscriber.EspActive) return;
+		if ((subscriber.Streams & ZBerryStreamFlags.STATE) == 0 && !subscriber.WantsEsp()) return;
 		if (!CanSeePlayers(subscriber)) return;
 
-		bool showPositions = subscriber.EspActive || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS);
+		bool showPositions = subscriber.WantsEsp() || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS);
 		bool showSelectedHealth = m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST);
 		bool full = subscriber.FullTimer >= FULL_INTERVAL;
 		if (full) {
@@ -247,7 +253,7 @@ class ZBerryStreamServer {
 				hasHeading = true;
 			}
 
-			bool hasHealth = subscriber.EspActive || (showSelectedHealth && id == subscriber.SelectedId);
+			bool hasHealth = subscriber.WantsEsp() || (showSelectedHealth && id == subscriber.SelectedId);
 			int health = 0;
 			int blood = 0;
 			if (hasHealth) {

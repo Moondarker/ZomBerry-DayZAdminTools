@@ -1,0 +1,357 @@
+PanelWidgetClass ESPWrapper {
+ visible 0
+ position 0 56
+ size 600 0.94
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  TextWidgetClass ESPPlayersTitle {
+   ignorepointer 1
+   position 10 8
+   size 580 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Players"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
+   "text valign" center
+  }
+  ButtonWidgetClass ESPBox {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 10 36
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPBoxLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Box"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPSkeleton {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 157 36
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPSkeletonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Skeleton"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPName {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 304 36
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPNameLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Name"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPDistance {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 451 36
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPDistanceLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Distance"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPHealth {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 10 74
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPHealthLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Health"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPFarPlayers {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 157 74
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPFarPlayersLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Far players"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass ESPOthersTitle {
+   ignorepointer 1
+   position 10 120
+   size 580 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Vehicles and AI"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
+   "text valign" center
+  }
+  ButtonWidgetClass ESPVehicles {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 10 148
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPVehiclesLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Vehicles"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPInfected {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 157 148
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPInfectedLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Infected"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass ESPAnimals {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 304 148
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPAnimalsLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Animals"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass ESPRangeTitle {
+   ignorepointer 1
+   position 10 194
+   size 580 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Range"
+   font "gui/fonts/Metron16"
+   "exact text" 1
+   "exact text size" 16
+   "text valign" center
+  }
+  PanelWidgetClass ESPRangeSlot {
+   position 10 222
+   size 580 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+  }
+  PanelWidgetClass ESPAIRangeSlot {
+   position 10 264
+   size 580 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+  }
+  TextWidgetClass ESPInfo1 {
+   ignorepointer 1
+   color 0.75 0.75 0.75 1
+   position 10 318
+   size 580 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Turn ESP on or off with the button above, the ESP function or its key."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+   "text valign" center
+  }
+  TextWidgetClass ESPInfo2 {
+   ignorepointer 1
+   color 0.75 0.75 0.75 1
+   position 10 342
+   size 580 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "These settings only change your own screen and are saved on this computer."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+   "text valign" center
+  }
+  TextWidgetClass ESPInfo3 {
+   ignorepointer 1
+   color 0.75 0.75 0.75 1
+   position 10 366
+   size 580 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Far players: players outside your network bubble, as labels."
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+   "text valign" center
+  }
+ }
+}

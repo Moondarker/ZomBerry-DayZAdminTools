@@ -257,7 +257,7 @@ PanelWidgetClass AdminMenu {
       }
      }
     }
-    PanelWidgetClass GearDropdown {
+    WrapSpacerWidgetClass GearDropdown {
      visible 0
      color 0 0 0 0.95
      position 50 0.05
@@ -269,34 +269,93 @@ PanelWidgetClass AdminMenu {
      vexactsize 1
      priority 10
      style rover_sim_colorable
+     Padding 0
+     Margin 0
+     "Size To Content H" 0
+     "Size To Content V" 1
      {
-    ButtonWidgetClass PermsButton {
-     color 0.3255 0.3255 0.3255 0.7843
-     position 5 5
-     size 115 36
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Colorable
-     {
-      TextWidgetClass PermsButtonLabel {
-       ignorepointer 1
-       position 0 0
-       size 1 1
-       hexactpos 1
-       vexactpos 1
-       hexactsize 0
-       vexactsize 0
-       text "Permissions"
-       font "gui/fonts/Metron16"
-       "exact text" 1
-       "exact text size" 16
-       "text halign" center
-       "text valign" center
+     PanelWidgetClass GearEntryPerms {
+      position 0 0
+      size 125 41
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      {
+       ButtonWidgetClass PermsButton {
+        color 0.3255 0.3255 0.3255 0.7843
+        position 5 5
+        size 115 36
+        hexactpos 1
+        vexactpos 1
+        hexactsize 1
+        vexactsize 1
+        style Colorable
+        {
+         TextWidgetClass PermsButtonLabel {
+          ignorepointer 1
+          position 0 0
+          size 1 1
+          hexactpos 1
+          vexactpos 1
+          hexactsize 0
+          vexactsize 0
+          text "Permissions"
+          font "gui/fonts/Metron16"
+          "exact text" 1
+          "exact text size" 16
+          "text halign" center
+          "text valign" center
+         }
+        }
+       }
       }
      }
-    }
+     PanelWidgetClass GearEntryESP {
+      position 0 0
+      size 125 41
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      {
+       ButtonWidgetClass ESPButton {
+        color 0.3255 0.3255 0.3255 0.7843
+        position 5 5
+        size 115 36
+        hexactpos 1
+        vexactpos 1
+        hexactsize 1
+        vexactsize 1
+        style Colorable
+        {
+         TextWidgetClass ESPButtonLabel {
+          ignorepointer 1
+          position 0 0
+          size 1 1
+          hexactpos 1
+          vexactpos 1
+          hexactsize 0
+          vexactsize 0
+          text "ESP"
+          font "gui/fonts/Metron16"
+          "exact text" 1
+          "exact text size" 16
+          "text halign" center
+          "text valign" center
+         }
+        }
+       }
+      }
+     }
+     PanelWidgetClass GearDropdownEnd {
+      position 0 0
+      size 125 5
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+     }
      }
     }
    }

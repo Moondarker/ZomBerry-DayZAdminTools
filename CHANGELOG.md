@@ -44,6 +44,8 @@
   - **infected and animals:** a box.
 
   Players beyond the admin's network range still show by name and distance, streamed by the server.
+
+  **Switching and settings** (#68): running the function switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on an **ESP tab** under the header's gear: each player detail, far players, vehicles, infected, animals and two ranges. The settings are saved per computer in `ZomBerryESP.json`. The server only streams everyone's position and health while those settings use them.
 - **Client-side functions for mods** (#38): server code can switch a named feature on one client (`SetClientFeature`), and that client runs the handler registered for it (`RegisterClientFeature`). Features with a required permission switch off by themselves when it's removed.
 
 ### Changed
@@ -56,7 +58,7 @@
   - **Before**, every open menu fetched the whole player list every 2–5 seconds, and every map marker every 10 seconds.
 - **Every log line names players the same way**, "Name (Steam64 id)". Function, spawn, teleport, kick and ban lines used the BattlEye GUID before. Offline bans by GUID still log the GUID, the only ID they have.
 - **Function and spawn requests** no longer carry the admin's ID, which the server ignored anyway (#52).
-- **A close button and a settings menu in the header** (#55): the **×** in the top-right corner closes the admin menu with the mouse, so the menu can be left even when the keyboard stops reaching it. The gear icon next to it opens a dropdown, which now holds the Permissions tab.
+- **A close button and a settings menu in the header** (#55): the **×** in the top-right corner closes the admin menu with the mouse, so the menu can be left even when the keyboard stops reaching it. The gear icon next to it opens a dropdown with the Permissions and ESP tabs. It lists only the pages the admin may use, without gaps.
 
 - **The log says what a permission change changed:** one line per change.
   - **Groups:** added, removed, level changes, permissions and spawn rules added or removed.

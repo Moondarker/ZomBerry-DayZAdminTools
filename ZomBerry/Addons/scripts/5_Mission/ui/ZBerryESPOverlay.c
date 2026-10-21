@@ -1,12 +1,11 @@
-//ESP overlay (#59), switched by the server's ESP function through the "zomberry_esp" client feature.
-//Draws what this client's network bubble holds (ZBerryEntityRegistry): players with box, skeleton up close and a label,
-//vehicles with box and name, infected and animals with a box. Players outside the bubble come from the streams as labels
+//ESP overlay (#59), switched on and off by the server's ESP function through the "zomberry_esp" client feature.
+//What it draws is up to this client (ZBerryESPSettings, the ESP tab). It draws what this client's network bubble holds
+//(ZBerryEntityRegistry): players with box, skeleton up close and a label, vehicles with box and name, infected and
+//animals with a box. Players outside the bubble come from the streams as labels
 class ZBerryESPOverlay {
 	static const string FEATURE = "zomberry_esp";
 	static const int LABEL_COUNT = 40;
 	static const float SKELETON_DISTANCE = 150; //Metres
-	static const float VEHICLE_DISTANCE = 1500;
-	static const float AI_DISTANCE = 300;
 
 	static const int COLOR_PLAYER = 0xFF55AAFF;
 	static const int COLOR_ADMIN = 0xFF47EB00;
@@ -21,10 +20,10 @@ class ZBerryESPOverlay {
 	protected int m_LabelsUsed;
 
 	protected bool m_Enabled;
-	protected bool m_ShowPlayers, m_ShowVehicles, m_ShowAI;
 
 	void ZBerryESPOverlay() {
 		GetZomberryCmdAPI().RegisterClientFeature(FEATURE, this, "OnFeature");
+		GetZBerryESPSettings().OnChanged.Insert(UpdateStreams);
 	}
 
 	void ~ZBerryESPOverlay() {
@@ -48,18 +47,25 @@ class ZBerryESPOverlay {
 		return m_Canvas != NULL;
 	}
 
-	//args: players, vehicles, infected and animals (0/1)
 	void OnFeature(bool enabled, TIntArray args) {
 		m_Enabled = enabled;
-		m_ShowPlayers = args.Count() > 0 && args[0] != 0;
-		m_ShowVehicles = args.Count() > 1 && args[1] != 0;
-		m_ShowAI = args.Count() > 2 && args[2] != 0;
+		UpdateStreams();
 
 		if (!m_Enabled) {
 			if (m_Root) m_Root.Show(false);
 			return;
 		}
 		if (CreateWidgets()) m_Root.Show(true);
+	}
+
+	bool IsEnabled() {
+		return m_Enabled;
+	}
+
+	//Everyone's position and health come from the server only while they're drawn
+	protected void UpdateStreams() {
+		ZBerryESPSettingsData settings = GetZBerryESPSettings().Get();
+		GetZBerryStreams().SetEspPlayers(m_Enabled && (settings.FarPlayers || settings.PlayerHealth));
 	}
 
 	//Every frame, from MissionGameplay
@@ -73,17 +79,19 @@ class ZBerryESPOverlay {
 		float lineWidth = Math.Max(1, 1.5 * scale);
 		vector cameraPos = GetGame().GetCurrentCameraPosition();
 
-		if (m_ShowPlayers) DrawPlayers(cameraPos, lineWidth);
-		if (m_ShowVehicles) DrawEntities(ZBerryEntityCategory.VEHICLES, cameraPos, VEHICLE_DISTANCE, COLOR_VEHICLE, lineWidth, true);
-		if (m_ShowAI) {
-			DrawEntities(ZBerryEntityCategory.INFECTED, cameraPos, AI_DISTANCE, COLOR_INFECTED, lineWidth, false);
-			DrawEntities(ZBerryEntityCategory.ANIMALS, cameraPos, AI_DISTANCE, COLOR_ANIMAL, lineWidth, false);
-		}
+		ZBerryESPSettingsData settings = GetZBerryESPSettings().Get();
+		DrawPlayers(settings, cameraPos, lineWidth);
+		if (settings.Vehicles) DrawEntities(ZBerryEntityCategory.VEHICLES, cameraPos, settings.MaxDistance, COLOR_VEHICLE, lineWidth, true);
+		if (settings.Infected) DrawEntities(ZBerryEntityCategory.INFECTED, cameraPos, settings.AIDistance, COLOR_INFECTED, lineWidth, false);
+		if (settings.Animals) DrawEntities(ZBerryEntityCategory.ANIMALS, cameraPos, settings.AIDistance, COLOR_ANIMAL, lineWidth, false);
 
 		for (int i = m_LabelsUsed; i < m_Labels.Count(); ++i) m_Labels[i].Show(false);
 	}
 
-	protected void DrawPlayers(vector cameraPos, float lineWidth) {
+	protected void DrawPlayers(ZBerryESPSettingsData settings, vector cameraPos, float lineWidth) {
+		bool nearShown = settings.PlayerBox || settings.PlayerSkeleton || settings.PlayerName || settings.PlayerDistance || settings.PlayerHealth;
+		if (!nearShown && !settings.FarPlayers) return;
+
 		ZBerryStreamClient streams = GetZBerryStreams();
 		Man localPlayer = GetGame().GetPlayer();
 		map<int, bool> drawnIds = new map<int, bool>;
@@ -100,22 +108,23 @@ class ZBerryESPOverlay {
 				name = player.GetIdentity().GetName();
 			}
 			drawnIds.Set(id, true);
+			if (!nearShown) continue;
 
 			int color = COLOR_PLAYER;
 			if (streams.IsAdmin(id)) color = COLOR_ADMIN;
 
 			float distance = vector.Distance(cameraPos, player.GetPosition());
+			if (distance > settings.MaxDistance) continue;
 			float left, top, right, bottom;
 			if (!ZBerryESPDraw.GetScreenBox(player, left, top, right, bottom)) continue;
 
-			ZBerryESPDraw.DrawBox(m_Canvas, left, top, right, bottom, color, lineWidth);
-			if (distance <= SKELETON_DISTANCE) ZBerryESPDraw.DrawSkeleton(m_Canvas, player, color, lineWidth);
+			if (settings.PlayerBox) ZBerryESPDraw.DrawBox(m_Canvas, left, top, right, bottom, color, lineWidth);
+			if (settings.PlayerSkeleton && distance <= SKELETON_DISTANCE) ZBerryESPDraw.DrawSkeleton(m_Canvas, player, color, lineWidth);
 
-			string text = name + " " + Math.Round(distance) + "m";
-			int health, blood;
-			if (streams.GetHealth(id, health, blood)) text += " | " + health + " HP, " + blood + " blood";
-			AddLabel((left + right) / 2, bottom, text, color);
+			string text = DescribePlayer(settings, id, name, distance);
+			if (text != "") AddLabel((left + right) / 2, bottom, text, color);
 		}
+		if (!settings.FarPlayers) return;
 
 		//Outside this client's network bubble: only what the server streams (position on the surface)
 		TIntArray ids = streams.GetPlayerIds();
@@ -130,6 +139,23 @@ class ZBerryESPOverlay {
 			float farDistance = vector.Distance(cameraPos, position);
 			AddLabel(x, y, streams.GetName(streamedId) + " " + Math.Round(farDistance) + "m", COLOR_FAR_PLAYER);
 		}
+	}
+
+	//The parts of a near player's label the settings ask for, "" for none
+	protected string DescribePlayer(ZBerryESPSettingsData settings, int id, string name, float distance) {
+		string text = "";
+		if (settings.PlayerName) text = name;
+		if (settings.PlayerDistance) {
+			if (text != "") text += " ";
+			text = text + Math.Round(distance) + "m"; //Like the far labels: string + float prints whole metres
+		}
+
+		int health, blood;
+		if (settings.PlayerHealth && GetZBerryStreams().GetHealth(id, health, blood)) {
+			if (text != "") text += " | ";
+			text += health.ToString() + " HP, " + blood.ToString() + " blood";
+		}
+		return text;
 	}
 
 	protected void DrawEntities(int category, vector cameraPos, float maxDistance, int color, float lineWidth, bool withName) {

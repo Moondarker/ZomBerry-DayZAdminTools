@@ -5,6 +5,7 @@ class ZBerryStreamClient {
 	protected bool m_MapShown;
 	protected int m_MarkerMask;
 	protected int m_SelectedId = -1;
+	protected bool m_EspPlayers; //The ESP overlay draws far players or health: outlives the menu
 	protected int m_SentStreams = -1, m_SentMarkerMask = -1, m_SentSelectedId = -2, m_SentViewFlags = -1;
 
 	protected ref map<int, ref ZBerryRosterEntry> m_Roster = new map<int, ref ZBerryRosterEntry>;
@@ -49,7 +50,12 @@ class ZBerryStreamClient {
 		Flush();
 	}
 
-	//The menu closed: nothing to show anymore (ESP is switched by the server, it isn't affected)
+	void SetEspPlayers(bool wanted) {
+		m_EspPlayers = wanted;
+		Flush();
+	}
+
+	//The menu closed: nothing to show anymore (ESP isn't affected)
 	void HideAll() {
 		m_ListShown = false;
 		m_MapShown = false;
@@ -61,6 +67,7 @@ class ZBerryStreamClient {
 	protected void Flush() {
 		int streams = 0;
 		if (m_ListShown || m_MapShown) streams = ZBerryStreamFlags.ROSTER | ZBerryStreamFlags.STATE;
+		if (m_EspPlayers) streams = streams | ZBerryStreamFlags.ESP_PLAYERS;
 		int viewFlags = 0;
 		if (m_MapShown) viewFlags = ZBerryStreamFlags.VIEW_MAP;
 		int markerMask = 0;

@@ -198,7 +198,7 @@ Keybinds only work while no menu is open, so they don't fire while you type in c
 Open and close the menu with `O`, or close it with `Esc` or the **×** in the header's top-right corner. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
 
 - **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu.
-- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions, for now. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
+- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions and ESP. Only the pages you may use are listed. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
 
 ### Players
 
@@ -241,7 +241,7 @@ The stock set:
 - **Stopping:** run the function again, or it ends by itself when they die or leave.
 - **Can't be combined:** you can't use it together with FreeCam.
 
-**ESP:** draws players through walls on your own screen. Its three options switch players, vehicles, and infected and animals on or off, and running it with all three off switches it off.
+**ESP:** draws players, vehicles, infected and animals through walls on your own screen. Running it switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on the [ESP tab](#esp).
 - **Players:** a box with name, distance, health and blood, and a skeleton within 150 m. Players beyond what your game loads (about 1 km) show as a name and distance.
 - **Vehicles:** a box with the name, within 1.5 km.
 - **Infected and animals:** a box, within 300 m.
@@ -288,6 +288,16 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
 - **Live and Paused:** the header button stops the list from updating while you read it.
 - **Details:** select a row to see it in full below the list.
+
+### ESP
+
+Admins who may run the ESP function open this tab from the gear icon in the header. It sets what ESP draws on your own screen. The settings are saved on your computer, in `ZomBerryESP.json` next to `ZomBerryConfig.json`.
+- **Players:** box, skeleton (within 150 m), name, distance and health, each on its own. **Far players** shows players outside your network range as labels, with name and distance.
+- **Vehicles, infected and animals:** each on its own.
+- **Range:** how far players and vehicles are drawn, and separately infected and animals (50–3000 m).
+- **The header button** shows whether ESP is on, and switches it like the ESP function does.
+
+Changes apply right away while ESP is on. The server only sends everyone's position and health while your settings use them (far players or health).
 
 ### Permissions
 

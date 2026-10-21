@@ -5,6 +5,7 @@ class ZBerryStreamFlags {
 	//What a client wants (Subscribe)
 	static const int ROSTER = 1; //Who is online: names, admin flag, item in hands
 	static const int STATE = 2; //Positions, headings, the selected player's health
+	static const int ESP_PLAYERS = 4; //Everyone's position and health for the ESP overlay (only while ESP is on)
 
 	//What a client shows, decides the update rate
 	static const int VIEW_MAP = 1;

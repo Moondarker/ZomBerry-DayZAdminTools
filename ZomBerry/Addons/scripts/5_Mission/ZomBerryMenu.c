@@ -18,6 +18,8 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIMapTab m_MapTab;
 	protected ref ZBerryUIPermsTab m_PermsTab;
 	protected ref ZBerryUILogsTab m_LogsTab;
+	protected ref ZBerryUIESPTab m_EspTab;
+	protected ref array<ZBerryUITab> m_DropdownTabs = new array<ZBerryUITab>; //Pages under the gear
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
@@ -67,6 +69,12 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_LogsTab.SetSideParent(contentWrapper); //Its player pane replaces the players panel while it's open
 		AddTab(m_LogsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/LogsTab.layout", "LogsButton");
 
+		m_EspTab = new ZBerryUIESPTab();
+		AddTab(m_EspTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/ESPTab.layout", "ESPButton");
+
+		m_DropdownTabs.Insert(m_PermsTab);
+		m_DropdownTabs.Insert(m_EspTab);
+
 		m_KickBanDialog = new ZBerryUIKickBanDialog();
 		m_KickBanDialog.Init(layoutRoot); //Last: drawn above everything else
 		m_PlayersPanel.SetDialog(m_KickBanDialog);
@@ -107,8 +115,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		ShowTabButton(m_MapTab, auth.Has(ZBerryPermissions.MAP_VIEW));
 		ShowTabButton(m_PermsTab, auth.CanManagePermissions());
 		ShowTabButton(m_LogsTab, auth.Has(ZBerryPermissions.LOGS_VIEW));
-		if (m_GearButton) m_GearButton.Show(auth.CanManagePermissions()); //Its dropdown's only entry for now
-		if (!auth.CanManagePermissions()) ShowDropdown(false);
+		ShowTabButton(m_EspTab, auth.Has(ZBerryPermissions.FunctionNode(ZBerryUIESPTab.FUNCTION)));
+		UpdateGear();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnPermissionsChanged();
@@ -116,9 +124,27 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_PlayersPanel.OnPermissionsChanged();
 	}
 
+	//A page under the gear hides its whole dropdown entry, so the dropdown closes up around the ones left
 	protected void ShowTabButton(ZBerryUITab tab, bool show) {
-		if (tab.GetTabButton()) tab.GetTabButton().Show(show);
+		ButtonWidget button = tab.GetTabButton();
+		if (button && m_DropdownTabs.Find(tab) != -1 && button.GetParent()) {
+			button.GetParent().Show(show);
+		} else if (button) {
+			button.Show(show);
+		}
 		if (!show && tab == m_ActiveTab) SelectTab(m_FunctionsTab);
+	}
+
+	//The gear is shown while one of its pages may be used; the dropdown sizes itself to the visible entries
+	protected void UpdateGear() {
+		bool anyEntry = false;
+		foreach (ZBerryUITab tab : m_DropdownTabs) {
+			if (tab.GetTabButton() && tab.GetTabButton().GetParent() && tab.GetTabButton().GetParent().IsVisible()) anyEntry = true;
+		}
+
+		if (m_GearButton) m_GearButton.Show(anyEntry);
+		if (!anyEntry) ShowDropdown(false);
+		if (m_GearDropdown) m_GearDropdown.Update();
 	}
 
 	//The server sent new rights: refresh what depends on them
@@ -156,7 +182,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		UpdateGearIcon();
 	}
 
-	//The gear's dropdown holds pages that don't need a tab of their own (Permissions)
+	//The gear's dropdown holds pages that don't need a tab of their own (Permissions, ESP)
 	protected void ShowDropdown(bool show) {
 		if (!m_GearDropdown) return;
 
@@ -168,7 +194,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected void UpdateGearIcon() {
 		if (!m_GearIcon) return;
 
-		if (m_ActiveTab && m_ActiveTab == m_PermsTab) {
+		if (m_ActiveTab && m_DropdownTabs.Find(m_ActiveTab) != -1) {
 			m_GearIcon.SetColor(COLOR_GREEN);
 		} else if (m_MouseOnDropdown) {
 			m_GearIcon.SetColor(ICON_HOVER);

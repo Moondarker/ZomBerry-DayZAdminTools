@@ -26,6 +26,14 @@ class ZomberryKeybinds {
 		if (key != -1) m_KeyToFunc.Set(key, funcId);
 	}
 
+	//Id of the function with this name in the current list, -1 when it isn't there (not synced yet, or not allowed)
+	int FindFunc(string funcName) {
+		foreach (int funcId, string name : m_FuncNames) {
+			if (name == funcName) return funcId;
+		}
+		return -1;
+	}
+
 	//-1 when the function has no key
 	int GetKey(int funcId) {
 		foreach (int key, int boundFunc : m_KeyToFunc) {
