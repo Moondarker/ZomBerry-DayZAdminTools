@@ -3,13 +3,18 @@
 class ZBerryMessages {
 	static const int MAX_LENGTH = 300;
 	static const float SHOW_TIME = 15; //Seconds the notification stays
-	//Must exist in the imageset, or the notification keeps its warning triangle. Square like the notification's 54x54 slot,
-	//and 170 px: the HUD's 34x40 walkie_talkie came out squished and blurry
-	static const string ICON = "set:dayz_inventory image:walkietalkie";
+	static const string ICON = ZBERRY_NOTIFICATION_ICON; //Square and 170 px: the HUD's 34x40 walkie_talkie came out squished and blurry
 	static const string TITLE_ANNOUNCE = "Server announcement";
 	static const string TITLE_PRIVATE = "Message from an admin";
 
+	//One line: chat can't show line breaks
 	static string Clean(string text) {
+		int carriageReturn = 13; //Character codes: backslash escapes in string literals are best avoided in Enforce
+		int lineFeed = 10;
+		string cr = carriageReturn.AsciiToString(); //Locals: temporaries passed on can be overwritten
+		string lf = lineFeed.AsciiToString();
+		text.Replace(cr, "");
+		text.Replace(lf, " ");
 		text = text.Trim();
 		if (text.Length() > MAX_LENGTH) text = text.Substring(0, MAX_LENGTH);
 		return text;

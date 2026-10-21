@@ -20,7 +20,7 @@ FrameWidgetClass MessageDialog {
   }
   PanelWidgetClass MessageBox {
    color 0 0 0 0.9
-   size 560 240
+   size 560 320
    halign center_ref
    valign center_ref
    hexactpos 1
@@ -95,20 +95,22 @@ FrameWidgetClass MessageDialog {
      "exact text" 1
      "exact text size" 14
     }
-    EditBoxWidgetClass MessageInput {
+    MultilineEditBoxWidgetClass MessageInput {
      color 0.3255 0.3255 0.3255 0.7843
      position 15 116
-     size 530 28
+     size 530 120
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
      style Editor
-     font "gui/fonts/sdf_MetronLight24"
-     "exact text" 0
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     lines 5
     }
     TextWidgetClass MessageLength {
-     position 15 148
+     position 15 240
      size 530 20
      hexactpos 1
      vexactpos 1

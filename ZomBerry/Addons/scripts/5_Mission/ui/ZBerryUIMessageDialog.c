@@ -2,7 +2,7 @@
 //Like the kick/ban dialog it's part of the menu's own layout; while it's open the menu key and Esc don't close the menu
 class ZBerryUIMessageDialog extends ZBerryUIComponent {
 	protected TextWidget m_Length;
-	protected EditBoxWidget m_Input;
+	protected MultilineEditBoxWidget m_Input; //Wraps long messages; Enter sends
 	protected ButtonWidget m_RecipientButton, m_SendButton, m_CancelButton;
 
 	protected ref TIntArray m_Recipients = new TIntArray; //Session ids the button steps through, -1 for everyone
@@ -13,7 +13,7 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/MessageDialog.layout", parent)) return;
 
 		m_Length = TextWidget.Cast( m_Root.FindAnyWidget("MessageLength") );
-		m_Input = EditBoxWidget.Cast( BindWidget("MessageInput") );
+		m_Input = MultilineEditBoxWidget.Cast( BindWidget("MessageInput") );
 		m_RecipientButton = ButtonWidget.Cast( BindWidget("MessageRecipient") );
 		m_SendButton = ButtonWidget.Cast( BindWidget("MessageSend") );
 		m_CancelButton = ButtonWidget.Cast( BindWidget("MessageCancel") );
@@ -67,8 +67,14 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		ZBerryUIUtils.SetButtonText(m_RecipientButton, caption);
 	}
 
+	protected string GetInputText() {
+		string text;
+		m_Input.GetText(text);
+		return text;
+	}
+
 	protected void UpdateLength() {
-		int length = m_Input.GetText().Length();
+		int length = GetInputText().Length();
 		m_Length.SetText(length.ToString() + " / " + ZBerryMessages.MAX_LENGTH);
 		if (length > ZBerryMessages.MAX_LENGTH) {
 			m_Length.SetColor(ZBerryUILogsTab.COLOR_REFUSED);
@@ -78,7 +84,8 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 	}
 
 	protected void Submit() {
-		string text = m_Input.GetText().Trim();
+		string text = GetInputText();
+		text = text.Trim();
 		if (text == "") {
 			SetFocus(m_Input);
 			return;
@@ -110,11 +117,21 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		return false;
 	}
 
+	//Enter adds a line break to a multi-line box: it sends instead (the server would turn it into a space anyway)
 	override bool OnChange(Widget w, int x, int y, bool finished) {
 		if (w != m_Input) return false;
 
+		int lineFeed = 10;
+		string lf = lineFeed.AsciiToString();
+		string text = GetInputText();
+		if (text.Contains(lf)) {
+			text.Replace(lf, "");
+			m_Input.SetText(text);
+			Submit();
+			return true;
+		}
+
 		UpdateLength();
-		if (finished) Submit();
 		return true;
 	}
 };

@@ -1,0 +1,16 @@
+ImageWidgetClass ZBerryNotificationIcon {
+ inheritalpha 1
+ ignorepointer 1
+ position 0.11 0.13
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ image0 "set:dayz_inventory image:walkietalkie"
+ mode blend
+ "src alpha" 1
+ "clamp mode" clamp
+ "stretch mode" stretch_w_h
+ filter 1
+}
