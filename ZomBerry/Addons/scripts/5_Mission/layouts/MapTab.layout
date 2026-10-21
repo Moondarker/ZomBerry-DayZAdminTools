@@ -16,6 +16,7 @@ PanelWidgetClass MapWrapper {
    vexactsize 0
   }
   CanvasWidgetClass MapArrows {
+   priority 100
    ignorepointer 1
    position 0 0
    size 1 0.95
@@ -25,6 +26,7 @@ PanelWidgetClass MapWrapper {
    vexactsize 0
   }
   ButtonWidgetClass MapFilterPlayers {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 2 4
    size 96 28
@@ -52,6 +54,7 @@ PanelWidgetClass MapWrapper {
    }
   }
   ButtonWidgetClass MapFilterVehicles {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 101 4
    size 96 28
@@ -79,6 +82,7 @@ PanelWidgetClass MapWrapper {
    }
   }
   ButtonWidgetClass MapFilterTents {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 200 4
    size 96 28
@@ -106,6 +110,7 @@ PanelWidgetClass MapWrapper {
    }
   }
   ButtonWidgetClass MapFilterStorage {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 299 4
    size 96 28
@@ -133,6 +138,7 @@ PanelWidgetClass MapWrapper {
    }
   }
   ButtonWidgetClass MapFilterBases {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 398 4
    size 96 28
@@ -160,6 +166,7 @@ PanelWidgetClass MapWrapper {
    }
   }
   ButtonWidgetClass MapFilterBodies {
+   priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 497 4
    size 96 28
