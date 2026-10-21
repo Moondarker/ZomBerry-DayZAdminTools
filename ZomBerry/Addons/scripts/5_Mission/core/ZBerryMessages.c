@@ -3,7 +3,7 @@
 class ZBerryMessages {
 	static const int MAX_LENGTH = 300;
 	static const float SHOW_TIME = 15; //Seconds the notification stays
-	static const string ICON = "set:dayz_gui image:notification_info";
+	static const string ICON = "set:dayz_gui image:walkie_talkie"; //Must exist in the imageset, or the notification keeps its warning triangle
 	static const string TITLE_ANNOUNCE = "Server announcement";
 	static const string TITLE_PRIVATE = "Message from an admin";
 
