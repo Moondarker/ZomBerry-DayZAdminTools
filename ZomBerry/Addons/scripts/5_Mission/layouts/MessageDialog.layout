@@ -95,19 +95,42 @@ FrameWidgetClass MessageDialog {
      "exact text" 1
      "exact text size" 14
     }
-    MultilineEditBoxWidgetClass MessageInput {
+    EditBoxWidgetClass MessageInput {
      color 0.3255 0.3255 0.3255 0.7843
      position 15 116
-     size 530 120
+     size 530 24
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
      style Editor
-     font "gui/fonts/sdf_MetronBook24"
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    PanelWidgetClass MessagePreviewBack {
+     ignorepointer 1
+     color 1 1 1 0.06
+     position 15 146
+     size 530 88
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style rover_sim_colorable
+    }
+    TextWidgetClass MessagePreview {
+     ignorepointer 1
+     position 21 150
+     size 518 80
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     wrap 1
+     font "gui/fonts/Metron14"
      "exact text" 1
-     "exact text size" 16
-     lines 5
+     "exact text size" 14
     }
     TextWidgetClass MessageLength {
      position 15 240

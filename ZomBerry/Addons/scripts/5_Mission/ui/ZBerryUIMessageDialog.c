@@ -1,8 +1,10 @@
 //Message dialog over the admin menu: a private message to the selected player, or an announcement to everyone.
 //Like the kick/ban dialog it's part of the menu's own layout; while it's open the menu key and Esc don't close the menu
 class ZBerryUIMessageDialog extends ZBerryUIComponent {
-	protected TextWidget m_Length;
-	protected MultilineEditBoxWidget m_Input; //Wraps long messages; Enter sends
+	static const int COLOR_PLACEHOLDER = 0xFF808080;
+
+	protected TextWidget m_Length, m_Preview;
+	protected EditBoxWidget m_Input; //One line: the multi-line box sends no change events and doesn't wrap. Enter sends
 	protected ButtonWidget m_RecipientButton, m_SendButton, m_CancelButton;
 
 	protected ref TIntArray m_Recipients = new TIntArray; //Session ids the button steps through, -1 for everyone
@@ -13,7 +15,8 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		if (!LoadLayout("ZomBerry/AT/scripts/5_Mission/layouts/MessageDialog.layout", parent)) return;
 
 		m_Length = TextWidget.Cast( m_Root.FindAnyWidget("MessageLength") );
-		m_Input = MultilineEditBoxWidget.Cast( BindWidget("MessageInput") );
+		m_Preview = TextWidget.Cast( m_Root.FindAnyWidget("MessagePreview") );
+		m_Input = EditBoxWidget.Cast( BindWidget("MessageInput") );
 		m_RecipientButton = ButtonWidget.Cast( BindWidget("MessageRecipient") );
 		m_SendButton = ButtonWidget.Cast( BindWidget("MessageSend") );
 		m_CancelButton = ButtonWidget.Cast( BindWidget("MessageCancel") );
@@ -67,25 +70,34 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		ZBerryUIUtils.SetButtonText(m_RecipientButton, caption);
 	}
 
-	protected string GetInputText() {
-		string text;
-		m_Input.GetText(text);
-		return text;
-	}
-
+	//Counter and preview: the box is one line, the preview shows the whole message wrapped, as players see it.
+	//Text past the limit is cut while typing
 	protected void UpdateLength() {
-		int length = GetInputText().Length();
+		string text = m_Input.GetText();
+		if (text.Length() > ZBerryMessages.MAX_LENGTH) {
+			text = text.Substring(0, ZBerryMessages.MAX_LENGTH);
+			m_Input.SetText(text);
+		}
+
+		int length = text.Length();
 		m_Length.SetText(length.ToString() + " / " + ZBerryMessages.MAX_LENGTH);
-		if (length > ZBerryMessages.MAX_LENGTH) {
+		if (length >= ZBerryMessages.MAX_LENGTH) {
 			m_Length.SetColor(ZBerryUILogsTab.COLOR_REFUSED);
 		} else {
 			m_Length.SetColor(ZBerryUIUtils.TEXT_DEFAULT);
 		}
+
+		if (length == 0) {
+			m_Preview.SetText("The whole message shows here, as players will see it");
+			m_Preview.SetColor(COLOR_PLACEHOLDER);
+		} else {
+			m_Preview.SetText(text);
+			m_Preview.SetColor(ZBerryUIUtils.TEXT_DEFAULT);
+		}
 	}
 
 	protected void Submit() {
-		string text = GetInputText();
-		text = text.Trim();
+		string text = m_Input.GetText().Trim();
 		if (text == "") {
 			SetFocus(m_Input);
 			return;
@@ -117,21 +129,11 @@ class ZBerryUIMessageDialog extends ZBerryUIComponent {
 		return false;
 	}
 
-	//Enter adds a line break to a multi-line box: it sends instead (the server would turn it into a space anyway)
 	override bool OnChange(Widget w, int x, int y, bool finished) {
 		if (w != m_Input) return false;
 
-		int lineFeed = 10;
-		string lf = lineFeed.AsciiToString();
-		string text = GetInputText();
-		if (text.Contains(lf)) {
-			text.Replace(lf, "");
-			m_Input.SetText(text);
-			Submit();
-			return true;
-		}
-
 		UpdateLength();
+		if (finished) Submit();
 		return true;
 	}
 };
