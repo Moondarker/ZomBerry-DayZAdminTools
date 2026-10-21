@@ -536,8 +536,7 @@ class ZBerryAuth {
 			}
 
 			if (before.Level != newGroup.Level) changes.Insert("group " + newGroup.Name + ": level " + before.Level + " -> " + newGroup.Level);
-			string permissions = DescribeListChange(before.Permissions, newGroup.Permissions);
-			if (permissions != "") changes.Insert("group " + newGroup.Name + ": permissions " + permissions);
+			DescribePermissionChanges(newGroup.Name, before.Permissions, newGroup.Permissions, changes);
 			string spawnRules = DescribeListChange(before.SpawnAllowed, newGroup.SpawnAllowed);
 			if (spawnRules != "") changes.Insert("group " + newGroup.Name + ": spawn rules " + spawnRules);
 		}
@@ -568,16 +567,52 @@ class ZBerryAuth {
 		return ZBerryPermissions.JoinList(items);
 	}
 
-	//"+a, +b, -c", "" when nothing changed
+	//"added a, b; removed c", "" when nothing changed. Spawn rules can start with "-" themselves, so no +/- signs
 	protected static string DescribeListChange(TStringArray before, TStringArray after) {
-		TStringArray parts = new TStringArray;
-		foreach (string added : after) {
-			if (before.Find(added) == -1) parts.Insert("+" + added);
+		TStringArray added = new TStringArray;
+		TStringArray removed = new TStringArray;
+		foreach (string item : after) {
+			if (before.Find(item) == -1) added.Insert(item);
 		}
-		foreach (string removed : before) {
-			if (after.Find(removed) == -1) parts.Insert("-" + removed);
+		foreach (string oldItem : before) {
+			if (after.Find(oldItem) == -1) removed.Insert(oldItem);
 		}
-		return ZBerryPermissions.JoinList(parts);
+
+		string result = "";
+		if (added.Count() > 0) result = "added " + ZBerryPermissions.JoinList(added);
+		if (removed.Count() > 0) {
+			if (result != "") result += "; ";
+			result += "removed " + ZBerryPermissions.JoinList(removed);
+		}
+		return result;
+	}
+
+	//One line per node that changed, in the Permissions tab's three states: "group admin: zomberry.players.ban allowed -> denied"
+	protected static void DescribePermissionChanges(string groupName, TStringArray before, TStringArray after, TStringArray changes) {
+		TStringArray nodes = new TStringArray;
+		AddPermissionNodes(before, nodes);
+		AddPermissionNodes(after, nodes);
+
+		foreach (string node : nodes) {
+			string stateBefore = DescribeNodeState(before, node);
+			string stateAfter = DescribeNodeState(after, node);
+			if (stateBefore != stateAfter) changes.Insert("group " + groupName + ": " + node + " " + stateBefore + " -> " + stateAfter);
+		}
+	}
+
+	protected static void AddPermissionNodes(TStringArray entries, TStringArray nodes) {
+		foreach (string entry : entries) {
+			string node = entry;
+			if (node.IndexOf("-") == 0) node = node.Substring(1, node.Length() - 1);
+			if (nodes.Find(node) == -1) nodes.Insert(node);
+		}
+	}
+
+	//A deny always wins over a grant, as in ZBerryPermissions
+	protected static string DescribeNodeState(TStringArray entries, string node) {
+		if (entries.Find("-" + node) != -1) return "denied";
+		if (entries.Find(node) != -1) return "allowed";
+		return "unset";
 	}
 
 	protected string CheckHierarchy(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig, int editorLevel) {

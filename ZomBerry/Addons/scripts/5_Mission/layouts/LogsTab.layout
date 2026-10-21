@@ -151,14 +151,14 @@ PanelWidgetClass LogsWrapper {
    lines 300
    font "gui/fonts/Metron28"
   }
-  TextWidgetClass LogDetails {
-   position 4 850
-   size 592 20
+  MultilineTextWidgetClass LogDetails {
+   position 4 816
+   size 592 54
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   "text valign" center
+   wrap 1
    font "gui/fonts/Metron14"
    "exact text" 1
    "exact text size" 14

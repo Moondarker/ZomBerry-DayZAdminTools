@@ -287,7 +287,7 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
 - **Live and Paused:** the header button stops the list from updating while you read it.
-- **Details:** select a row to see it in full below the list.
+- **Details:** select a row to see it in full below the list, wrapped over up to three lines.
 
 ### ESP
 

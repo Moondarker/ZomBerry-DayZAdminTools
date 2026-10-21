@@ -166,7 +166,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		m_LaidOutHeight = screenHeight;
 
 		float u = screenWidth / 600;
-		float detailsY = screenHeight - (10 + 20) * u;
+		float detailsY = screenHeight - (10 + 54) * u; //Three wrapped lines, long events don't fit one
 		float listY = 70 * u;
 		float listHeight = Math.Max(60 * u, detailsY - 8 * u - listY);
 		m_Details.SetPos(4 * u, detailsY);

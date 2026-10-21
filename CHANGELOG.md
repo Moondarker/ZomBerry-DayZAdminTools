@@ -61,7 +61,7 @@
 - **A close button and a settings menu in the header** (#55): the **×** in the top-right corner closes the admin menu with the mouse, so the menu can be left even when the keyboard stops reaching it. The gear icon next to it opens a dropdown with the Permissions and ESP tabs. It lists only the pages the admin may use, without gaps.
 
 - **The log says what a permission change changed:** one line per change.
-  - **Groups:** added, removed, level changes, permissions and spawn rules added or removed.
+  - **Groups:** added, removed, level changes, spawn rules added or removed, and each permission that changed, in the Permissions tab's words: "zomberry.players.ban allowed -> denied" (allowed, denied or unset).
   - **Admins:** added, removed, or moved to another group.
   - **Before**, every save logged only the number of groups and admins.
 
