@@ -189,11 +189,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		return false;
 	}
 
-	//Clicking works whatever GetCloseClearance says: a click can't be a stray keystroke while typing. An open dialog
-	//closes first, as with Esc
+	//Clicking works whatever GetCloseClearance says: a click can't be a stray keystroke while typing. The kick/ban
+	//dialog takes the mouse while it's open and has its own Cancel, so the button can't be reached then
 	protected void CloseByButton() {
-		if (CloseDialogs()) return;
-
 		MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
 		if (mission) mission.CloseZomberryMenu();
 	}

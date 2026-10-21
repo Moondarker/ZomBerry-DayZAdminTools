@@ -197,7 +197,7 @@ Keybinds only work while no menu is open, so they don't fire while you type in c
 
 Open and close the menu with `O`, or close it with `Esc` or the **×** in the header's top-right corner. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
 
-- **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu. When the kick or ban dialog is open, it closes the dialog first, like `Esc`.
+- **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu.
 - **The gear icon** next to it opens pages that don't need a tab of their own: Permissions, for now. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
 
 ### Players
