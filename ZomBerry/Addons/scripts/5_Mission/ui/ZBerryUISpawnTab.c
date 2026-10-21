@@ -110,11 +110,11 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		if (targetIdx != -1) {
 			m_ObjTarget = m_Targets[targetIdx];
 			ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
-			ShowDropup(false);
+			LayoutDropup(); //Stays open to show the new choice; leaving it closes it
 			return true;
 		}
 
-		if (w == m_TargetButton) { //Hovering opens it already, a click brings it back after picking a target
+		if (w == m_TargetButton) { //Hovering opens it already
 			ShowDropup(true);
 			return true;
 		}
