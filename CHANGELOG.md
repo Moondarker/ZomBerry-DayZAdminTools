@@ -69,6 +69,7 @@
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
 - **Set weather barely worked on servers.** The server's own weather took over again right away: a storm often brought no rain at all, and clear weather kept raining for about a minute. The chosen weather now applies at once and holds for 6 minutes.
 - **FreeCam started inside the admin's head.** It now starts just behind it.
+- **The Functions tab looked ready to run after reopening the menu, but wasn't** (#67). Reopening cleared the selection, but the function's name and parameters stayed, and named values turned into numbers. The selected function and its values are now kept.
 
 ## 0.7.0
 

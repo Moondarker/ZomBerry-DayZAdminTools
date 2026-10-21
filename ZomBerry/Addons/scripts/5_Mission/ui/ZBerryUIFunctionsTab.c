@@ -11,6 +11,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	protected ZBerryUIPlayersPanel m_PlayersPanel;
 
 	protected int m_LastSelFunc = -1;
+	protected int m_SelectedFuncId = -1; //Survives the list being rebuilt (every time the menu opens)
 	protected int m_ActiveParamCount = 0;
 	static const int BIND_IDLE = 0;
 	static const int BIND_WAITING_FOR_KEY = 1;
@@ -54,7 +55,13 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_LastSelFunc = -1;
 	}
 
+	//Rebuilding drops the list's selection and the parameter definitions the rows point at, so the selected function
+	//is selected again afterwards, with its values (or the bottom area is cleared if it's gone)
 	void SetFunctions(ZBerryCategoryArray catList) {
+		int keptFuncId = m_SelectedFuncId;
+		TIntArray keptValues = GetParamValues();
+		ClearSelection();
+
 		m_FunctionsList.ClearItems();
 		m_FuncParams.Clear();
 		ZomberryBase.GetKeyBindsMgr().ClearFuncList();
@@ -81,6 +88,32 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 				++row;
 			}
 		}
+
+		if (keptFuncId != -1) Reselect(keptFuncId, keptValues);
+	}
+
+	protected void Reselect(int funcId, TIntArray values) {
+		Param3<int, bool, int> funcData;
+
+		for (int row = 0; row < m_FunctionsList.GetNumItems(); ++row) {
+			m_FunctionsList.GetItemData(row, 0, funcData);
+			if (!funcData || funcData.param1 != funcId) continue;
+
+			m_FunctionsList.SelectRow(row);
+			SelectFunction();
+			for (int i = 0; i < m_ActiveParamCount; ++i) m_ParamRows[i].SetValue(values[i]);
+			return;
+		}
+	}
+
+	//Nothing selected: no name, no parameter rows, the bind button back to "Bind"
+	protected void ClearSelection() {
+		m_LastSelFunc = -1;
+		m_SelectedFuncId = -1;
+		m_FncName.SetText("");
+		ZBerryFuncParamArray noParams = new ZBerryFuncParamArray; //Local: a temporary argument may be freed early
+		ShowParams(noParams);
+		if (IsVisible() && m_BindMode == BIND_IDLE) ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button) {
@@ -156,6 +189,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_FunctionsList.GetItemText( selectedFuncRow, 0, fncName );
 		if (funcData.param3 == -1) return;
 
+		m_SelectedFuncId = funcData.param1;
 		UpdateBindButtonText(funcData.param1);
 		m_FncName.SetText(fncName);
 		ShowParams(m_FuncParams[funcData.param3]);
