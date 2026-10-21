@@ -386,8 +386,15 @@ class ZBerryEventLog {
 		GetZBerryEventLog().AddHit(victim, attacker, weapon, damage);
 	}
 
+	//Also runs for each new character of a player who stayed connected (after dying): that's a respawn, and the
+	//session goes on from the first join
 	void OnPlayerConnected(PlayerIdentity identity) {
 		if (!identity) return;
+
+		if (m_LoginTimes.Contains(identity.GetPlainId())) {
+			ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} respawned");
+			return;
+		}
 		m_LoginTimes.Set(identity.GetPlainId(), ZBerryTime.Now());
 		ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} joined");
 	}

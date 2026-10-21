@@ -20,7 +20,7 @@
 - **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`), only asked for confirmation (`AwaitConfirmation()`), or describe what they did in the log (`DescribeCall()`, `GetCurrentCall()`).
 - **Admin event log, with a Logs tab in the menu** (needs `zomberry.logs.view`). The tab takes the Permissions tab's old place, which moved under the gear icon.
   - **View:** everyone the log mentions on the left (double-click one to see only their events), a search by text, name or Steam64 id, a type filter, and live updates you can pause.
-  - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, logouts, kills, auth problems and refused attempts.
+  - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, respawns, logouts, kills, auth problems and refused attempts.
   - **Players** are kept as separate fields (name and Steam64), so the view can highlight them.
   - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim. A burst ends after 3 s without hits, or as soon as the attacker is hit by another player, so a firefight is logged volley by volley.
   - **Size:** the server keeps the last 2048 events and 10486 damage records.
