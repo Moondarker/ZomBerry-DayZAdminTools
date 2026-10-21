@@ -3,7 +3,9 @@
 class ZBerryMessages {
 	static const int MAX_LENGTH = 300;
 	static const float SHOW_TIME = 15; //Seconds the notification stays
-	static const string ICON = "set:dayz_gui image:walkie_talkie"; //Must exist in the imageset, or the notification keeps its warning triangle
+	//Must exist in the imageset, or the notification keeps its warning triangle. Square like the notification's 54x54 slot,
+	//and 170 px: the HUD's 34x40 walkie_talkie came out squished and blurry
+	static const string ICON = "set:dayz_inventory image:walkietalkie";
 	static const string TITLE_ANNOUNCE = "Server announcement";
 	static const string TITLE_PRIVATE = "Message from an admin";
 
