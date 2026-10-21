@@ -189,6 +189,27 @@ modded class MissionServer {
 		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);
 	}
 
+	//Vanilla kills a character that respawns or logs out while unconscious or restrained: the log says so instead of "died"
+	override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player) {
+		NoteForcedDeath(player, " respawned");
+		super.OnClientRespawnEvent(identity, player);
+	}
+
+	override void HandleBody(PlayerBase player) {
+		if (player && player.IsAlive() && ShouldPlayerBeKilled(player)) NoteForcedDeath(player, " logged out");
+		super.HandleBody(player);
+	}
+
+	protected void NoteForcedDeath(PlayerBase player, string how) {
+		if (!player || !player.IsAlive()) return;
+
+		if (player.IsRestrained()) {
+			player.ZBSetDeathNote(how + " while restrained");
+		} else if (player.IsUnconscious()) {
+			player.ZBSetDeathNote(how + " while unconscious");
+		}
+	}
+
 	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed) {
 		GetZBerryEventLog().OnPlayerDisconnected(identity); //Before super: the identity may be gone after it
 		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnPlayerDisconnected(identity);

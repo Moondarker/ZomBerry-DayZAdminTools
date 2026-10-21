@@ -289,6 +289,7 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - Even after a crash, everything logged up to it is kept.
   - A file that can't be read is set aside as `.bad`, and the log starts empty.
   - Delete both files, with the server stopped, to clear the log.
+- **Deaths** say what killed the player: another player, an infected, an animal, a vehicle, an explosion, a fall, drowning, fire, bleeding, poisoning, thirst or hunger. The damage log only covers damage between players.
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
 - **Live and Paused:** the header button stops the list from updating while you read it.

@@ -351,7 +351,8 @@ class ZBerryEventLog {
 
 	//---------------------------------------------------------------- Server: hooks
 
-	//"{target} was killed by {actor} with KA-M from 154 m", "{target} was killed by an infected", "{target} died"
+	//"{target} was killed by {actor} with KA-M from 154 m", "{target} was run over by {actor} in Ada 4x4", or the cause
+	//ZBerryDeathCause finds: "{target} was killed by an infected", "{target} died from a fall"...
 	static void OnPlayerKilled(PlayerBase victim, Object killer) {
 		if (!GetGame().IsServer() || !victim) return;
 
@@ -359,6 +360,15 @@ class ZBerryEventLog {
 		EntityAI killerEntity = EntityAI.Cast(killer);
 		PlayerBase killerPlayer;
 		if (killerEntity) killerPlayer = PlayerBase.Cast(killerEntity.GetHierarchyRootPlayer());
+
+		Transport vehicle = Transport.Cast(killer);
+		if (vehicle) {
+			PlayerBase driver = PlayerBase.Cast(vehicle.CrewDriver());
+			if (driver && driver != victim) {
+				ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + vehicle.GetDisplayName() + where);
+				return;
+			}
+		}
 
 		if (killerPlayer && killerPlayer != victim) {
 			string text = "{target} was killed by {actor}";
@@ -368,13 +378,7 @@ class ZBerryEventLog {
 			return;
 		}
 
-		string cause = " died";
-		if (killerEntity && killerEntity != victim) {
-			cause = " was killed by " + killerEntity.GetDisplayName();
-			if (killerEntity.IsInherited(ZombieBase)) cause = " was killed by an infected";
-			if (killerEntity.IsInherited(Transport)) cause = " was run over by a " + killerEntity.GetDisplayName();
-		}
-		ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + cause + where);
+		ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + ZBerryDeathCause.Describe(victim, killer) + where);
 	}
 
 	//Player against player only: infected, animals and falls aren't logged
