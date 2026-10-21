@@ -267,7 +267,7 @@ PanelWidgetClass AdminMenu {
      vexactpos 0
      hexactsize 1
      vexactsize 1
-     priority 10
+     priority 100
      style rover_sim_colorable
      Padding 0
      Margin 0
