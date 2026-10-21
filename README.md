@@ -283,7 +283,12 @@ The cursor's coordinates are shown below the map.
 
 ### Logs
 
-Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, kicks, bans, permission changes, refused attempts, logins and logouts, kills, and damage between players. Times are in your local time.
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, kicks, bans, permission changes, refused attempts, logins and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
+- **Kept across restarts:** the server keeps the last 2048 events and 10486 damage records in `ZomBerryEventLog.bin` in its `ZomBerry` profile folder, with the newest additions in `ZomBerryEventLog.bin.journal`.
+  - Each start logs "Server started", with how much it restored, and whether the previous run stopped without a clean shutdown. A clean shutdown logs "Server stopping".
+  - Even after a crash, everything logged up to it is kept.
+  - A file that can't be read is set aside as `.bad`, and the log starts empty.
+  - Delete both files, with the server stopped, to clear the log.
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
 - **Live and Paused:** the header button stops the list from updating while you read it.

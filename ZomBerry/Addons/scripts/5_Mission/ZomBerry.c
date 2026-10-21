@@ -114,6 +114,7 @@ class ZomberryBase {
 	void OnServerReady() {
 		m_Auth.LoadAdmins();
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
+		if (GetGame().IsMultiplayer()) GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
 	}
 
 	//Server only, NULL on clients
@@ -157,6 +158,12 @@ modded class MissionServer {
 		super.OnInit();
 
 		GetZomberryBase().OnServerReady();
+	}
+
+	//A clean shutdown only: after a crash the next start finds the last periodic save
+	override void OnMissionFinish() {
+		if (g_ZBerryEventLog) g_ZBerryEventLog.OnServerStopping();
+		super.OnMissionFinish();
 	}
 
 	//Before the character is loaded: banned players never get into the world

@@ -15,9 +15,10 @@ class ZBerryEventType {
 	static const int KILL = 13;
 	static const int AUTH = 14; //Setup token, versions
 	static const int REFUSED = 15; //Something an admin may not do, or a wrong setup token
+	static const int SERVER = 16; //Server started or stopping
 
 	static string GetName(int type) {
-		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused"};
+		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused", "Server"};
 		if (type < 0 || type >= names.Count()) return "";
 		return names[type];
 	}
@@ -117,15 +118,33 @@ class ZBerryDamageBurst {
 //   readable, one record per volley), then stored as 7 ints; player names and weapon names are kept once, in tables that
 //   only grow, and a record refers to them by index. Damage never goes into the log file
 //An admin with zomberry.logs.view gets everything once after joining (BATCH_* per tick, so the server never stalls),
-//then only what's new
+//then only what's new.
+//On a dedicated server both queues survive restarts (StartPersisting, OnServerStopping), in two files:
+// - the snapshot (FILE_NAME): everything, written at startup, at a clean shutdown and when the journal is full. Writing
+//   it takes about 0.2 s, too long to do regularly
+// - the journal (FILE_NAME + JOURNAL_SUFFIX): every event and damage record appended as it's stored, under 1 ms each.
+//   Loading replays it over the snapshot of the same generation; a newer snapshot already holds it
 class ZBerryEventLog {
 	static const int MAX_EVENTS = 2048;
 	static const int MAX_DAMAGE = 10486;
 	static const int DAMAGE_INTS = 7; //Time, attacker, victim, hits, damage x10, weapon, distance
+	static const int MAX_TEXT = 1024; //Bytes of an event's text, so the file has an upper bound
 	static const int BURST_MS = 3000;
 	static const int TICK_MS = 250;
 	static const int BATCH_EVENTS = 64; //Per client and tick
 	static const int BATCH_DAMAGE = 256;
+
+	static const string FILE_NAME = "ZomBerryEventLog.bin";
+	static const string FILE_MAGIC = "ZBLOG";
+	static const int FILE_VERSION = 1; //Fields are only ever appended, under a new version that still reads the old ones
+	static const string JOURNAL_SUFFIX = ".journal";
+	static const string JOURNAL_MAGIC = "ZBJRN";
+	static const int JOURNAL_MAX = 4096; //Entries before the snapshot is rewritten and the journal starts over
+	static const int JOURNAL_EVENT = 1;
+	static const int JOURNAL_DAMAGE = 2;
+	//After every journal entry and at the end of the snapshot. FileSerializer.Read doesn't fail at the end of a file, so
+	//this is what tells a complete entry from one a crash cut short, and the end of the journal
+	static const int END_MARK = 1515870810;
 
 	//Server
 	protected ref ZBerryLogEventArray m_Events = new ZBerryLogEventArray;
@@ -141,6 +160,13 @@ class ZBerryEventLog {
 	protected ref map<string, int> m_LoginTimes = new map<string, int>; //Steam64 -> ZBerryTime, for logout lines
 	protected ZBerryAuth m_Auth;
 	protected bool m_Ticking;
+	protected string m_SavePath = ""; //Snapshot path, "" while the log isn't persisted (singleplayer, tests)
+	protected int m_Generation = 0; //Of the snapshot on disk: a journal of another generation is stale
+	protected int m_JournalEntries = 0; //In the journal on disk
+	//What the last Load found, for the startup event
+	protected bool m_LoadedFile = false;
+	protected bool m_LoadedCleanStop = false;
+	protected int m_LoadedJournal = 0; //Entries replayed
 
 	//Client
 	protected ref ZBerryLogEventArray m_ClientEvents = new ZBerryLogEventArray;
@@ -150,8 +176,11 @@ class ZBerryEventLog {
 	ref ScriptInvoker OnEventsChanged = new ScriptInvoker(); //No arguments
 	ref ScriptInvoker OnDamageChanged = new ScriptInvoker(); //No arguments
 
-	void ZBerryEventLog() {
+	//withRPC false: a detached copy (tests loading a file), it never receives the client half of the log
+	void ZBerryEventLog(bool withRPC = true) {
 		m_Damage.Resize(MAX_DAMAGE * DAMAGE_INTS);
+		if (!withRPC) return;
+
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LogEvents, "OnLogEvents", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LogDamage, "OnLogDamage", this, ZBerrySPExec.Client );
 	}
@@ -183,10 +212,18 @@ class ZBerryEventLog {
 		logEvent.TargetId = targetId;
 		logEvent.TargetName = targetName;
 		logEvent.Text = text;
+		if (text.Length() > MAX_TEXT) logEvent.Text = text.Substring(0, MAX_TEXT) + "...";
 
+		InsertEvent(logEvent);
+		if (m_SavePath != "") JournalEvent(logEvent);
+		return logEvent;
+	}
+
+	//New and replayed events: the oldest drop out, ids keep increasing
+	protected void InsertEvent(ZBerryLogEvent logEvent) {
 		m_Events.Insert(logEvent);
 		while (m_Events.Count() > MAX_EVENTS) m_Events.RemoveOrdered(0);
-		return logEvent;
+		if (logEvent.Id >= m_NextEventId) m_NextEventId = logEvent.Id + 1;
 	}
 
 	int GetEventCount() {
@@ -267,15 +304,23 @@ class ZBerryEventLog {
 	}
 
 	protected void StoreBurst(ZBerryDamageBurst burst) {
-		int slot = (m_NextDamageSeq % MAX_DAMAGE) * DAMAGE_INTS;
 		float damageTenths = burst.Damage * 10;
-		m_Damage[slot] = burst.StartTime;
-		m_Damage[slot + 1] = burst.AttackerIndex;
-		m_Damage[slot + 2] = burst.VictimIndex;
-		m_Damage[slot + 3] = burst.Hits;
-		m_Damage[slot + 4] = Math.Round(damageTenths);
-		m_Damage[slot + 5] = burst.WeaponIndex;
-		m_Damage[slot + 6] = Math.Round(burst.Distance);
+		int damage = Math.Round(damageTenths);
+		int distance = Math.Round(burst.Distance);
+		StoreRecord(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.Hits, damage, burst.WeaponIndex, distance);
+		if (m_SavePath != "") JournalDamage(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.Hits, damage, burst.WeaponIndex, distance);
+	}
+
+	//New and replayed records
+	protected void StoreRecord(int time, int attackerIndex, int victimIndex, int hits, int damageTenths, int weaponIndex, int distance) {
+		int slot = (m_NextDamageSeq % MAX_DAMAGE) * DAMAGE_INTS;
+		m_Damage[slot] = time;
+		m_Damage[slot + 1] = attackerIndex;
+		m_Damage[slot + 2] = victimIndex;
+		m_Damage[slot + 3] = hits;
+		m_Damage[slot + 4] = damageTenths;
+		m_Damage[slot + 5] = weaponIndex;
+		m_Damage[slot + 6] = distance;
 		++m_NextDamageSeq;
 	}
 
@@ -378,6 +423,9 @@ class ZBerryEventLog {
 
 	protected void Tick() {
 		FlushBursts();
+
+		if (m_SavePath != "" && m_JournalEntries >= JOURNAL_MAX) Save(m_SavePath); //Rare: once per JOURNAL_MAX entries
+
 		if (m_Subscribers.Count() == 0) return;
 
 		TIntArray gone = new TIntArray;
@@ -432,6 +480,376 @@ class ZBerryEventLog {
 		subscriber.SentWeapons = m_Weapons.Count();
 
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LogDamage, new Param4<bool, ref TStringArray, ref TStringArray, ref TIntArray>(subscriber.Reset, players, weapons, records), true, subscriber.Identity );
+	}
+
+	//---------------------------------------------------------------- Server: persistence
+
+	//Server, once at startup (before anyone joins): the last run's log, folded into a fresh snapshot, then the
+	//startup event. Journals from here on
+	void StartPersisting(string path) {
+		Load(path);
+		m_SavePath = path;
+		Save(path);
+
+		string text = "Server started (ZomBerry " + ZBerryVersion.GetFullVersion() + ")";
+		if (m_LoadedFile) {
+			text += ": restored " + m_Events.Count() + " events and " + GetDamageCount() + " damage records";
+			if (!m_LoadedCleanStop) text += "; the previous run didn't shut down cleanly";
+		}
+		ZomberryBase.LogEventRaw(ZBerryEventType.SERVER, "", "", "", "", text);
+	}
+
+	//Server, from MissionServer.OnMissionFinish: open bursts become records, then the last snapshot
+	void OnServerStopping() {
+		if (m_SavePath == "") return;
+
+		FlushBursts(true);
+		ZomberryBase.LogEventRaw(ZBerryEventType.SERVER, "", "", "", "", "Server stopping");
+		Save(m_SavePath, true);
+	}
+
+	//The snapshot: header (magic, version, generation, save time, clean stop), events field by field, the damage ring
+	//as it is, the name tables. Written to path.tmp first, so a crash while writing keeps the last good file; the
+	//journal it now holds is deleted afterwards
+	bool Save(string path, bool cleanStop = false) {
+		string tmpPath = path + ".tmp";
+		FileSerializer file = new FileSerializer();
+		if (!file.Open(tmpPath, FileMode.WRITE)) {
+			ZomberryBase.Log( "ZomBerryEventLog", "ERROR: Can't write " + tmpPath + ", the event log snapshot isn't saved" );
+			return false;
+		}
+
+		string magic = FILE_MAGIC;
+		int version = FILE_VERSION;
+		int generation = m_Generation + 1;
+		int savedAt = ZBerryTime.Now();
+		file.Write(magic);
+		file.Write(version);
+		file.Write(generation);
+		file.Write(savedAt);
+		file.Write(cleanStop);
+
+		int eventCount = m_Events.Count();
+		file.Write(m_NextEventId);
+		file.Write(eventCount);
+		foreach (ZBerryLogEvent logEvent : m_Events) WriteEvent(file, logEvent);
+
+		//The whole ring in one write: faster than record by record, Load unwinds it
+		int damageInts = DAMAGE_INTS;
+		int ringSize = MAX_DAMAGE;
+		int damageCount = GetDamageCount();
+		file.Write(damageInts);
+		file.Write(ringSize);
+		file.Write(damageCount);
+		file.Write(m_NextDamageSeq);
+		file.Write(m_Damage);
+		file.Write(m_Players);
+		file.Write(m_Weapons);
+		int endMark = END_MARK;
+		file.Write(endMark);
+		file.Close();
+
+		//Deleted first in case CopyFile doesn't replace; Load falls back to the .tmp if a crash comes in between
+		DeleteFile(path);
+		if (!CopyFile(tmpPath, path)) {
+			ZomberryBase.Log( "ZomBerryEventLog", "ERROR: Can't replace " + path + " with " + tmpPath );
+			return false;
+		}
+		DeleteFile(tmpPath);
+		m_Generation = generation;
+		DeleteFile(path + JOURNAL_SUFFIX); //Left behind by a crash right here, it's ignored: its generation is older
+		m_JournalEntries = 0;
+		return true;
+	}
+
+	//False when there was a snapshot but it couldn't be read: it's kept as path.bad (with its journal) and the log
+	//starts empty. Keeps the newest MAX_EVENTS/MAX_DAMAGE, and only the name table entries the kept records use
+	bool Load(string path) {
+		m_LoadedFile = false;
+		m_LoadedJournal = 0;
+		string source = path;
+		if (!FileExist(source)) source = path + ".tmp";
+		if (!FileExist(source)) return true; //First start
+
+		FileSerializer file = new FileSerializer();
+		bool loaded = file.Open(source, FileMode.READ);
+		if (loaded) {
+			loaded = ReadSnapshot(file);
+			file.Close();
+		}
+
+		if (!loaded) {
+			DeleteFile(path + ".bad");
+			CopyFile(source, path + ".bad");
+			if (FileExist(path + JOURNAL_SUFFIX)) {
+				DeleteFile(path + JOURNAL_SUFFIX + ".bad");
+				CopyFile(path + JOURNAL_SUFFIX, path + JOURNAL_SUFFIX + ".bad");
+			}
+			ZomberryBase.Log( "ZomBerryEventLog", "WARN: Can't read " + source + ", kept it as " + path + ".bad. The event log starts empty" );
+			return false;
+		}
+
+		m_LoadedJournal = ReplayJournal(path + JOURNAL_SUFFIX);
+		m_LoadedFile = true;
+		ZomberryBase.Log( "ZomBerryEventLog", "INFO: Restored " + m_Events.Count() + " events and " + GetDamageCount() + " damage records from " + source + " (" + m_LoadedJournal + " of them from the journal)" );
+		return true;
+	}
+
+	//Everything is read into locals first: the log only changes when the whole file was readable
+	protected bool ReadSnapshot(FileSerializer file) {
+		string magic = "";
+		int version = 0;
+		int generation = 0;
+		int savedAt = 0;
+		bool cleanStop = false;
+		if (!file.Read(magic) || magic != FILE_MAGIC) return false;
+		if (!file.Read(version) || version < 1 || version > FILE_VERSION) return false;
+		if (!file.Read(generation) || !file.Read(savedAt) || !file.Read(cleanStop)) return false;
+
+		int nextEventId = 0;
+		int eventCount = 0;
+		if (!file.Read(nextEventId) || !file.Read(eventCount) || eventCount < 0 || eventCount > 65536) return false; //Garbage: reads don't fail at the end
+		ZBerryLogEventArray events = new ZBerryLogEventArray;
+		for (int i = 0; i < eventCount; ++i) {
+			ZBerryLogEvent logEvent = ReadEvent(file);
+			if (!logEvent) return false;
+			events.Insert(logEvent);
+		}
+
+		int damageInts = 0;
+		int ringSize = 0;
+		int damageCount = 0;
+		int nextSeq = 0;
+		if (!file.Read(damageInts) || !file.Read(ringSize) || !file.Read(damageCount) || !file.Read(nextSeq)) return false;
+		if (damageInts != DAMAGE_INTS || ringSize <= 0 || ringSize > 1000000 || damageCount < 0 || damageCount > ringSize || nextSeq < damageCount) return false;
+
+		TIntArray ring = new TIntArray;
+		TStringArray players = new TStringArray;
+		TStringArray weapons = new TStringArray;
+		if (!file.Read(ring) || ring.Count() != ringSize * DAMAGE_INTS) return false;
+		if (!file.Read(players) || !file.Read(weapons)) return false;
+		int endMark = 0;
+		if (!file.Read(endMark) || endMark != END_MARK) return false; //Cut short
+
+		//Unwound oldest first, the newest MAX_DAMAGE only
+		TIntArray records = new TIntArray;
+		int firstSeq = nextSeq - Math.Min(damageCount, MAX_DAMAGE);
+		for (int seq = firstSeq; seq < nextSeq; ++seq) {
+			int slot = (seq % ringSize) * DAMAGE_INTS;
+			for (int k = 0; k < DAMAGE_INTS; ++k) records.Insert(ring[slot + k]);
+		}
+
+		//The tables only grow while the server runs: without this they'd keep everyone from every earlier run
+		TStringArray keptPlayers = new TStringArray;
+		TStringArray keptWeapons = new TStringArray;
+		map<int, int> playerRemap = new map<int, int>;
+		map<int, int> weaponRemap = new map<int, int>;
+		for (int r = 0; r < records.Count(); r += DAMAGE_INTS) {
+			if (!RemapIndex(records, r + 1, players, keptPlayers, playerRemap)) return false;
+			if (!RemapIndex(records, r + 2, players, keptPlayers, playerRemap)) return false;
+			if (!RemapIndex(records, r + 5, weapons, keptWeapons, weaponRemap)) return false;
+		}
+
+		m_Events = new ZBerryLogEventArray;
+		for (int e = Math.Max(0, events.Count() - MAX_EVENTS); e < events.Count(); ++e) m_Events.Insert(events[e]);
+		m_NextEventId = nextEventId;
+		if (m_Events.Count() > 0 && m_NextEventId <= m_Events[m_Events.Count() - 1].Id) m_NextEventId = m_Events[m_Events.Count() - 1].Id + 1;
+
+		for (int d = 0; d < records.Count(); ++d) m_Damage[d] = records[d];
+		m_NextDamageSeq = records.Count() / DAMAGE_INTS;
+
+		m_Players = keptPlayers;
+		m_PlayerIndex.Clear();
+		for (int p = 0; p < m_Players.Count(); ++p) m_PlayerIndex.Set(GetEntryKey(m_Players[p]), p);
+		m_Weapons = keptWeapons;
+		m_WeaponIndex.Clear();
+		for (int w = 0; w < m_Weapons.Count(); ++w) m_WeaponIndex.Set(m_Weapons[w], w);
+
+		m_Generation = generation;
+		m_LoadedCleanStop = cleanStop;
+		return true;
+	}
+
+	//What was logged after the snapshot of this generation was written. A crash can cut the last entry short:
+	//everything before it still counts. Returns the entries replayed
+	protected int ReplayJournal(string journalPath) {
+		if (!FileExist(journalPath)) return 0;
+
+		FileSerializer file = new FileSerializer();
+		if (!file.Open(journalPath, FileMode.READ)) return 0;
+
+		string magic = "";
+		int version = 0;
+		int generation = 0;
+		if (!file.Read(magic) || magic != JOURNAL_MAGIC || !file.Read(version) || version != FILE_VERSION || !file.Read(generation) || generation != m_Generation) {
+			file.Close();
+			return 0; //Stale (already in the snapshot) or not a journal
+		}
+
+		int replayed = 0;
+		while (replayed < 1000000) { //Can't be reached by a real journal, it's rewritten every JOURNAL_MAX entries
+			int kind = 0;
+			file.Read(kind);
+			if (kind == JOURNAL_EVENT) {
+				ZBerryLogEvent logEvent = ReadEvent(file);
+				if (!logEvent || !ReadEndMark(file)) break;
+				InsertEvent(logEvent);
+			} else if (kind == JOURNAL_DAMAGE) {
+				if (!ReplayDamage(file)) break;
+			} else {
+				break; //The end, or an entry cut short
+			}
+			++replayed;
+		}
+		file.Close();
+		return replayed;
+	}
+
+	protected static bool ReadEndMark(FileSerializer file) {
+		int endMark = 0;
+		return file.Read(endMark) && endMark == END_MARK;
+	}
+
+	protected bool ReplayDamage(FileSerializer file) {
+		int time = 0;
+		int hits = 0;
+		int damage = 0;
+		int distance = 0;
+		string attacker = "";
+		string victim = "";
+		string weapon = "";
+		if (!file.Read(time) || !file.Read(hits) || !file.Read(damage) || !file.Read(distance)) return false;
+		if (!file.Read(attacker) || !file.Read(victim) || !file.Read(weapon)) return false;
+		if (!ReadEndMark(file)) return false;
+
+		int attackerIndex = GetTableIndex(m_Players, m_PlayerIndex, GetEntryKey(attacker), attacker);
+		int victimIndex = GetTableIndex(m_Players, m_PlayerIndex, GetEntryKey(victim), victim);
+		int weaponIndex = GetTableIndex(m_Weapons, m_WeaponIndex, weapon, weapon);
+		StoreRecord(time, attackerIndex, victimIndex, hits, damage, weaponIndex, distance);
+		return true;
+	}
+
+	//The player table's key for an entry from a file: the Steam64 id. Characters without one were keyed by their network
+	//id, which doesn't survive a restart, so the entry itself stands in
+	protected static string GetEntryKey(string entry) {
+		int separator = entry.IndexOf("|");
+		if (separator > 0) return entry.Substring(0, separator);
+		return "entry:" + entry;
+	}
+
+	protected void JournalEvent(ZBerryLogEvent logEvent) {
+		FileSerializer file = OpenJournal();
+		if (!file) return;
+
+		int kind = JOURNAL_EVENT;
+		int endMark = END_MARK;
+		file.Write(kind);
+		WriteEvent(file, logEvent);
+		file.Write(endMark);
+		file.Close();
+		++m_JournalEntries;
+	}
+
+	//Names instead of table indices: the tables are rebuilt on every load
+	protected void JournalDamage(int time, int attackerIndex, int victimIndex, int hits, int damageTenths, int weaponIndex, int distance) {
+		FileSerializer file = OpenJournal();
+		if (!file) return;
+
+		int kind = JOURNAL_DAMAGE;
+		file.Write(kind);
+		file.Write(time);
+		file.Write(hits);
+		file.Write(damageTenths);
+		file.Write(distance);
+		file.Write(GetPlayerEntry(attackerIndex));
+		file.Write(GetPlayerEntry(victimIndex));
+		file.Write(GetWeaponEntry(weaponIndex));
+		int endMark = END_MARK;
+		file.Write(endMark);
+		file.Close();
+		++m_JournalEntries;
+	}
+
+	//Open for appending, created with its header (the snapshot's generation) when there's none yet. NULL on failure
+	protected FileSerializer OpenJournal() {
+		string journalPath = m_SavePath + JOURNAL_SUFFIX;
+		FileSerializer file = new FileSerializer();
+		if (FileExist(journalPath)) {
+			if (file.Open(journalPath, FileMode.APPEND)) return file;
+		} else if (file.Open(journalPath, FileMode.WRITE)) {
+			string magic = JOURNAL_MAGIC;
+			int version = FILE_VERSION;
+			int generation = m_Generation;
+			file.Write(magic);
+			file.Write(version);
+			file.Write(generation);
+			return file;
+		}
+
+		ZomberryBase.Log( "ZomBerryEventLog", "ERROR: Can't write " + journalPath + ", this entry won't survive a restart" );
+		return NULL;
+	}
+
+	protected static void WriteEvent(FileSerializer file, ZBerryLogEvent logEvent) {
+		file.Write(logEvent.Id);
+		file.Write(logEvent.Time);
+		file.Write(logEvent.Type);
+		file.Write(logEvent.Flags);
+		file.Write(logEvent.ActorId);
+		file.Write(logEvent.ActorName);
+		file.Write(logEvent.TargetId);
+		file.Write(logEvent.TargetName);
+		file.Write(logEvent.Text);
+	}
+
+	protected static ZBerryLogEvent ReadEvent(FileSerializer file) {
+		int id = 0;
+		int time = 0;
+		int type = 0;
+		int flags = 0;
+		string actorId = "";
+		string actorName = "";
+		string targetId = "";
+		string targetName = "";
+		string text = "";
+		if (!file.Read(id) || !file.Read(time) || !file.Read(type) || !file.Read(flags)) return NULL;
+		if (!file.Read(actorId) || !file.Read(actorName) || !file.Read(targetId) || !file.Read(targetName) || !file.Read(text)) return NULL;
+
+		ZBerryLogEvent logEvent = new ZBerryLogEvent;
+		logEvent.Id = id;
+		logEvent.Time = time;
+		logEvent.Type = type;
+		logEvent.Flags = flags;
+		logEvent.ActorId = actorId;
+		logEvent.ActorName = actorName;
+		logEvent.TargetId = targetId;
+		logEvent.TargetName = targetName;
+		logEvent.Text = text;
+		return logEvent;
+	}
+
+	//records[at] is an index into table: points it at the entry's place in kept instead (added on first use)
+	protected static bool RemapIndex(TIntArray records, int at, TStringArray table, TStringArray kept, map<int, int> remap) {
+		int oldIndex = records[at];
+		if (oldIndex < 0 || oldIndex >= table.Count()) return false;
+
+		int newIndex;
+		if (!remap.Find(oldIndex, newIndex)) {
+			newIndex = kept.Insert(table[oldIndex]);
+			remap.Set(oldIndex, newIndex);
+		}
+		records[at] = newIndex;
+		return true;
+	}
+
+	//Server, for tests
+	int GetJournalEntries() {
+		return m_JournalEntries;
+	}
+
+	//Server, for tests: journal to path's journal from now on, as StartPersisting does, without loading or the startup event
+	void SetSavePath(string path) {
+		m_SavePath = path;
 	}
 
 	//---------------------------------------------------------------- Client: the synced copy
@@ -575,6 +993,11 @@ class ZBerryEventLog {
 	string GetPlayerEntry(int index) {
 		if (index < 0 || index >= m_Players.Count()) return "";
 		return m_Players[index];
+	}
+
+	string GetWeaponEntry(int index) {
+		if (index < 0 || index >= m_Weapons.Count()) return "";
+		return m_Weapons[index];
 	}
 };
 

@@ -24,6 +24,8 @@
   - **Players** are kept as separate fields (name and Steam64), so the view can highlight them.
   - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim. A burst ends after 3 s without hits, or as soon as the attacker is hit by another player, so a firefight is logged volley by volley.
   - **Size:** the server keeps the last 2048 events and 10486 damage records.
+  - **Kept across restarts:** in `ZomBerryEventLog.bin`, plus a journal of the newest additions, so even a crash loses nothing that was already logged. A full log takes about 0.5–1.3 MB on disk, and never more than about 11 MB. Server starts and clean stops are logged too, as a new event type, "Server".
+  - **Long event texts** are cut at 1024 bytes.
   - **Who gets it:** admins with `zomberry.logs.view` receive everything once after joining, in small batches so the server doesn't stall, and live updates from then on.
   - **Log file:** logins, logouts and damage stay out of ZomBerry's log file. Everything else is written there too.
   - **Times** show in each admin's local time. The server keeps them in UTC.

@@ -67,6 +67,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - It writes the file line and keeps the event for the in-game log (`ZBerryEventLog`). Don't format the players into the text yourself; the placeholders let the log view highlight them.
   - `ZomberryBase.Log` is for plain lines only: startup, config, errors, details.
   - New event kinds are appended to `ZBerryEventType`.
+  - The log survives restarts: a snapshot plus a journal appended to as events are stored (`ZBerryEventLog.Save`, `JournalEvent`). Old files are read by every later version, so the formats only grow: new fields go at the end, under a new `FILE_VERSION` that still reads the old ones. `FileSerializer.Read` doesn't fail at the end of a file, which is why every journal entry and the snapshot end with `END_MARK`.
   - Commands are logged by the dispatcher (`ZBerryServerRPC.ExecuteCommand`, `LogCall`), one event per call. Each call has its own `ZBerryCall`, from `BeginCall` to `EndCall`.
     - A command that does nothing reports it with `RefuseCall(reason)`, and a first run that only asks for confirmation with `AwaitConfirmation()` (stock functions: `Refuse`, `AskToConfirm`).
     - A command that can say what it did uses `DescribeCall("{actor} flipped X at Y")` instead of a `ZomberryBase.Log` detail line. Toggles say which way they switched ("{actor} switched ESP on"); stock functions on a selected player can use `DescribeOnTarget`.
