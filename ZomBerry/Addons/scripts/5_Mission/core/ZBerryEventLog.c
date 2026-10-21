@@ -405,6 +405,13 @@ class ZBerryEventLog {
 		ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} joined");
 	}
 
+	//ZBerryTime of the player's join (respawns don't count), 0 when unknown
+	int GetLoginTime(string steamId) {
+		int loginTime = 0;
+		m_LoginTimes.Find(steamId, loginTime);
+		return loginTime;
+	}
+
 	void OnPlayerDisconnected(PlayerIdentity identity) {
 		if (!identity) return;
 

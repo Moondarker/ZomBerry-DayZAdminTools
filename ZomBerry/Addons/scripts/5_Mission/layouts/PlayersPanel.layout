@@ -223,5 +223,69 @@ FrameWidgetClass PlayersPanel {
    "exact text" 1
    "exact text size" 14
   }
+  TextWidgetClass PlayerInfo2 {
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass PlayerInfo3 {
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass PlayerInfo4 {
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  ButtonWidgetClass PlayersCopyId {
+   visible 0
+   color 0.3255 0.3255 0.3255 0.7843
+   position 270 900
+   size 80 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass PlayersCopyIdLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Copy ID"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
  }
 }

@@ -15,6 +15,7 @@ class ZBerryStreamClient {
 	protected ref array<ref ZBerryMapMarkerArray> m_Markers = new array<ref ZBerryMapMarkerArray>;
 	protected ref TIntArray m_Dropped = new TIntArray;
 	protected int m_ServerTime; //ms since the server started, as of the last message
+	protected ref ZBerryPlayerDetails m_Details; //Of the selected player, NULL until the server sent them
 
 	ref ScriptInvoker OnPlayersChanged = new ScriptInvoker(); //Roster or states changed
 	ref ScriptInvoker OnMarkersChanged = new ScriptInvoker(); //(int category)
@@ -28,6 +29,7 @@ class ZBerryStreamClient {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Roster, "Roster", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerState, "PlayerState", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Markers, "Markers", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerDetails, "PlayerDetails", this, ZBerrySPExec.Client );
 	}
 
 	void SetListShown(bool shown) {
@@ -46,6 +48,7 @@ class ZBerryStreamClient {
 	}
 
 	void SetSelected(int playerId) {
+		if (playerId != m_SelectedId) m_Details = NULL; //The old player's are no use
 		m_SelectedId = playerId;
 		Flush();
 	}
@@ -143,6 +146,22 @@ class ZBerryStreamClient {
 		m_Markers[data.param1] = data.param3;
 		m_Dropped[data.param1] = data.param2;
 		OnMarkersChanged.Invoke(data.param1);
+	}
+
+	void PlayerDetails( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<ref ZBerryPlayerDetails> data;
+		if (type != ZBerryCallType.Client) return;
+		if ( !ctx.Read( data ) || !data.param1 ) return;
+		if (data.param1.Id != m_SelectedId) return; //Sent before the selection changed
+
+		m_Details = data.param1;
+		OnPlayersChanged.Invoke();
+	}
+
+	//The selected player's details, NULL until they arrived (or for another player)
+	ZBerryPlayerDetails GetDetails(int playerId) {
+		if (!m_Details || m_Details.Id != playerId) return NULL;
+		return m_Details;
 	}
 
 	int GetServerTime() {

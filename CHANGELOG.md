@@ -56,6 +56,7 @@
 
   **Switching and settings** (#68): running the function switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on an **ESP tab** under the header's gear: each player detail, far players, vehicles, infected, animals and two ranges. The settings are saved per computer in `ZomBerryESP.json`. The server only streams everyone's position and health while those settings use them.
 - **Messages** (#62): a **Message** button on the players panel sends a private message to the selected player (`zomberry.messages.private`) or an announcement to everyone (`zomberry.messages.announce`). Players get a notification and the same text in chat. Messages are logged with their text, as a new event type, "Message".
+- **Player info** (#64): the selected player's ping, position, time online, status (alive, unconscious, restrained, dead), vehicle and Steam64 ID show under the player list, with a **Copy ID** button. The server sends them for the selected player only, every 5 seconds. The position needs `zomberry.map.player_markers`, like the map's player markers.
 - **Client-side functions for mods** (#38): server code can switch a named feature on one client (`SetClientFeature`), and that client runs the handler registered for it (`RegisterClientFeature`). Features with a required permission switch off by themselves when it's removed.
 
 ### Changed

@@ -30,7 +30,8 @@ enum ZBerryRPCOp {
 	CameraMode = 27, //Client -> server: a watched player's 1st/3rd person mode (ZBerrySpectate)
 	LogEvents = 28, //Server -> client: start over, a batch of log events (ZBerryEventLog)
 	LogDamage = 29, //Server -> client: start over, new player and weapon names, a batch of damage records
-	Message = 30 //Client -> server: recipient's session id (-1: everyone), text
+	Message = 30, //Client -> server: recipient's session id (-1: everyone), text
+	PlayerDetails = 31 //Server -> client: the selected player's id, ping, position, time online, status (ZBerryPlayerDetails)
 }
 
 //Which side received the call

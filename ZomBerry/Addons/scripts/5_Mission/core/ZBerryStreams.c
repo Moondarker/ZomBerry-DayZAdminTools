@@ -32,6 +32,29 @@ class ZBerryRosterEntry {
 
 typedef array<ref ZBerryRosterEntry> ZBerryRosterArray;
 
+//What an admin sees about the player they selected, beyond health and blood. Only ever sent for that one player
+class ZBerryPlayerDetails {
+	static const int ALIVE = 0;
+	static const int UNCONSCIOUS = 1;
+	static const int RESTRAINED = 2;
+	static const int DEAD = 3;
+
+	int Id; //Session id
+	string SteamId; //Empty in singleplayer
+	int Ping; //ms
+	bool HasPosition; //Only for admins who see player markers
+	vector Position;
+	int OnlineSeconds = -1; //-1: unknown (singleplayer)
+	int Status;
+	string Vehicle; //Display name, empty when on foot
+
+	static string GetStatusName(int status) {
+		TStringArray names = {"Alive", "Unconscious", "Restrained", "Dead"};
+		if (status < 0 || status >= names.Count()) return "";
+		return names[status];
+	}
+};
+
 //Player state travels as 3 ints per player: session id, position, misc. That's 12 bytes instead of a full
 //ZBerryPlayer with name and vector. Typed locals throughout: Enforce mixes up int maths on array/method operands
 class ZBerryStatePacker {

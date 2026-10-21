@@ -96,7 +96,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 
 | Permission | Allows |
 |---|---|
-| `zomberry.players.list` | The player list, with health and blood |
+| `zomberry.players.list` | The player list, and the selected player's health, blood, ping, time online, status and Steam64 ID |
 | `zomberry.players.kick` | Kicking players |
 | `zomberry.players.ban` | Banning players, also offline ones by ID |
 | `zomberry.players.unban` | The ban list, and unbanning |
@@ -205,7 +205,13 @@ Open and close the menu with `O`, or close it with `Esc` or the **×** in the he
 ### Players
 
 The left panel lists everyone online. Admins are green, and the item in a player's hands or their vehicle is shown next to their name.
-- **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and their health and blood are shown below the list.
+- **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and below the list you see:
+  - their health, blood and ping;
+  - their position (only with `zomberry.map.player_markers`) and how long they've been online;
+  - whether they're alive, unconscious, restrained or dead, and the vehicle they're in;
+  - their Steam64 ID. **Copy ID** puts it on the clipboard.
+
+  These details refresh every 5 seconds, and only for the selected player.
 - **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
 - **Message:** sends a private message to the selected player, or an announcement to everyone. The **To** button switches between the two (with nobody selected, it's an announcement). Players see it as a notification at the side of the screen for 15 seconds, and in chat. Messages are up to 300 characters, and every one is logged with its text.

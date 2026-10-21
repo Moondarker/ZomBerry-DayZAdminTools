@@ -5,7 +5,7 @@ class ZBerrySubscriber {
 	PlayerIdentity Identity; //Weak: gone when they disconnect. NULL in singleplayer
 	int Streams; //ZBerryStreamFlags
 	int MarkerMask; //Bit per ZBerryEntityCategory below MARKER_COUNT
-	int SelectedId = -1; //Gets health and blood
+	int SelectedId = -1; //Gets health and blood, and details (ZBerryPlayerDetails)
 	int ViewFlags; //ZBerryStreamFlags.VIEW_*
 	bool EspActive; //Set by the ESP function, not by the client. Its data also needs the client's ESP_PLAYERS (WantsEsp)
 
@@ -13,6 +13,7 @@ class ZBerrySubscriber {
 	float StateTimer = 1000; //Due right away
 	float FullTimer = 1000;
 	float MarkersTimer = 1000;
+	float DetailsTimer = 1000;
 	ref map<int, int> SentPositions = new map<int, int>;
 	ref map<int, int> SentMisc = new map<int, int>;
 	ref TIntArray MarkerSignatures = new TIntArray; //Per marker category, NOT_SENT until sent
@@ -39,6 +40,7 @@ class ZBerryStreamServer {
 	static const float ESP_INTERVAL = 1; //... while ESP is on
 	static const float FULL_INTERVAL = 10; //A full state now and then, deltas in between
 	static const float MARKERS_INTERVAL = 10;
+	static const float DETAILS_INTERVAL = 5; //The selected player's details: ping and time online change all the time
 
 	protected static ZBerryStreamServer s_Instance; //Weak, owned by ZomberryBase
 
@@ -102,6 +104,7 @@ class ZBerryStreamServer {
 		bool selectionChanged = subscriber.SelectedId != request.param3;
 		bool espAdded = (request.param1 & ZBerryStreamFlags.ESP_PLAYERS) != 0 && (subscriber.Streams & ZBerryStreamFlags.ESP_PLAYERS) == 0;
 		bool viewChanged = subscriber.ViewFlags != request.param4;
+		bool listOpened = (request.param1 & ZBerryStreamFlags.ROSTER) != 0 && (subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0;
 
 		subscriber.Streams = request.param1;
 		subscriber.MarkerMask = request.param2;
@@ -110,6 +113,7 @@ class ZBerryStreamServer {
 
 		if (addedMarkers != 0) subscriber.MarkersTimer = MARKERS_INTERVAL; //Newly shown categories right away
 		if (selectionChanged || viewChanged || espAdded) subscriber.StateTimer = MAP_INTERVAL; //Sooner, for the new selection or view
+		if (selectionChanged || listOpened) subscriber.DetailsTimer = DETAILS_INTERVAL;
 		DropIfEmpty(sender);
 	}
 
@@ -156,6 +160,12 @@ class ZBerryStreamServer {
 			if (subscriber.MarkersTimer >= MARKERS_INTERVAL) {
 				subscriber.MarkersTimer = 0;
 				SendMarkers(subscriber, batches);
+			}
+
+			subscriber.DetailsTimer += tickSeconds;
+			if (subscriber.DetailsTimer >= DETAILS_INTERVAL) {
+				subscriber.DetailsTimer = 0;
+				SendDetails(subscriber, players);
 			}
 		}
 
@@ -275,6 +285,48 @@ class ZBerryStreamServer {
 
 		if (!full && packed.Count() == 0) return; //Nothing moved
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerState, new Param3<int, bool, ref TIntArray>(GetGame().GetTime(), full, packed), true, subscriber.Identity );
+	}
+
+	//The selected player's details, while the players panel is shown and the admin may see the list
+	protected void SendDetails(ZBerrySubscriber subscriber, map<int, PlayerBase> players) {
+		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 || subscriber.SelectedId < 0) return;
+		if (!m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST)) return;
+
+		PlayerBase player = players.Get(subscriber.SelectedId);
+		if (!player) return;
+
+		ZBerryPlayerDetails details = BuildDetails(subscriber.SelectedId, player, m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS));
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerDetails, new Param1<ref ZBerryPlayerDetails>(details), true, subscriber.Identity );
+	}
+
+	static ZBerryPlayerDetails BuildDetails(int id, PlayerBase player, bool withPosition) {
+		ZBerryPlayerDetails details = new ZBerryPlayerDetails;
+		details.Id = id;
+
+		PlayerIdentity identity = player.GetIdentity();
+		if (identity) {
+			details.SteamId = identity.GetPlainId();
+			details.Ping = identity.GetPingAct();
+			int loginTime = GetZBerryEventLog().GetLoginTime(details.SteamId);
+			if (loginTime > 0) details.OnlineSeconds = Math.Max(0, ZBerryTime.Now() - loginTime);
+		}
+
+		if (withPosition) {
+			details.HasPosition = true;
+			details.Position = player.GetPosition();
+		}
+
+		details.Status = ZBerryPlayerDetails.ALIVE;
+		if (!player.IsAlive()) {
+			details.Status = ZBerryPlayerDetails.DEAD;
+		} else if (player.IsUnconscious()) {
+			details.Status = ZBerryPlayerDetails.UNCONSCIOUS;
+		} else if (player.IsRestrained()) {
+			details.Status = ZBerryPlayerDetails.RESTRAINED;
+		}
+
+		if (player.GetCommand_Vehicle()) details.Vehicle = player.GetCommand_Vehicle().GetTransport().GetDisplayName();
+		return details;
 	}
 
 	//Each subscribed category the admin may see, when it changed since the last send
