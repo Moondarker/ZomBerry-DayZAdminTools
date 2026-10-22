@@ -1,3 +1,18 @@
+//One bindable function as the Keybinds tab lists it
+class ZBerryKeybindEntry {
+	int FuncId;
+	string Name;
+	string Category;
+	int Color;
+
+	void ZBerryKeybindEntry(int funcId, string name, string category, int color) {
+		FuncId = funcId;
+		Name = name;
+		Category = category;
+		Color = color;
+	}
+};
+
 //Keybinds, under the header's gear: every function this admin may bind, by category, with its key. Binding works as on
 //the Functions tab: select a function, press the header's Bind button, then the key; pressing Bind again while it
 //waits removes the key. Functions with parameters, or marked not keybindable, aren't listed
@@ -6,7 +21,7 @@ class ZBerryUIKeybindsTab extends ZBerryUITab {
 	protected ref ZBerryScaledList m_Lists;
 	protected ButtonWidget m_UnbindButton, m_UnbindAllButton;
 	protected TextWidget m_Count;
-	protected ref ZBerryCategoryArray m_Categories; //The last function list from the server
+	protected ref array<ref ZBerryKeybindEntry> m_Entries = new array<ref ZBerryKeybindEntry>; //Copied: the list from the server doesn't outlive its RPC
 	protected int m_SelectedFuncId = -1;
 	protected bool m_WaitingForKey;
 	protected bool m_ConfirmUnbindAll; //Unbind all asks once more before clearing everything
@@ -42,7 +57,15 @@ class ZBerryUIKeybindsTab extends ZBerryUITab {
 
 	//The server sent the function list (as for the Functions tab, which registers the functions for keybinding first)
 	void SetFunctions(ZBerryCategoryArray catList) {
-		m_Categories = catList;
+		m_Entries.Clear();
+		for (int i = 0; i < catList.Count(); ++i) {
+			ZBerryCategory category = catList.Get(i);
+			ZBerryFunctionArray funcArray = category.GetAll();
+			for (int j = 0; j < funcArray.Count(); ++j) {
+				ZBerryFunction funcData = funcArray.Get(j);
+				if (IsBindable(funcData)) m_Entries.Insert(new ZBerryKeybindEntry(funcData.GetId(), funcData.GetDisplayName(), category.GetName(), funcData.GetColor()));
+			}
+		}
 		Refill();
 	}
 
@@ -58,31 +81,24 @@ class ZBerryUIKeybindsTab extends ZBerryUITab {
 		int row = 0;
 		int selectedRow = -1;
 		ZomberryKeybinds binds = ZomberryBase.GetKeyBindsMgr();
-		if (m_Categories) {
-			foreach (ZBerryCategory category : m_Categories) {
-				ZBerryFunctionArray funcArray = category.GetAll();
-				bool headerAdded = false;
-
-				foreach (ZBerryFunction funcData : funcArray) {
-					if (!IsBindable(funcData)) continue;
-					if (!headerAdded) {
-						m_List.AddItem( "==== " + category.GetName() + " ====", new Param1<int>(-1), 0, row );
-						++row;
-						headerAdded = true;
-					}
-
-					string text = funcData.GetDisplayName();
-					int key = binds.GetKey(funcData.GetId());
-					if (key != -1) {
-						text = text + "   " + ZBerryUIUtils.FormatKeyName(key);
-						++bound;
-					}
-					m_List.AddItem( text, new Param1<int>(funcData.GetId()), 0, row );
-					m_List.SetItemColor(row, 0, funcData.GetColor());
-					if (funcData.GetId() == m_SelectedFuncId) selectedRow = row;
-					++row;
-				}
+		string lastCategory = "";
+		foreach (ZBerryKeybindEntry entry : m_Entries) {
+			if (row == 0 || entry.Category != lastCategory) {
+				m_List.AddItem( "==== " + entry.Category + " ====", new Param1<int>(-1), 0, row );
+				++row;
+				lastCategory = entry.Category;
 			}
+
+			string text = entry.Name;
+			int key = binds.GetKey(entry.FuncId);
+			if (key != -1) {
+				text = text + "   " + ZBerryUIUtils.FormatKeyName(key);
+				++bound;
+			}
+			m_List.AddItem( text, new Param1<int>(entry.FuncId), 0, row );
+			m_List.SetItemColor(row, 0, entry.Color);
+			if (entry.FuncId == m_SelectedFuncId) selectedRow = row;
+			++row;
 		}
 
 		if (selectedRow != -1) {
