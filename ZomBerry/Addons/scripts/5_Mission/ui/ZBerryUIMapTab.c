@@ -27,7 +27,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	protected ButtonWidget m_FiltersButton;
 	protected Widget m_FiltersDropdown;
 	protected float m_FiltersTimer = 0; //Seconds since the mouse left the dropdown and its button
-	protected ButtonWidget m_PlayersFilter, m_LocationsFilter;
+	protected ButtonWidget m_FilterAll, m_FilterNone, m_PlayersFilter, m_LocationsFilter;
 	protected ref array<ButtonWidget> m_CategoryFilters = new array<ButtonWidget>; //Per marker category
 
 	protected Widget m_Coords;
@@ -63,6 +63,8 @@ class ZBerryUIMapTab extends ZBerryUITab {
 
 		m_FiltersButton = ButtonWidget.Cast( BindWidget("MapFiltersButton") );
 		m_FiltersDropdown = m_Root.FindAnyWidget("MapFiltersDropdown");
+		m_FilterAll = ButtonWidget.Cast( BindWidget("MapFilterAll") );
+		m_FilterNone = ButtonWidget.Cast( BindWidget("MapFilterNone") );
 		m_PlayersFilter = ButtonWidget.Cast( BindWidget("MapFilterPlayers") );
 		m_LocationsFilter = ButtonWidget.Cast( BindWidget("MapFilterLocations") );
 		TStringArray buttonNames = {"MapFilterVehicles", "MapFilterTents", "MapFilterStorage", "MapFilterBases", "MapFilterBodies"};
@@ -98,43 +100,109 @@ class ZBerryUIMapTab extends ZBerryUITab {
 		g_ZBerryStreamClient.OnLocationsChanged.Remove(OnLocationsChanged);
 	}
 
-	//Each filter needs its permission, active ones are green
+	//Each filter needs its permission. Styled like the Logs tab's type filter: "[x] Name" in green when on, and the
+	//button's caption says what's shown
 	protected void UpdateFilterButtons() {
 		ZBerryClientAuth auth = GetZBerryClientAuth();
 		m_PlayersFilter.Show(auth.Has(ZBerryPermissions.MAP_PLAYER_MARKERS));
-		ZBerryUIUtils.SetButtonActive(m_PlayersFilter, m_ShowPlayers);
-		ZBerryUIUtils.SetButtonActive(m_LocationsFilter, m_ShowLocations);
-
 		for (int category = 0; category < m_CategoryFilters.Count(); ++category) {
-			ButtonWidget button = m_CategoryFilters[category];
 			bool allowed = auth.Has(ZBerryPermissions.MapMarkerNode(category));
 			if (!allowed) m_ShowCategory[category] = false;
-
-			button.Show(allowed);
-			ZBerryUIUtils.SetButtonActive(button, m_ShowCategory[category]);
+			m_CategoryFilters[category].Show(allowed);
 		}
+
+		int available = 0;
+		int shown = 0;
+		string lastShown = "";
+		array<ButtonWidget> filters = GetFilterButtons();
+		foreach (ButtonWidget filter : filters) {
+			if (!IsFilterAllowed(filter)) continue;
+
+			++available;
+			bool on = IsFilterOn(filter);
+			string mark = "[ ] ";
+			int color = ZBerryUIUtils.TEXT_DEFAULT;
+			if (on) {
+				mark = "[x] ";
+				color = ZBerryUILogsTab.COLOR_TYPE_ON;
+				++shown;
+				lastShown = GetFilterName(filter);
+			}
+			ZBerryUIUtils.SetButtonText(filter, "  " + mark + GetFilterName(filter));
+			ZBerryUIUtils.SetButtonTextColor(filter, color);
+		}
+
+		string caption = "Filters: " + shown + " of " + available;
+		if (shown == available) caption = "Filters: all";
+		if (shown == 0) caption = "Filters: none";
+		if (shown == 1 && available > 1) caption = "Filters: " + lastShown;
+		ZBerryUIUtils.SetButtonText(m_FiltersButton, caption);
 		LayoutFilters();
 	}
 
-	//Hidden filters leave no gaps: the shown ones are stacked, the dropdown fits them
+	//Every marker filter, in dropdown order (All and None not included)
+	protected array<ButtonWidget> GetFilterButtons() {
+		array<ButtonWidget> buttons = {m_PlayersFilter};
+		buttons.InsertAll(m_CategoryFilters);
+		buttons.Insert(m_LocationsFilter);
+		return buttons;
+	}
+
+	//By permission, not IsVisible: the rows sit in a dropdown that's usually hidden
+	protected bool IsFilterAllowed(ButtonWidget filter) {
+		if (filter == m_PlayersFilter) return GetZBerryClientAuth().Has(ZBerryPermissions.MAP_PLAYER_MARKERS);
+		if (filter == m_LocationsFilter) return true;
+
+		int category = m_CategoryFilters.Find(filter);
+		return category != -1 && GetZBerryClientAuth().Has(ZBerryPermissions.MapMarkerNode(category));
+	}
+
+	protected bool IsFilterOn(ButtonWidget filter) {
+		if (filter == m_PlayersFilter) return m_ShowPlayers;
+		if (filter == m_LocationsFilter) return m_ShowLocations;
+
+		int category = m_CategoryFilters.Find(filter);
+		return category != -1 && m_ShowCategory[category];
+	}
+
+	protected string GetFilterName(ButtonWidget filter) {
+		if (filter == m_PlayersFilter) return "Players";
+		if (filter == m_LocationsFilter) return "Locations";
+
+		TStringArray names = {"Vehicles", "Tents", "Storage", "Bases", "Bodies"};
+		int category = m_CategoryFilters.Find(filter);
+		if (category < 0 || category >= names.Count()) return "";
+		return names[category];
+	}
+
+	//All or None: every filter the admin may use
+	protected void SetAllFilters(bool on) {
+		m_ShowPlayers = on;
+		m_ShowLocations = on;
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		for (int category = 0; category < m_ShowCategory.Count(); ++category) {
+			m_ShowCategory[category] = on && auth.Has(ZBerryPermissions.MapMarkerNode(category));
+		}
+	}
+
+	//Hidden filters leave no gaps: All, None and the shown filters are stacked, the dropdown fits them
 	protected void LayoutFilters() {
 		float dropdownWidth, dropdownHeight;
 		m_FiltersDropdown.GetScreenSize(dropdownWidth, dropdownHeight);
 		if (dropdownWidth <= 0) return; //Hidden: laid out when shown
 
-		float u = dropdownWidth / 120; //SetPos/SetSize take physical pixels: the dropdown is 120 units wide
-		array<ButtonWidget> buttons = {m_PlayersFilter};
-		buttons.InsertAll(m_CategoryFilters);
-		buttons.Insert(m_LocationsFilter);
+		float u = dropdownWidth / 140; //SetPos/SetSize take physical pixels: the dropdown is 140 units wide
+		m_FilterAll.SetPos(4 * u, 4 * u);
+		m_FilterNone.SetPos(4 * u, 28 * u);
+		int shown = 2;
+		array<ButtonWidget> filters = GetFilterButtons();
+		foreach (ButtonWidget filter : filters) {
+			if (!IsFilterAllowed(filter)) continue;
 
-		int shown = 0;
-		foreach (ButtonWidget button : buttons) {
-			if (!button.IsVisible()) continue;
-
-			button.SetPos(4 * u, (4 + shown * 25) * u);
+			filter.SetPos(4 * u, (4 + shown * 24) * u);
 			++shown;
 		}
-		m_FiltersDropdown.SetSize(dropdownWidth, (4 + shown * 25 + 3) * u);
+		m_FiltersDropdown.SetSize(dropdownWidth, (4 + shown * 24 + 2) * u);
 	}
 
 	//Teleport controls and location management follow the admin's rights
@@ -377,6 +445,13 @@ class ZBerryUIMapTab extends ZBerryUITab {
 	//---------------------------------------------------------------- Events
 
 	override bool OnClick(Widget w, int x, int y, int button) {
+		if (w == m_FilterAll || w == m_FilterNone) {
+			SetAllFilters(w == m_FilterAll);
+			UpdateFilterButtons();
+			GetZBerryStreams().SetMarkerMask(GetCategoryMask());
+			Redraw();
+			return true;
+		}
 		if (w == m_PlayersFilter) {
 			m_ShowPlayers = !m_ShowPlayers;
 			UpdateFilterButtons();

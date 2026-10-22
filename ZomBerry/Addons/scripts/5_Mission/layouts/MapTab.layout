@@ -29,7 +29,7 @@ PanelWidgetClass MapWrapper {
    priority 100
    color 0.3255 0.3255 0.3255 0.7843
    position 2 4
-   size 96 28
+   size 130 28
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -44,7 +44,7 @@ PanelWidgetClass MapWrapper {
      vexactpos 1
      hexactsize 0
      vexactsize 0
-     text "Filters"
+     text "Filters: all"
      font "gui/fonts/Metron16"
      "exact text" 1
      "exact text size" 14
@@ -55,9 +55,9 @@ PanelWidgetClass MapWrapper {
   }
   PanelWidgetClass MapFiltersDropdown {
    visible 0
-   color 0 0 0 0.9
+   color 0 0 0 0.95
    position 2 34
-   size 120 182
+   size 140 222
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -65,11 +65,67 @@ PanelWidgetClass MapWrapper {
    priority 110
    style rover_sim_colorable
    {
-    ButtonWidgetClass MapFilterPlayers {
+    ButtonWidgetClass MapFilterAll {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
      position 4 4
-     size 112 22
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterAllLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  All"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterNone {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 28
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterNoneLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  None"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterPlayers {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 52
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -85,7 +141,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Players"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -96,8 +152,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterVehicles {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 29
-     size 112 22
+     position 4 76
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -113,7 +169,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Vehicles"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -124,8 +180,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterTents {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 54
-     size 112 22
+     position 4 100
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -141,7 +197,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Tents"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -152,8 +208,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterStorage {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 79
-     size 112 22
+     position 4 124
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -169,7 +225,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Storage"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -180,8 +236,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterBases {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 104
-     size 112 22
+     position 4 148
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -197,7 +253,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Bases"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -208,8 +264,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterBodies {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 129
-     size 112 22
+     position 4 172
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -225,7 +281,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Bodies"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
@@ -236,8 +292,8 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapFilterLocations {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 4 154
-     size 112 22
+     position 4 196
+     size 132 22
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -253,7 +309,7 @@ PanelWidgetClass MapWrapper {
        hexactsize 0
        vexactsize 0
        text "  Locations"
-       font "gui/fonts/Metron16"
+       font "gui/fonts/Metron14"
        "exact text" 1
        "exact text size" 14
        "text halign" left
