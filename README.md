@@ -158,9 +158,9 @@ For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every 
 
 Bans are ZomBerry's own list, stored in `<profiles>/ZomBerry/ZomBerryBans.json`. They don't touch BattlEye's `ban.txt`.
 - **Who can be kicked or banned:** levels apply here too. Admins can only kick or ban admins ranked **below** them, and superadmins can kick or ban everyone. Nobody can kick or ban themselves. This also applies to offline bans of an admin's ID.
-- **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect.
+- **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect. Back in the main menu, their game shows the reason again in a dialog, and for bans how long the ban still lasts and when it ends.
 - **Unconscious or restrained players:** kicking them kills their character. The normal logout treats it like combat logging. See [#53](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/53).
-- **Rejoining:** banned players are refused while they connect, before their character loads. The game can't show them a reason at that point, so they only see a disconnect. The server's ZomBerry log names them and the reason.
+- **Rejoining:** banned players are refused while they connect, before their character loads. Back in the main menu, their game shows the reason, how long the ban still lasts and when it ends. The server's ZomBerry log names them and the reason.
 - **Durations:** 1 hour, 1 day, 7 days, 30 days or permanent. Expired bans are removed on their own.
 - **The file:** entries have `Id` (Steam64), `Guid` (BattlEye GUID), `Name`, `Reason`, `BannedBy`, `Since` and `Until` (seconds since 1970, UTC; `0` means permanent). Either ID is enough for a ban to match. If the file can't be read, nobody is banned until it's fixed, and ZomBerry never overwrites it.
 

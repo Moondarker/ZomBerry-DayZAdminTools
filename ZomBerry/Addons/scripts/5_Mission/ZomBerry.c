@@ -177,9 +177,13 @@ modded class MissionServer {
 		if (!ban) return;
 
 		ZomberryBase.LogEvent( ZBerryEventType.JOIN_REFUSED, NULL, identity, "Banned player {target} tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
-		//Not during the event: DisconnectPlayer frees the identity the engine still uses after it returns (crashed the server)
-		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(RefuseBannedJoin, 0, false, identity.GetPlayerId(), identity.GetId());
+		ZBerryBans.SendKickNotice(identity, ban.Reason, true, ban.Until);
+		//Not during the event: DisconnectPlayer frees the identity the engine still uses after it returns (crashed the
+		//server). A moment later, so the notice gets there first
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(RefuseBannedJoin, REFUSE_DELAY, false, identity.GetPlayerId(), identity.GetId());
 	}
+
+	static const int REFUSE_DELAY = 1000; //ms between telling a banned player why and disconnecting them
 
 	protected void RefuseBannedJoin(int sessionId, string uid) {
 		PlayerIdentity identity = ZBGetIdentityById(sessionId);
@@ -194,7 +198,10 @@ modded class MissionServer {
 		GetZBerryEventLog().OnPlayerConnected(identity);
 
 		ZBerryBanEntry ban = FindZBerryBan(identity);
-		if (ban) m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+		if (ban) {
+			ZBerryBans.SendKickNotice(identity, ban.Reason, true, ban.Until);
+			m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+		}
 
 		//Frozen players stay frozen across relogs; a moment later, so their client is ready for the feature
 		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);

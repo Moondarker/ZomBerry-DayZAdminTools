@@ -297,6 +297,17 @@ class ZBerryBans {
 		return reason;
 	}
 
+	//Server: why they're being disconnected, for their game to show once it's back in the main menu (the engine's own
+	//disconnect screen can't show a reason). until: ban end (ZBerryTime), 0 permanent; ignored for kicks
+	static void SendKickNotice(PlayerIdentity identity, string reason, bool banned, int until) {
+		if (!identity) return;
+
+		int remaining = 0;
+		if (banned && until > 0) remaining = Math.Max(0, until - ZBerryTime.Now());
+		Param4<bool, string, int, int> notice = new Param4<bool, string, int, int>(banned, reason, until, remaining);
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.KickNotice, notice, true, identity );
+	}
+
 	//Chat message first, the disconnect a moment later
 	void KickPlayer(PlayerBase player, string message) {
 		if (!player || !ZBGetIdentity(player)) return;

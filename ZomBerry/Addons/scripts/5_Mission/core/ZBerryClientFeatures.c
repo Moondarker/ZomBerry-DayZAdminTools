@@ -26,6 +26,16 @@ class ZBerryClientFeatures {
 	void ZBerryClientFeatures() {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.ClientFeature, "OnClientFeature", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Chat, "OnChat", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.KickNotice, "OnKickNotice", this, ZBerrySPExec.Client ); //Created early: also while loading in
+	}
+
+	//Client: about to be kicked or banned, see ZBerryBans.SendKickNotice
+	void OnKickNotice( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param4<bool, string, int, int> notice; //Banned, reason, ban end (0: permanent), seconds left
+		if ( !ctx.Read( notice ) ) return;
+		if (type != ZBerryCallType.Client) return;
+
+		ZBerryKickNotice.Remember(notice.param1, notice.param2, notice.param3, notice.param4);
 	}
 
 	//Client: a chat line while this client controls no character (FreeCam, spectating), see ZBerryMessages.SendToChat

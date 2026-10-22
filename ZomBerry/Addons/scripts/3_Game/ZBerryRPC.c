@@ -38,7 +38,8 @@ enum ZBerryRPCOp {
 	Locations = 35, //Server -> client: version, the saved locations (ZBerryLocations)
 	Chat = 36, //Server -> client: a chat line, for admins in FreeCam or spectating (their client has no character to get it)
 	CameraView = 37, //Client -> server: a watched player's camera heading and pitch (ZBerrySpectate)
-	SpectateView = 38 //Server -> client: the watched player's camera heading and pitch, relayed to whoever spectates them
+	SpectateView = 38, //Server -> client: the watched player's camera heading and pitch, relayed to whoever spectates them
+	KickNotice = 39 //Server -> client, just before a kick or ban: banned, reason, ban end, seconds left (ZBerryKickNotice)
 }
 
 //Which side received the call

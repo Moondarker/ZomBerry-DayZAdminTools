@@ -323,6 +323,7 @@ class ZBerryServerRPC {
 		}
 
 		string reason = ZBerryBans.CleanReason(kickParam.param2);
+		ZBerryBans.SendKickNotice(targetIdentity, reason, false, 0);
 		m_Bans.KickPlayer(targetPly, "Kicked by an admin: " + reason);
 		ZomberryBase.LogEvent( ZBerryEventType.KICK, sender, targetIdentity, "{actor} kicked {target}: " + reason );
 		Tell(sender, "Kicked " + targetIdentity.GetName());
@@ -388,7 +389,10 @@ class ZBerryServerRPC {
 
 		string length = "permanently";
 		if (duration > 0) length = "for " + ZBerryTime.FormatDuration(duration);
-		if (targetPly) m_Bans.KickPlayer(targetPly, "Banned by an admin " + length + ": " + reason);
+		if (targetPly) {
+			ZBerryBans.SendKickNotice(ZBGetIdentity(targetPly), reason, true, until);
+			m_Bans.KickPlayer(targetPly, "Banned by an admin " + length + ": " + reason);
+		}
 
 		ZomberryBase.LogEventRaw( ZBerryEventType.BAN, sender.GetPlainId(), sender.GetName(), bannedId, name, "{actor} banned {target} " + length + ": " + reason );
 		Tell(sender, "Banned " + display + " " + length);
