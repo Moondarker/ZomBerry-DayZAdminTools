@@ -45,6 +45,12 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 	protected override void OnActivate() {
 		SetActionButton("Bind", ZBerryUIUtils.TEXT_DEFAULT);
+		if (m_SelectedFuncId != -1) UpdateBindButtonText(m_SelectedFuncId);
+	}
+
+	//A bind waiting for its key is dropped: the key would go to whatever tab is open then
+	protected override void OnDeactivate() {
+		m_BindMode = BIND_IDLE;
 	}
 
 	override void OnMenuShow() {
@@ -229,7 +235,11 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		return values;
 	}
 
+	//The header button is shared by all tabs: only while this one is open (the list is rebuilt whenever the menu opens,
+	//whichever tab is showing)
 	protected void UpdateBindButtonText(int funcId) {
+		if (!IsVisible()) return;
+
 		int fKeyBind = ZomberryBase.GetKeyBindsMgr().GetKey(funcId);
 
 		if (m_BindMode == BIND_WAITING_FOR_KEY) {
