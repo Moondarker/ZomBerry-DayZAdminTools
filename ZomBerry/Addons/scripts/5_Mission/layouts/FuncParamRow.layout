@@ -8,7 +8,7 @@ FrameWidgetClass FuncParamRow {
  {
   TextWidgetClass ParamName {
    position 0 0
-   size 120 24
+   size 100 24
    valign center_ref
    hexactpos 1
    vexactpos 0
@@ -17,7 +17,7 @@ FrameWidgetClass FuncParamRow {
    text "Param"
    "size to text h" 0
    "size to text v" 0
-   "text halign" right
+   "text halign" left
    "text valign" center
    font "gui/fonts/Metron14"
    "exact text" 1
@@ -25,7 +25,7 @@ FrameWidgetClass FuncParamRow {
   }
   SliderWidgetClass ParamSlider {
    color 0.6667 0.6667 0.6667 0.8431
-   position 130 0
+   position 104 0
    size 300 32
    valign center_ref
    hexactpos 1
@@ -36,7 +36,7 @@ FrameWidgetClass FuncParamRow {
   }
   EditBoxWidgetClass ParamValue {
    position 0 0
-   size 140 24
+   size 168 20
    halign right_ref
    valign center_ref
    hexactpos 1
