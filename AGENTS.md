@@ -48,6 +48,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 - **Find players by session id, never by reference.**
   - Store `PlayerIdentity.GetPlayerId()`, and look players up again with `ZBGetIdentityById`/`ZBGetPlayerById`.
   - Never compare `PlayerIdentity` objects by reference: the same player can come back as a different object.
+  - On the server, get a character's identity with `ZBGetIdentity(player)`, not `player.GetIdentity()`. In FreeCam and while spectating, the admin's client controls only the camera, so the network bubble follows it. Their body is detached (`ZBerryBodies`) and may have no identity then.
 - **Admins act only on lower ranks** for kicks and bans (`ZBerryAuth.CanActOnLevel`, the Permissions API's `CanActOn`).
   - Functions use `ZBerryAuth.CanTarget` instead: groups shield their members with `zomberry.protect.*`, and superadmins ignore that. Mark commands that hurt or move their target as `harmful` in `AddCommand`.
 - **New permission nodes** go into `ZBerryPermissions` as a constant, into `GetFixedNodes()` (so the Permissions tab lists them) and into the README's permission table. Nodes are lower case and dot-separated, and `zomberry.*` is ZomBerry's own.

@@ -299,20 +299,20 @@ class ZBerryBans {
 
 	//Chat message first, the disconnect a moment later
 	void KickPlayer(PlayerBase player, string message) {
-		if (!player || !player.GetIdentity()) return;
+		if (!player || !ZBGetIdentity(player)) return;
 
 		ZomberryStockFunctions.MessagePlayer(player, message);
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(FinishKick, KICK_DELAY, false, player);
 	}
 
 	protected void FinishKick(PlayerBase player) {
-		if (!player || !player.GetIdentity()) return; //Left by themselves meanwhile
+		if (!player || !ZBGetIdentity(player)) return; //Left by themselves meanwhile
 
 		MissionServer mission = MissionServer.Cast(GetGame().GetMission());
 		if (!mission) return;
 
 		//Vanilla logout: saves the character and removes it from the world before disconnecting
-		PlayerIdentity identity = player.GetIdentity();
+		PlayerIdentity identity = ZBGetIdentity(player);
 		mission.PlayerDisconnected(player, identity, identity.GetId());
 	}
 };

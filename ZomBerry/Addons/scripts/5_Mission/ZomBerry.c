@@ -225,8 +225,19 @@ modded class MissionServer {
 	}
 
 	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed) {
+		//Left from FreeCam or spectating: back into the body, so it logs out (and is saved) like any other.
+		//Looked up first: switching the client features off below ends spectating, which reattaches it too
+		PlayerBase body;
+		if (identity) body = ZBerryBodies.GetBody(identity.GetPlayerId());
+
 		GetZBerryEventLog().OnPlayerDisconnected(identity); //Before super: the identity may be gone after it
 		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnPlayerDisconnected(identity);
+
+		if (body) {
+			ZomberryStockFunctions.FreezeBody(body, false);
+			ZBerryBodies.Reattach(body);
+			if (!player) player = body;
+		}
 		super.OnClientDisconnectedEvent(identity, player, logoutTime, authFailed);
 	}
 

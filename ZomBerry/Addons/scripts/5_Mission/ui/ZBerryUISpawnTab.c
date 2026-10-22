@@ -231,7 +231,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			vector targetPlace = ZBerryUIUtils.GetCursorPos();
 			int mode = ZBerrySpawner.AT_POSITION;
 			int playerId = -1;
-			if (m_ObjTarget == "Ground") targetPlace = GetGame().GetPlayer().GetPosition();
+			if (m_ObjTarget == "Ground" && GetGame().GetPlayer()) targetPlace = GetGame().GetPlayer().GetPosition(); //In FreeCam: at the cursor
 			if (m_ObjTarget == "Inventory") mode = ZBerrySpawner.OWN_INVENTORY;
 			if (m_ObjTarget == "Player's feet") mode = ZBerrySpawner.PLAYER_FEET;
 			if (m_ObjTarget == "Player's inv.") mode = ZBerrySpawner.PLAYER_INVENTORY;

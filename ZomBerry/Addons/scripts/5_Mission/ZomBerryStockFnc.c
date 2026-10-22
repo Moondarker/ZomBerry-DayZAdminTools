@@ -95,11 +95,10 @@ class ZomberryStockFunctions {
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {
-		Param1<string> param = new Param1<string>( "[ZomBerry]: " + msg );
 		if (GetGame().IsMultiplayer()) {
-			if (!player || !player.GetIdentity()) return; //Admin disconnected meanwhile
+			if (!player || !ZBGetIdentity(player)) return; //Admin disconnected meanwhile
 
-			GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, player.GetIdentity());
+			ZBerryMessages.SendToChat(player, "[ZomBerry]: " + msg);
 		} else {
 			GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", msg, ""));
 		}
@@ -160,9 +159,9 @@ class ZomberryStockFunctions {
 
 	//Players have no identity in singleplayer
 	static string GetPlayerName(PlayerBase player) {
-		if (!player || !player.GetIdentity()) return "Player";
+		if (!player || !ZBGetIdentity(player)) return "Player";
 
-		return player.GetIdentity().GetName();
+		return ZBGetIdentity(player).GetName();
 	}
 
 	void TPForward( string funcName, int adminId, int targetId, vector cursor ) {
@@ -617,7 +616,7 @@ class ZomberryStockFunctions {
 		if (freeze) m_Frozen.Insert(steamId);
 
 		FreezeBody(target, freeze);
-		m_ZomberryCmdAPI.SetClientFeature(target.GetIdentity(), FEATURE_FREEZE, freeze);
+		m_ZomberryCmdAPI.SetClientFeature(ZBGetIdentity(target), FEATURE_FREEZE, freeze);
 		if (freeze) {
 			MessagePlayer(target, "An admin froze you, please wait");
 		} else {
@@ -626,8 +625,8 @@ class ZomberryStockFunctions {
 	}
 
 	protected static string GetSteamId(PlayerBase player) {
-		if (!player.GetIdentity()) return "";
-		return player.GetIdentity().GetPlainId();
+		if (!ZBGetIdentity(player)) return "";
+		return ZBGetIdentity(player).GetPlainId();
 	}
 
 	//A frozen player who relogged: freeze them again (their client lost the feature with the old session)
@@ -681,14 +680,14 @@ class ZomberryStockFunctions {
 			return;
 		}
 
-		PlayerIdentity adminIdent = adminPly.GetIdentity();
+		PlayerIdentity adminIdent = ZBGetIdentity(adminPly);
 
 		if (listId != -1) {
+			MessagePlayer(adminPly, "Returned to player body"); //First: while detached it reaches their client without the body
 			FreezeBody(adminPly, false);
 			m_spectatingList.Remove(listId);
 
-			GetGame().SelectPlayer(adminIdent, adminPly);
-			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
+			ZBerryBodies.Reattach(adminPly);
 			m_ZomberryCmdAPI.DescribeCall("{actor} left FreeCam");
 		} else {
 			FreezeBody(adminPly, true);
@@ -698,7 +697,8 @@ class ZomberryStockFunctions {
 			facing[1] = 0;
 			facing.Normalize();
 			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", adminPly.GetPosition() - facing * 1.2 + Vector(0, 2, 0)); //Behind the head, not inside it
-			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
+			ZBerryBodies.Detach(adminPly); //The network bubble follows the camera
+			MessagePlayer(adminPly, "Entered FreeCam, use MWheel to change camera speed");
 			m_ZomberryCmdAPI.DescribeCall("{actor} entered FreeCam");
 		}
 	}
@@ -794,7 +794,7 @@ class ZomberryStockFunctions {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		if (!admin) return;
 
-		PlayerIdentity identity = admin.GetIdentity();
+		PlayerIdentity identity = ZBGetIdentity(admin);
 		bool on = !GetZomberryCmdAPI().IsClientFeatureActive(identity, ZBerryESPOverlay.FEATURE);
 		GetZomberryCmdAPI().SetClientFeature(identity, ZBerryESPOverlay.FEATURE, on, NULL, ZBerryPermissions.FunctionNode(funcName));
 		ZBerryStreamServer streams = ZBerryStreamServer.Get();
@@ -839,7 +839,7 @@ class ZomberryStockFunctions {
 				++inVehicles;
 				continue;
 			}
-			if (admin.GetIdentity() && player.GetIdentity() && !GetZomberryPermAPI().CanTarget(admin.GetIdentity(), player.GetIdentity(), true)) {
+			if (ZBGetIdentity(admin) && ZBGetIdentity(player) && !GetZomberryPermAPI().CanTarget(ZBGetIdentity(admin), ZBGetIdentity(player), true)) {
 				++protectedCount;
 				continue;
 			}

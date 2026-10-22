@@ -196,7 +196,17 @@ class ZBerryStreamServer {
 		GetGame().GetPlayers(men);
 		foreach (Man man : men) {
 			PlayerBase player = PlayerBase.Cast(man);
-			if (player && player.GetIdentity()) result.Set(player.GetIdentity().GetPlayerId(), player);
+			PlayerIdentity identity = ZBGetIdentity(player);
+			if (player && identity) result.Set(identity.GetPlayerId(), player);
+		}
+
+		//Admins in FreeCam or spectating: their body may not be listed
+		array<PlayerIdentity> identities = new array<PlayerIdentity>;
+		GetGame().GetPlayerIndentities(identities);
+		foreach (PlayerIdentity connected : identities) {
+			if (!connected || result.Contains(connected.GetPlayerId())) continue;
+			PlayerBase body = ZBerryBodies.GetBody(connected.GetPlayerId());
+			if (body) result.Set(connected.GetPlayerId(), body);
 		}
 		return result;
 	}
@@ -206,8 +216,9 @@ class ZBerryStreamServer {
 		ZBerryRosterArray roster = new ZBerryRosterArray;
 		foreach (int id, PlayerBase player : players) {
 			string name = "Player";
-			if (player.GetIdentity()) name = player.GetIdentity().GetName();
-			roster.Insert(new ZBerryRosterEntry(id, name, m_Auth.IsAdmin(player.GetIdentity()), GetExtra(player)));
+			PlayerIdentity identity = ZBGetIdentity(player);
+			if (identity) name = identity.GetName();
+			roster.Insert(new ZBerryRosterEntry(id, name, m_Auth.IsAdmin(identity), GetExtra(player)));
 		}
 
 		bool changed = roster.Count() != m_Roster.Count();
@@ -321,7 +332,7 @@ class ZBerryStreamServer {
 		ZBerryPlayerDetails details = new ZBerryPlayerDetails;
 		details.Id = id;
 
-		PlayerIdentity identity = player.GetIdentity();
+		PlayerIdentity identity = ZBGetIdentity(player);
 		if (identity) {
 			details.SteamId = identity.GetPlainId();
 			details.Ping = identity.GetPingAct();

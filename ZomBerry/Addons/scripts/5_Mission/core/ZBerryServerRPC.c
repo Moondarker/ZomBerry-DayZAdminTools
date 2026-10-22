@@ -112,15 +112,15 @@ class ZBerryServerRPC {
 		int adminId = GetSenderId(sender);
 		int targetId = funcParam.param2;
 		PlayerBase targetPly = ZBGetPlayerById(targetId);
-		if (targetId != adminId && targetPly && targetPly.GetIdentity() && !m_Auth.CanTarget(sender, targetPly.GetIdentity(), cmdFunc.IsHarmful())) {
-			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, targetPly.GetIdentity(), "{actor} tried to run " + cmdFunc.GetDisplayName() + " on {target}, whose group is protected from their rank" );
-			Tell(sender, "Can't run " + cmdFunc.GetDisplayName() + " on " + targetPly.GetIdentity().GetName() + ": their group is protected from your rank");
+		if (targetId != adminId && targetPly && ZBGetIdentity(targetPly) && !m_Auth.CanTarget(sender, ZBGetIdentity(targetPly), cmdFunc.IsHarmful())) {
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, ZBGetIdentity(targetPly), "{actor} tried to run " + cmdFunc.GetDisplayName() + " on {target}, whose group is protected from their rank" );
+			Tell(sender, "Can't run " + cmdFunc.GetDisplayName() + " on " + ZBGetIdentity(targetPly).GetName() + ": their group is protected from your rank");
 			return;
 		}
 
-		bool onTarget = targetId != adminId && targetPly && targetPly.GetIdentity();
+		bool onTarget = targetId != adminId && targetPly && ZBGetIdentity(targetPly);
 		PlayerIdentity targetIdentity = NULL;
-		if (onTarget) targetIdentity = targetPly.GetIdentity();
+		if (onTarget) targetIdentity = ZBGetIdentity(targetPly);
 
 		ZomberryCmdAPI api = GetZomberryCmdAPI();
 		ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
@@ -206,8 +206,8 @@ class ZBerryServerRPC {
 				Tell(sender, "Spawn failed: double-click another player in the list first");
 				return;
 			}
-			if (!m_Auth.CanTarget(sender, recipient.GetIdentity(), false)) {
-				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, recipient.GetIdentity(), "{actor} tried to spawn " + className + " for {target}, whose group is protected from their rank" );
+			if (!m_Auth.CanTarget(sender, ZBGetIdentity(recipient), false)) {
+				ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, ZBGetIdentity(recipient), "{actor} tried to spawn " + className + " for {target}, whose group is protected from their rank" );
 				Tell(sender, "Can't spawn for " + ZomberryStockFunctions.GetPlayerName(recipient) + ": their group is protected from your rank");
 				return;
 			}
@@ -216,7 +216,7 @@ class ZBerryServerRPC {
 
 		string result = ZBerrySpawner.Spawn(className, recipient, position, intoInventory, admin);
 		PlayerIdentity spawnTarget;
-		if (forPlayer) spawnTarget = recipient.GetIdentity();
+		if (forPlayer) spawnTarget = ZBGetIdentity(recipient);
 		ZomberryBase.LogEvent( ZBerryEventType.SPAWN, sender, spawnTarget, "{actor} " + result );
 		if (forPlayer && intoInventory && result.IndexOf("couldn't") != 0) ZomberryStockFunctions.MessagePlayer(recipient, "An admin gave you " + ZBerrySpawner.GetDisplayName(className));
 	}
@@ -264,22 +264,22 @@ class ZBerryServerRPC {
 		if (!CanRun(type, sender, {ZBerryPermissions.MAP_TELEPORT_PLAYERS}, "teleport another player")) return;
 
 		PlayerBase targetPly = ZBGetPlayerById(targetId);
-		if (!targetPly || !targetPly.GetIdentity()) {
+		if (!targetPly || !ZBGetIdentity(targetPly)) {
 			Tell(sender, "Teleport failed: the player has left");
 			return;
 		}
-		if (!m_Auth.CanTarget(sender, targetPly.GetIdentity(), true)) {
-			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, targetPly.GetIdentity(), "{actor} tried to teleport {target}, whose group is protected from their rank" );
-			Tell(sender, "Can't teleport " + targetPly.GetIdentity().GetName() + ": their group is protected from your rank");
+		if (!m_Auth.CanTarget(sender, ZBGetIdentity(targetPly), true)) {
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, ZBGetIdentity(targetPly), "{actor} tried to teleport {target}, whose group is protected from their rank" );
+			Tell(sender, "Can't teleport " + ZBGetIdentity(targetPly).GetName() + ": their group is protected from your rank");
 			return;
 		}
 		if (!ZomberryStockFunctions.SetPosSafe(targetPly, position)) {
-			Tell(sender, "Teleport failed: " + targetPly.GetIdentity().GetName() + " is in a vehicle");
+			Tell(sender, "Teleport failed: " + ZBGetIdentity(targetPly).GetName() + " is in a vehicle");
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, targetPly.GetIdentity(), "{actor} teleported {target} to " + where, ZBerryEventFlags.HARMFUL );
-		Tell(sender, "Teleported " + targetPly.GetIdentity().GetName());
+		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, ZBGetIdentity(targetPly), "{actor} teleported {target} to " + where, ZBerryEventFlags.HARMFUL );
+		Tell(sender, "Teleported " + ZBGetIdentity(targetPly).GetName());
 	}
 
 	//Why the sender may not kick or ban this player, "" if they may: admins only act on lower ranks, superadmins on everyone
@@ -296,7 +296,7 @@ class ZBerryServerRPC {
 		GetGame().GetPlayers(players);
 
 		foreach (Man man : players) {
-			PlayerIdentity identity = man.GetIdentity();
+			PlayerIdentity identity = ZBGetIdentity(man);
 			if (!identity) continue;
 			if ((id != "" && identity.GetPlainId() == id) || (guid != "" && identity.GetId() == guid)) return PlayerBase.Cast(man);
 		}
@@ -309,12 +309,12 @@ class ZBerryServerRPC {
 		if (!CanRunOnServer(type, sender, ZBerryPermissions.PLAYERS_KICK, "kick a player")) return;
 
 		PlayerBase targetPly = ZBGetPlayerById(kickParam.param1);
-		if (!targetPly || !targetPly.GetIdentity()) {
+		if (!targetPly || !ZBGetIdentity(targetPly)) {
 			Tell(sender, "Kick failed: the player has left");
 			return;
 		}
 
-		PlayerIdentity targetIdentity = targetPly.GetIdentity();
+		PlayerIdentity targetIdentity = ZBGetIdentity(targetPly);
 		string problem = CheckTarget(sender, targetIdentity.GetPlainId(), targetIdentity.GetId());
 		if (problem != "") {
 			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, targetIdentity, "{actor} tried to kick {target}, refused: " + problem );
@@ -338,7 +338,7 @@ class ZBerryServerRPC {
 		PlayerBase targetPly;
 		if (banParam.param1 >= 0) {
 			targetPly = ZBGetPlayerById(banParam.param1);
-			if (!targetPly || !targetPly.GetIdentity()) {
+			if (!targetPly || !ZBGetIdentity(targetPly)) {
 				Tell(sender, "Ban failed: the player has left, ban them by id instead");
 				return;
 			}
@@ -357,9 +357,9 @@ class ZBerryServerRPC {
 
 		string name = "";
 		if (targetPly) {
-			id = targetPly.GetIdentity().GetPlainId();
-			guid = targetPly.GetIdentity().GetId();
-			name = targetPly.GetIdentity().GetName();
+			id = ZBGetIdentity(targetPly).GetPlainId();
+			guid = ZBGetIdentity(targetPly).GetId();
+			name = ZBGetIdentity(targetPly).GetName();
 		}
 
 		string bannedId = id; //Steam64 when known; offline bans by GUID only know the GUID
@@ -500,14 +500,14 @@ class ZBerryServerRPC {
 		if (text == "") return;
 
 		PlayerBase recipient = ZBGetPlayerById(msgParam.param1);
-		if (!recipient || (GetGame().IsMultiplayer() && !recipient.GetIdentity())) {
+		if (!recipient || (GetGame().IsMultiplayer() && !ZBGetIdentity(recipient))) {
 			Tell(sender, "Message not sent: the player has left");
 			return;
 		}
 
 		ZBerryMessages.SendPrivate(recipient, text);
-		ZomberryBase.LogEvent( ZBerryEventType.MESSAGE, sender, recipient.GetIdentity(), "{actor} messaged {target}: " + ZBerryMessages.ForLog(text) );
-		if (recipient.GetIdentity()) Tell(sender, "Message sent to " + recipient.GetIdentity().GetName());
+		ZomberryBase.LogEvent( ZBerryEventType.MESSAGE, sender, ZBGetIdentity(recipient), "{actor} messaged {target}: " + ZBerryMessages.ForLog(text) );
+		if (ZBGetIdentity(recipient)) Tell(sender, "Message sent to " + ZBGetIdentity(recipient).GetName());
 	}
 
 	protected void SendBans(PlayerIdentity recipient) {

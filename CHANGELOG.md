@@ -46,8 +46,9 @@
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
 - **Teleport all players to me** (#57): a new stock function. You confirm it by running it twice, and players are placed in a ring around you. It skips players in vehicles and admins protected from your rank.
 - **Spectate target** (#60): a new stock function that shows the selected player's view.
-  - **What it follows:** where they look, including their aim. In third person the camera sits over their shoulder; their game reports which mode they use while they're watched.
-  - **Ending it:** running it again, or the target dying or leaving.
+  - **What it follows:** where their own camera looks, up and down and free look included. In third person the camera sits over their shoulder. While they're watched, their game reports which mode they use and where they look.
+  - **Anywhere on the map:** the area your game loads moves with the camera, and the camera follows a target who teleports or drives away. FreeCam works the same way.
+  - **Ending it:** running it again, the target dying or leaving, or losing the permission.
 - **ESP** (#59): a new stock function that draws, on the admin's own screen:
   - **players:** box, name, distance and health, and skeletons within 150 m;
   - **vehicles:** box and name;

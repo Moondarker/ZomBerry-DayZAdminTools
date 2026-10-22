@@ -96,13 +96,14 @@ class ZBerryUIUtils {
 		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", txt, ""));
 	}
 
+	protected static int s_LocalPlayerId; //Last known: in FreeCam or spectating this client controls no character
+
 	static int GetLocalPlayerId() {
 		if (!GetGame().IsMultiplayer()) return 0;
 
 		Man ply = GetGame().GetPlayer();
-		if (!ply || !ply.GetIdentity()) return 0;
-
-		return ply.GetIdentity().GetPlayerId();
+		if (ply && ply.GetIdentity()) s_LocalPlayerId = ply.GetIdentity().GetPlayerId();
+		return s_LocalPlayerId;
 	}
 
 	static string FormatKeyName(int key) {
@@ -110,9 +111,7 @@ class ZBerryUIUtils {
 		return "[" + keyName.Substring(3, keyName.Length() - 3) + "]"; //Strip "KC_"
 	}
 
-	static vector GetCursorPos() { //<3 Arkensor and CO
-		if ( !GetGame().GetPlayer() ) { return "0 0 0"; }
-
+	static vector GetCursorPos() { //<3 Arkensor and CO. From the camera: also works in FreeCam, without a character
 		vector rayStart = GetGame().GetCurrentCameraPosition();
 		vector rayEnd = rayStart + GetGame().GetCurrentCameraDirection() * 10000;
 		vector hitPos; vector hitNormal; int hitComponentIndex;

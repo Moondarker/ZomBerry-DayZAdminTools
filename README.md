@@ -248,9 +248,10 @@ The stock set:
 **Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
 **Spectate target:** see through the selected player's eyes.
-- **Camera:** it follows where they look, including their aim up and down. While they play in third person, the camera moves over their shoulder.
-- **Your body** stays frozen where you left it.
-- **Stopping:** run the function again, or it ends by itself when they die or leave.
+- **Camera:** it follows where their own camera looks, up and down and free look included. While they play in third person, the camera moves over their shoulder.
+- **Distance:** it works anywhere on the map. What your game loads moves with the camera, so you see the people and vehicles around them, and the camera follows them when they teleport or drive off.
+- **Your body** stays frozen where you left it. If you disconnect while spectating, it logs out like after a normal disconnect.
+- **Stopping:** run the function again, or it ends by itself when they die or leave, or when you lose the permission.
 - **Can't be combined:** you can't use it together with FreeCam.
 
 **ESP:** draws players, vehicles, infected and animals through walls on your own screen. Running it switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on the [ESP tab](#esp).
@@ -259,7 +260,7 @@ The stock set:
 - **Infected and animals:** a box, within 300 m.
 - **Who sees what:** only you see it, and it stays on when the menu is closed. It switches off by itself if you lose the permission.
 
-**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character.
+**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character. What your game loads moves with the camera, so you see players and vehicles wherever you fly. Your body stays frozen where you left it.
 
 ### Spawn
 

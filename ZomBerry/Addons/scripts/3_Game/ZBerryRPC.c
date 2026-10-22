@@ -35,7 +35,10 @@ enum ZBerryRPCOp {
 	LocationAdd = 32, //Client -> server: name; saved at the admin's position
 	LocationDelete = 33, //Client -> server: name
 	LocationTeleport = 34, //Client -> server: name, session id of the player to move (-1: the admin)
-	Locations = 35 //Server -> client: version, the saved locations (ZBerryLocations)
+	Locations = 35, //Server -> client: version, the saved locations (ZBerryLocations)
+	Chat = 36, //Server -> client: a chat line, for admins in FreeCam or spectating (their client has no character to get it)
+	CameraView = 37, //Client -> server: a watched player's camera heading and pitch (ZBerrySpectate)
+	SpectateView = 38 //Server -> client: the watched player's camera heading and pitch, relayed to whoever spectates them
 }
 
 //Which side received the call

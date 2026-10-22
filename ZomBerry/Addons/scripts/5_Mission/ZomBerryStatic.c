@@ -37,12 +37,28 @@ static PlayerBase ZBGetPlayerById (int plyId) {
 	GetGame().GetPlayers(players);
 
 	foreach (Man player : players) {
-		if (!player.GetIdentity()) continue; //Connecting/disconnecting players have no identity
+		PlayerIdentity identity = ZBGetIdentity(player);
+		if (!identity) continue; //Connecting/disconnecting players have no identity
 
-		if (player.GetIdentity().GetPlayerId() == plyId) return PlayerBase.Cast(player);
+		if (identity.GetPlayerId() == plyId) return PlayerBase.Cast(player);
 	}
 
-	return NULL;
+	return ZBerryBodies.GetBody(plyId); //In FreeCam or spectating: the body may not be listed
+}
+
+/**
+\brief Server: the identity of a player's character, also while its admin is in FreeCam or spectating (the body
+	is detached from its identity then, see ZBerryBodies). Use it instead of Man.GetIdentity() on the server
+	\param player \p Man the character
+	\return \p PlayerIdentity, NULL for characters nobody controls (and always in singleplayer)
+*/
+static PlayerIdentity ZBGetIdentity(Man player) {
+	if (!player) return NULL;
+	if (player.GetIdentity()) return player.GetIdentity();
+
+	int sessionId = ZBerryBodies.FindSessionId(PlayerBase.Cast(player));
+	if (sessionId == -1) return NULL;
+	return ZBGetIdentityById(sessionId);
 }
 
 

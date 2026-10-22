@@ -25,6 +25,16 @@ class ZBerryClientFeatures {
 
 	void ZBerryClientFeatures() {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.ClientFeature, "OnClientFeature", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.Chat, "OnChat", this, ZBerrySPExec.Client );
+	}
+
+	//Client: a chat line while this client controls no character (FreeCam, spectating), see ZBerryMessages.SendToChat
+	void OnChat( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<string> line;
+		if ( !ctx.Read( line ) ) return;
+		if (type != ZBerryCallType.Client) return;
+
+		GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "", line.param1, ""));
 	}
 
 	protected static int GetSessionId(PlayerIdentity identity) {

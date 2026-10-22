@@ -40,7 +40,7 @@ class ZBerryMessages {
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 		foreach (Man man : players) {
-			if (!man.GetIdentity()) continue;
+			if (!ZBGetIdentity(man)) continue;
 
 			SendToChat(man, "Announcement: " + text);
 			++count;
@@ -53,15 +53,24 @@ class ZBerryMessages {
 			ShowLocally(TITLE_PRIVATE, text);
 			return;
 		}
-		if (!player || !player.GetIdentity()) return;
+		if (!player || !ZBGetIdentity(player)) return;
 
-		NotificationSystem.SendNotificationToPlayerExtended(player, SHOW_TIME, TITLE_PRIVATE, text, ICON);
+		NotificationSystem.SendNotificationToPlayerIdentityExtended(ZBGetIdentity(player), SHOW_TIME, TITLE_PRIVATE, text, ICON);
 		SendToChat(player, "Admin: " + text);
 	}
 
-	protected static void SendToChat(Man player, string line) {
+	//Vanilla delivers chat lines through the character, which an admin in FreeCam or spectating doesn't control:
+	//their client may not even have it, so they get the line through ZomBerry's own RPC (ZBerryClientFeatures.OnChat)
+	static void SendToChat(Man player, string line) {
+		PlayerIdentity identity = ZBGetIdentity(player);
+		if (!identity) return;
+
+		if (ZBerryBodies.FindSessionId(PlayerBase.Cast(player)) != -1) {
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.Chat, new Param1<string>(line), true, identity );
+			return;
+		}
 		Param1<string> param = new Param1<string>(line);
-		GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, player.GetIdentity());
+		GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, identity);
 	}
 
 	//Singleplayer: server and client are the same game

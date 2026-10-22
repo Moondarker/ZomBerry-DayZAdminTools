@@ -342,12 +342,12 @@ class ZBerryEventLog {
 	}
 
 	protected static string GetSteamId(PlayerBase player) {
-		if (!player || !player.GetIdentity()) return "";
-		return player.GetIdentity().GetPlainId();
+		if (!player || !ZBGetIdentity(player)) return "";
+		return ZBGetIdentity(player).GetPlainId();
 	}
 
 	protected static string GetName(PlayerBase player) {
-		if (player && player.GetIdentity()) return player.GetIdentity().GetName();
+		if (player && ZBGetIdentity(player)) return ZBGetIdentity(player).GetName();
 		if (player && player.GetCachedName() != "") return player.GetCachedName();
 		return "An unnamed character";
 	}
