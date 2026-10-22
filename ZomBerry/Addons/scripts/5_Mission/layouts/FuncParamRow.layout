@@ -26,7 +26,7 @@ FrameWidgetClass FuncParamRow {
   SliderWidgetClass ParamSlider {
    color 0.6667 0.6667 0.6667 0.8431
    position 130 0
-   size 350 32
+   size 300 32
    valign center_ref
    hexactpos 1
    vexactpos 0
@@ -36,7 +36,7 @@ FrameWidgetClass FuncParamRow {
   }
   EditBoxWidgetClass ParamValue {
    position 0 0
-   size 90 30
+   size 140 24
    halign right_ref
    valign center_ref
    hexactpos 1
