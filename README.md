@@ -239,7 +239,7 @@ The stock set:
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, clean up around cursor, flip vehicle near cursor, teleport all players to you, ESP |
 
-**God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+**God mode:** the target takes no damage and their stamina stays full until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
 **Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them until it's switched off again. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
