@@ -177,7 +177,15 @@ modded class MissionServer {
 		if (!ban) return;
 
 		ZomberryBase.LogEvent( ZBerryEventType.JOIN_REFUSED, NULL, identity, "Banned player {target} tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
-		GetGame().DisconnectPlayer(identity, identity.GetId());
+		//Not during the event: DisconnectPlayer frees the identity the engine still uses after it returns (crashed the server)
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(RefuseBannedJoin, 0, false, identity.GetPlayerId(), identity.GetId());
+	}
+
+	protected void RefuseBannedJoin(int sessionId, string uid) {
+		PlayerIdentity identity = ZBGetIdentityById(sessionId);
+		if (!identity || identity.GetId() != uid) return; //Left by themselves meanwhile; InvokeOnConnect still kicks a character that got in
+
+		GetGame().DisconnectPlayer(identity, uid);
 	}
 
 	//In case the engine still let the character in
