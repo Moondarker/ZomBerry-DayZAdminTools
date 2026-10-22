@@ -1,8 +1,22 @@
+//The first run of Clean up around cursor: what it found, so the confirming run deletes exactly that
+class ZBerryPendingCleanup {
+	string Key; //Kind, radius and spot (to 10 m)
+	int Time; //GetGame().GetTime()
+	ref array<EntityAI> Entities; //Entries turn NULL when an object is deleted meanwhile
+
+	void ZBerryPendingCleanup(string key, int time, array<EntityAI> entities) {
+		Key = key;
+		Time = time;
+		Entities = entities;
+	}
+};
+
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
 	protected ref map<int, string> m_PendingKeys = new map<int, string>; //Admin session id -> what the last first run would do
 	protected ref map<int, int> m_PendingTimes = new map<int, int>; //... and when
+	protected ref map<int, ref ZBerryPendingCleanup> m_PendingCleanups = new map<int, ref ZBerryPendingCleanup>; //Admin session id -> the first Clean up run
 	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
 	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
 	protected ref TStringArray m_Invisible = new TStringArray; //Steam64 ids: invisible until switched off, also across relogs
@@ -907,27 +921,43 @@ class ZomberryStockFunctions {
 		string kindName = ZBerryWorldTools.GetCleanNames()[kind];
 		kindName.ToLower(); //In place
 
-		array<EntityAI> found = ZBerryWorldTools.FindForCleanup(cursor, radius, kind);
-		if (found.Count() == 0) {
-			Refuse(admin, "No " + kindName + " within " + radius + " m");
-			return;
-		}
-
 		//Same kind, radius and spot (to 10 m) as the first run
 		float x = cursor[0];
 		float z = cursor[2];
 		int cellX = Math.Floor(x / 10);
 		int cellZ = Math.Floor(z / 10);
-		if (!IsConfirmed(adminId, "clean:" + kind + ":" + radius + ":" + cellX + ":" + cellZ)) {
-			AskToConfirm(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
+		string key = kind.ToString() + ":" + radius + ":" + cellX + ":" + cellZ;
+		int now = GetGame().GetTime();
+		ZBerryPendingCleanup pending = m_PendingCleanups.Get(adminId);
+		if (pending && pending.Key == key && now - pending.Time <= CONFIRM_MS) {
+			//What the prompt counted, not what's there now: objects that came since stay. Those gone meanwhile are
+			//skipped, and so are items someone picked up (they'd vanish from a player's inventory)
+			int deleted = 0;
+			foreach (EntityAI entity : pending.Entities) {
+				if (!entity || entity.GetHierarchyParent()) continue;
+
+				GetGame().ObjectDelete(entity);
+				++deleted;
+			}
+			int counted = pending.Entities.Count();
+			m_PendingCleanups.Remove(adminId);
+
+			string gone = "";
+			if (deleted < counted) gone = " (" + (counted - deleted) + " were already gone or picked up)";
+			m_ZomberryCmdAPI.DescribeCall("{actor} cleaned up " + deleted + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor) + gone);
+			MessagePlayer(admin, "Deleted " + deleted + " " + kindName + gone);
 			return;
 		}
 
-		foreach (EntityAI entity : found) {
-			if (entity) GetGame().ObjectDelete(entity);
+		array<EntityAI> found = ZBerryWorldTools.FindForCleanup(cursor, radius, kind);
+		if (found.Count() == 0) {
+			m_PendingCleanups.Remove(adminId);
+			Refuse(admin, "No " + kindName + " within " + radius + " m");
+			return;
 		}
-		m_ZomberryCmdAPI.DescribeCall("{actor} cleaned up " + found.Count() + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor));
-		MessagePlayer(admin, "Deleted " + found.Count() + " " + kindName);
+
+		m_PendingCleanups.Set(adminId, new ZBerryPendingCleanup(key, now, found));
+		AskToConfirm(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
 	}
 
 	//The car or boat nearest to the cursor (within 5 m of its body), back on its wheels

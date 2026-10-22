@@ -38,7 +38,7 @@
   - **Positions** are written as map coordinates in whole metres ("X 9871 Y 2144"), here and in the log file.
   - **Function calls that did nothing** (no valid target, nothing under the cursor, a player in a vehicle) are logged as refused, with the reason. A first run that only asks for confirmation isn't logged; the confirmed run is. Commands from other mods can do the same with `RefuseCall()` and `AwaitConfirmation()`.
   - **Functions say what they did** (#66): one line each, in the log file and the in-game log, instead of "ran …" plus a separate detail line. Toggles say which way they switched: "switched ESP on", "entered FreeCam", "froze PlayerName", "switched god mode off for themselves". Flip, clean up, delete and teleport all name the vehicle, the count or the object, and the place. Commands from other mods can do the same with `DescribeCall()`.
-- **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation.
+- **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation. The confirming run deletes what the prompt counted: things that arrived since stay, and so do items someone picked up.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
 - **Toggle invisibility:** a new stock function. Other players don't see or hear the target (voice chat still works), infected and animals ignore them, and nothing can hurt them while it lasts. It survives logging out and respawning. Mods can check it with `PlayerBase.ZBIsInvisible()`, on the server and on clients.
@@ -90,6 +90,7 @@
 - **Set weather barely worked on servers.** The server's own weather took over again right away: a storm often brought no rain at all, and clear weather kept raining for about a minute. The chosen weather now applies at once and holds for 6 minutes.
 - **FreeCam started inside the admin's head.** It now starts just behind it.
 - **The Functions tab looked ready to run after reopening the menu, but wasn't** (#67). Reopening cleared the selection, but the function's name and parameters stayed, and named values turned into numbers. The selected function and its values are now kept.
+- **Long value names were cut off** on the Functions tab ("Ruined items" showed as "Ruinec"): the value box is wider, with smaller text.
 
 ## 0.7.0
 
