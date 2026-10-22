@@ -235,11 +235,13 @@ The stock set:
 
 | Category | Functions |
 |---|---|
-| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, spectate target, toggle freeze, repair item in hands, refuel and repair nearby vehicles |
+| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, spectate target, toggle freeze, repair item in hands, refuel and repair nearby vehicles |
 | == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, clean up around cursor, flip vehicle near cursor, teleport all players to you, ESP |
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+
+**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and god mode stays on until it's switched off again. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
 
@@ -518,7 +520,7 @@ void MyModLeaveSafeZone(PlayerBase player) {
 }
 ```
 
-**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message.
+**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message. While a player is invisible (Toggle invisibility), switching it off does nothing.
 
 Both work on the **server** only. The flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client.
 

@@ -190,6 +190,9 @@ modded class MissionServer {
 
 		//Frozen players stay frozen across relogs; a moment later, so their client is ready for the feature
 		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);
+
+		//Invisible players stay invisible across relogs and respawns: right away, so nobody sees them arrive
+		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) m_ZomberryBase.m_ZomberryStockFunctions.ReapplyInvisibility(player);
 	}
 
 	//Vanilla kills a character that respawns or logs out while unconscious or restrained: the log says so instead of "died"

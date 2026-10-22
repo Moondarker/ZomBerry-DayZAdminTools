@@ -5,6 +5,7 @@ class ZomberryStockFunctions {
 	protected ref map<int, int> m_PendingTimes = new map<int, int>; //... and when
 	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
 	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
+	protected ref TStringArray m_Invisible = new TStringArray; //Steam64 ids: invisible until switched off, also across relogs
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
 
 	static const string FEATURE_FREEZE = "zomberry_freeze";
@@ -27,6 +28,7 @@ class ZomberryStockFunctions {
 			new ZBerryFuncParam("Feed", {0, 1, 1,}, {"No", "Yes"}),
 		});
 		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false, NULL, true); //Can switch an admin's god mode off
+		m_ZomberryCmdAPI.AddCommand("Toggle invisibility", "InvisibleTarget", this, "OnTarget", false, NULL, true); //Can switch it off for an admin
 		m_ZomberryCmdAPI.AddCommand("Spectate target", "SpectateTarget", this, "OnTarget", true);
 		m_ZomberryCmdAPI.AddCommand("Toggle freeze", "FreezeTarget", this, "OnTarget", true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
@@ -285,6 +287,11 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
+		if (target.ZBIsGod() && target.ZBIsInvisible()) {
+			Refuse(admin, "God mode stays on while " + DescribeWho(adminId, targetId, target) + " invisible, switch invisibility off first");
+			return;
+		}
+
 		if (target.ZBIsGod()) {
 			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
@@ -523,6 +530,48 @@ class ZomberryStockFunctions {
 		target.SetHealth("", "Blood", fValues[0]);
 
 		MessagePlayer(admin, "Target blood level was set to " + fValues[0]);
+	}
+
+	//"you are" or "Name is", for messages to the admin
+	protected string DescribeWho(int adminId, int targetId, PlayerBase target) {
+		if (adminId == targetId) return "you are";
+		return GetPlayerName(target) + " is";
+	}
+
+	//Other players don't see or hear the target (voice chat aside), infected ignore them, and god mode stays on.
+	//Survives relogs, see ReapplyInvisibility
+	void InvisibleTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+
+		bool invisible = !target.ZBIsInvisible();
+		SetInvisible(target, invisible);
+
+		if (invisible) {
+			MessagePlayer(target, "You are invisible: other players can't see or hear you (voice chat still works), infected ignore you, god mode is on");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " is invisible");
+			DescribeOnTarget(adminId, targetId, "switched invisibility on");
+		} else {
+			MessagePlayer(target, "You are visible again");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " is visible again");
+			DescribeOnTarget(adminId, targetId, "switched invisibility off");
+		}
+	}
+
+	protected void SetInvisible(PlayerBase target, bool invisible) {
+		string steamId = GetSteamId(target);
+		m_Invisible.RemoveItem(steamId);
+		if (invisible && steamId != "") m_Invisible.Insert(steamId);
+
+		target.ZBSetInvisible(invisible);
+	}
+
+	//An invisible player who relogged or respawned: their new character is made invisible again
+	void ReapplyInvisibility(PlayerBase player) {
+		if (!player || m_Invisible.Find(GetSteamId(player)) == -1) return;
+
+		player.ZBSetInvisible(true);
+		MessagePlayer(player, "You are still invisible, run Toggle invisibility to be seen again");
 	}
 
 	//The admin's body stays where it is and doesn't react to input while they're in FreeCam or spectating
