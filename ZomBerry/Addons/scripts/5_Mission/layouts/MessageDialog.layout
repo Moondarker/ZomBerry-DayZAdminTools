@@ -96,7 +96,6 @@ FrameWidgetClass MessageDialog {
      "exact text size" 14
     }
     PanelWidgetClass MessagePreviewBack {
-     ignorepointer 1
      color 0.3137 0.3137 0.3137 0.4706
      position 15 116
      size 530 130
@@ -121,6 +120,7 @@ FrameWidgetClass MessageDialog {
      wrap 1
     }
     EditBoxWidgetClass MessageInput {
+     ignorepointer 1
      color 1 1 1 0
      position 15 116
      size 530 130

@@ -330,6 +330,7 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	//Raw key presses forwarded from MissionGameplay while the menu is open (used for keybinding)
 	void OnBindKeyPress( int key ) {
+		if (m_MessageDialog) m_MessageDialog.OnKeyPressed(key); //It follows the caret of its hidden edit box
 
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnBindKeyPress(key);
