@@ -520,7 +520,7 @@ void MyModLeaveSafeZone(PlayerBase player) {
 }
 ```
 
-**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message. While a player is invisible (Toggle invisibility), switching it off does nothing.
+**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message. While a player is invisible (Toggle invisibility), god mode stays on: the call takes effect when invisibility ends.
 
 Both work on the **server** only. The flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client.
 

@@ -17,12 +17,13 @@ modded class PlayerBase
 		return ZBGodMode;
 	};
 
-	//While invisible, god mode can't be switched off: invisible characters still take bullets
+	//While invisible, god mode stays on (invisible characters still take bullets): the call is remembered and applies
+	//when invisibility ends, so a safe zone that switches it on or off for an invisible admin still gets its way after
 	void ZBSetGod(bool isGod) {
 		if (GetGame().IsMultiplayer() && GetGame().IsClient()) return;
 
-		if (!isGod && m_ZBInvisible) {
-			m_ZBGodBeforeInvisible = false; //Off once invisibility ends
+		if (m_ZBInvisible) {
+			m_ZBGodBeforeInvisible = isGod;
 			return;
 		}
 
@@ -122,6 +123,13 @@ modded class PlayerBase
 	override void AddNoise(NoiseParams noisePar, float noiseMultiplier = 1.0) {
 		if (m_ZBInvisible) return;
 		super.AddNoise(noisePar, noiseMultiplier);
+	}
+
+	//Hits never land on invisible players, even after another mod switched damage back on with SetAllowDamage(true)
+	//without asking ZBIsGod() first
+	override bool EEOnDamageCalculated(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef) {
+		if (m_ZBInvisible) return false;
+		return super.EEOnDamageCalculated(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
 	}
 
 	override bool CanBeTargetedByAI(EntityAI ai) {
