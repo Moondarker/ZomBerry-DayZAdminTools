@@ -7,6 +7,7 @@
 ### Added
 
 - **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.
+- **Keybinds tab** under the gear icon: every function you can bind, with its key, and buttons to unbind one or all of them.
 - **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
   - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).
   - Storage and base parts are grouped per area, with a count.
