@@ -227,7 +227,7 @@ The left panel lists everyone online. Admins are green, and the item in a player
     - Bases, tents, storage, stashes and fireplaces are never touched.
     - The first run says how many it found, and running it again within 10 seconds deletes them.
   - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
-- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet, and neither can "Teleport all players back", so it never runs by accident.
+- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet, and neither can "Teleport - All players back", so it never runs by accident.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
 - **Removing all binds:** select any function that can be bound, hold `A` and press the button twice.
 - **All keys in one place:** the [Keybinds tab](#keybinds-tab) lists every function you can bind, with its key.
@@ -249,9 +249,9 @@ Set time, set date and set weather start from the game's current time, date and 
 
 **Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them until it's switched off again. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
-**Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
+**Teleport - All players to Me:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
 
-**Teleport all players back:** undoes it. Everyone who was moved goes back to where they were before the first teleport since the last revert. Players who are offline, in a vehicle or protected from your rank stay saved, so a later run moves them too. Players who died meanwhile are forgotten. The saved spots don't survive a server restart.
+**Teleport - All players back:** undoes it. Everyone who was moved goes back to where they were before the first teleport since the last revert. Players who are offline, in a vehicle or protected from your rank stay saved, so a later run moves them too. Players who died meanwhile are forgotten. The saved spots don't survive a server restart.
 
 **Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
@@ -346,7 +346,7 @@ Every admin can open this tab from the gear icon in the header. It lists the fun
 - **Removing a key:** select the function and press **Unbind**, or press the header button twice.
 - **Removing all keys:** press **Unbind all**, then again to confirm.
 
-Functions with parameters, and "Teleport all players back", can't be bound, so they aren't listed.
+Functions with parameters, and "Teleport - All players back", can't be bound, so they aren't listed.
 
 ### Permissions
 

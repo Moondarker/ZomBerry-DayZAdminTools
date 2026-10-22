@@ -11,7 +11,7 @@ class ZBerryPendingCleanup {
 	}
 };
 
-//Where Teleport all players to me found a player, for Teleport all players back
+//Where Teleport - All players to Me found a player, for Teleport - All players back
 class ZBerryTPReturn {
 	vector Position;
 	ref TIntArray CharacterId; //GetPersistentID: a new character after a death doesn't go back to the old one's spot
@@ -58,8 +58,8 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, CATEGORY_TELEPORT, false);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, CATEGORY_TELEPORT);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, CATEGORY_TELEPORT, true, NULL, true);
-		m_ZomberryCmdAPI.AddCommand("Teleport all players to me", "TPAllToAdmin", this, CATEGORY_TELEPORT, false, NULL, true, true);
-		m_ZomberryCmdAPI.AddCommand("Teleport all players back", "TPAllBack", this, CATEGORY_TELEPORT, false, NULL, true, true, false); //Menu only
+		m_ZomberryCmdAPI.AddCommand("Teleport - All players to Me", "TPAllToAdmin", this, CATEGORY_TELEPORT, false, NULL, true, true);
+		m_ZomberryCmdAPI.AddCommand("Teleport - All players back", "TPAllBack", this, CATEGORY_TELEPORT, false, NULL, true, true, false); //Menu only
 
 		m_ZomberryCmdAPI.AddCategory(CATEGORY_PLAYER, 0xFF7CD67C);
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, CATEGORY_PLAYER, false);
@@ -927,13 +927,13 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players to " + ZBDescribePosition(center) + ": " + targets.Count() + " moved" + skipped);
 	}
 
-	//Undoes Teleport all players to me: everyone it moved goes back to where it found them. Players in vehicles,
+	//Undoes Teleport - All players to Me: everyone it moved goes back to where it found them. Players in vehicles,
 	//protected from this admin's rank or offline stay saved for a later run; a player who died meanwhile is dropped
 	void TPAllBack( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		if (!admin) return;
 		if (m_TPAllReturns.Count() == 0) {
-			Refuse(admin, "Nobody to teleport back: Teleport all players to me wasn't run since the last revert or server start");
+			Refuse(admin, "Nobody to teleport back: Teleport - All players to Me wasn't run since the last revert or server start");
 			return;
 		}
 
