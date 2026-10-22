@@ -241,7 +241,7 @@ The stock set:
 
 **God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
-**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and god mode stays on until it's switched off again. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
+**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them until it's switched off again. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
 
@@ -505,24 +505,25 @@ The example mission registers `missionexample.vip_loadout` and gives members of 
 
 ### God mode and other mods
 
-ZomBerry's god mode uses the engine's damage switch, `SetAllowDamage(false)`. Other mods use the same switch: a safe zone, for example, turns damage off on the way in and back on on the way out. That also ends god mode for an admin who walks out of the zone.
+ZomBerry's god mode and invisibility use the engine's damage switch, `SetAllowDamage(false)`. Other mods use the same switch: a safe zone, for example, turns damage off on the way in and back on on the way out. That also ends god mode for an admin who walks out of the zone.
 
-To avoid that, check ZomBerry's god mode before turning damage back on:
+To avoid that, check ZomBerry before turning damage back on:
 - **`#define ZOMBERRY_AT`** is set while ZomBerry is loaded, so the code also compiles without it.
 - **`bool PlayerBase.ZBIsGod()`** says whether the player is in god mode.
+- **`bool PlayerBase.ZBIsInvisible()`** says whether the player is invisible (Toggle invisibility).
 
 ```c
 void MyModLeaveSafeZone(PlayerBase player) {
 #ifdef ZOMBERRY_AT
-	if (player.ZBIsGod()) return; //ZomBerry's god mode keeps damage off
+	if (player.ZBIsGod() || player.ZBIsInvisible()) return; //ZomBerry keeps damage off
 #endif
 	player.SetAllowDamage(true);
 }
 ```
 
-**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message. While a player is invisible (Toggle invisibility), god mode stays on: the call takes effect when invisibility ends.
+**`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message.
 
-Both work on the **server** only. The flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client.
+God mode works on the **server** only. Its flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client. Invisibility is sent to every client, so `ZBIsInvisible()` works on both sides.
 
 ### Testing without a server
 

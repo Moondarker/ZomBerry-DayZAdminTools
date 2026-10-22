@@ -17,7 +17,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 | `config.cpp` | CfgPatches/CfgMods: script modules, inputs, the mod version |
 | `Common/` | `#define ZOMBERRY_AT`, visible to every module. Other mods use it to check whether ZomBerry is loaded |
 | `3_Game/ZBerryRPC.c` | Own RPC layer: one engine RPC ID (`74635`), every message starts with an opcode (`ZBerryRPCOp`) |
-| `4_World/` | `PlayerBase` god mode (`ZBIsGod`/`ZBSetGod`, used by other mods) and its kill/hit hooks for the event log, FreeCam and spectator cameras, the entity registry (`ZBerryEntityRegistry`), ESP drawing maths (`ZBerryESPDraw`) |
+| `4_World/` | `PlayerBase` god mode and invisibility (`ZBIsGod`/`ZBSetGod`/`ZBIsInvisible`, used by other mods) and its kill/hit hooks for the event log, FreeCam and spectator cameras, the entity registry (`ZBerryEntityRegistry`), ESP drawing maths (`ZBerryESPDraw`) |
 | `5_Mission/ZomBerry.c` | `ZomberryBase`, the `MissionServer`/`MissionGameplay` hooks, menu and dialog opening, `LogEvent` |
 | `5_Mission/core/` | Server auth and permissions (`ZBerryAuth`, `ZBerryPermissions`), client auth (`ZBerryClientAuth`), request handlers (`ZBerryServerRPC`), streams (`ZBerryStreams`, `ZBerryStreamServer`, `ZBerryStreamClient`, `ZBerryMapMarkers`), client features (`ZBerryClientFeatures`), spectating, the event log (`ZBerryEventLog`), bans, spawning, world tools, version and build info, the Permissions API |
 | `5_Mission/ui/` | Admin menu components: one class per tab, panel or dialog, plus the ESP overlay |
@@ -57,7 +57,7 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
   - Don't use the deprecated `JsonLoadFile`/`JsonSaveFile`: they give no reason.
 - **Keep public APIs stable.** Other mods and missions use:
   - `GetZomberryCmdAPI()`, `GetZomberryPermAPI()`, `ZBGetPlayerById()` and `ZomberryStockFunctions.MessagePlayer()`;
-  - `#define ZOMBERRY_AT` with `PlayerBase.ZBIsGod()` and `ZBSetGod()`, so mods that switch damage themselves (safe zones) can leave god mode alone. God mode has to stay a server-side flag on `PlayerBase` that goes together with `SetAllowDamage`.
+  - `#define ZOMBERRY_AT` with `PlayerBase.ZBIsGod()`, `ZBSetGod()` and `ZBIsInvisible()`, so mods that switch damage themselves (safe zones) can leave god mode and invisibility alone. God mode has to stay a server-side flag on `PlayerBase` that goes together with `SetAllowDamage`; invisibility is a synced flag that keeps damage off too, independently of god mode.
   - **Public means exactly these.** That's the APIs listed here, plus the command API's client-feature and call outcome methods, all documented in the README's "For developers" section.
     - Keep them backwards compatible: add methods and append optional parameters, but don't remove or change existing ones.
     - Everything else (UI components, keybinds, config, RPC opcodes and handlers) is internal and may change freely.

@@ -3,10 +3,9 @@ modded class PlayerBase
 	private bool ZBGodMode;
 
 	//Invisibility (the "Toggle invisibility" function): synced to every client, which then doesn't draw this character
-	//or its gear and plays none of its sounds. The server keeps it out of the AI's noise and targets, and god mode
-	//stays on while it lasts. Voice chat isn't affected
+	//or its gear and plays none of its sounds. The server keeps it out of the AI's noise and targets, and it can't be
+	//hurt (invisible characters still take bullets). Independent of god mode. Voice chat isn't affected
 	protected bool m_ZBInvisible;
-	protected bool m_ZBGodBeforeInvisible; //Restored when invisibility ends
 
 	override void Init() {
 		super.Init();
@@ -17,20 +16,14 @@ modded class PlayerBase
 		return ZBGodMode;
 	};
 
-	//While invisible, god mode stays on (invisible characters still take bullets): the call is remembered and applies
-	//when invisibility ends, so a safe zone that switches it on or off for an invisible admin still gets its way after
 	void ZBSetGod(bool isGod) {
 		if (GetGame().IsMultiplayer() && GetGame().IsClient()) return;
 
-		if (m_ZBInvisible) {
-			m_ZBGodBeforeInvisible = isGod;
-			return;
-		}
-
 		ZBGodMode = isGod;
-		SetAllowDamage(!ZBGodMode);
+		ZBUpdateAllowDamage();
 	};
 
+	//Synced: true on clients too
 	bool ZBIsInvisible() {
 		return m_ZBInvisible;
 	}
@@ -40,15 +33,15 @@ modded class PlayerBase
 		if (GetGame().IsMultiplayer() && GetGame().IsClient()) return;
 		if (invisible == m_ZBInvisible) return;
 
-		if (invisible) {
-			m_ZBGodBeforeInvisible = ZBGodMode;
-			ZBSetGod(true);
-			m_ZBInvisible = true;
-		} else {
-			m_ZBInvisible = false;
-			ZBSetGod(m_ZBGodBeforeInvisible);
-		}
+		m_ZBInvisible = invisible;
+		ZBUpdateAllowDamage();
 		SetSynchDirty();
+	}
+
+	//God mode and invisibility each keep damage off, neither switches the other. SetAllowDamage(false) also stops
+	//health and blood lost from script (bleeding, hunger), which EEOnDamageCalculated below doesn't see
+	protected void ZBUpdateAllowDamage() {
+		SetAllowDamage(!ZBGodMode && !m_ZBInvisible);
 	}
 
 	//Other players' clients hide the character; its own client keeps seeing itself

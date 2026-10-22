@@ -287,11 +287,6 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (target.ZBIsGod() && target.ZBIsInvisible()) {
-			Refuse(admin, "God mode stays on while " + DescribeWho(adminId, targetId, target) + " invisible, switch invisibility off first");
-			return;
-		}
-
 		if (target.ZBIsGod()) {
 			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
@@ -532,14 +527,8 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Target blood level was set to " + fValues[0]);
 	}
 
-	//"you are" or "Name is", for messages to the admin
-	protected string DescribeWho(int adminId, int targetId, PlayerBase target) {
-		if (adminId == targetId) return "you are";
-		return GetPlayerName(target) + " is";
-	}
-
-	//Other players don't see or hear the target (voice chat aside), infected ignore them, and god mode stays on.
-	//Survives relogs, see ReapplyInvisibility
+	//Other players don't see or hear the target (voice chat aside), infected ignore them, and they can't be hurt.
+	//Independent of god mode. Survives relogs, see ReapplyInvisibility
 	void InvisibleTarget( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
@@ -548,7 +537,7 @@ class ZomberryStockFunctions {
 		SetInvisible(target, invisible);
 
 		if (invisible) {
-			MessagePlayer(target, "You are invisible: other players can't see or hear you (voice chat still works), infected ignore you, god mode is on");
+			MessagePlayer(target, "You are invisible: other players can't see or hear you (voice chat still works), infected ignore you, nothing can hurt you");
 			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " is invisible");
 			DescribeOnTarget(adminId, targetId, "switched invisibility on");
 		} else {
