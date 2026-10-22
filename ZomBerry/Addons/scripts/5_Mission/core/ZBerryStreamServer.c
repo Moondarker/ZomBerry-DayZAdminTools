@@ -10,6 +10,7 @@ class ZBerrySubscriber {
 	bool EspActive; //Set by the ESP function, not by the client. Its data also needs the client's ESP_PLAYERS (WantsEsp)
 
 	int RosterVersionSent = -1;
+	int LocationsVersionSent = -1;
 	float StateTimer = 1000; //Due right away
 	float FullTimer = 1000;
 	float MarkersTimer = 1000;
@@ -45,12 +46,14 @@ class ZBerryStreamServer {
 	protected static ZBerryStreamServer s_Instance; //Weak, owned by ZomberryBase
 
 	protected ZBerryAuth m_Auth;
+	protected ZBerryLocations m_Locations;
 	protected ref map<int, ref ZBerrySubscriber> m_Subscribers = new map<int, ref ZBerrySubscriber>; //By session id, 0 in singleplayer
 	protected ref ZBerryRosterArray m_Roster = new ZBerryRosterArray;
 	protected int m_RosterVersion = 0;
 
-	void ZBerryStreamServer(ZBerryAuth auth) {
+	void ZBerryStreamServer(ZBerryAuth auth, ZBerryLocations locations) {
 		m_Auth = auth;
+		m_Locations = locations;
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Subscribe, "Subscribe", this, ZBerrySPExec.Client );
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Tick, TICK_MS, true);
 		GetZBerryClientFeatures().OnServerFeatureChanged.Insert(OnFeatureChanged);
@@ -148,6 +151,7 @@ class ZBerryStreamServer {
 			}
 
 			SendRoster(subscriber);
+			SendLocations(subscriber);
 
 			subscriber.StateTimer += tickSeconds;
 			subscriber.FullTimer += tickSeconds;
@@ -234,6 +238,20 @@ class ZBerryStreamServer {
 		subscriber.RosterVersionSent = m_RosterVersion;
 		ZBerryRosterArray roster = m_Roster; //Locals keep data alive while it's sent
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.Roster, new Param3<int, int, ref ZBerryRosterArray>(GetGame().GetTime(), m_RosterVersion, roster), true, subscriber.Identity );
+	}
+
+	//The saved locations, while the menu is open, when they changed since the last send
+	protected void SendLocations(ZBerrySubscriber subscriber) {
+		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 || !m_Locations) return;
+		if (!m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_VIEW)) {
+			subscriber.LocationsVersionSent = -1; //Sent again once allowed again
+			return;
+		}
+		if (subscriber.LocationsVersionSent == m_Locations.GetVersion()) return;
+
+		subscriber.LocationsVersionSent = m_Locations.GetVersion();
+		ZBerryLocationArray locations = m_Locations.GetAll(); //Locals keep data alive while it's sent
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.Locations, new Param2<int, ref ZBerryLocationArray>(m_Locations.GetVersion(), locations), true, subscriber.Identity );
 	}
 
 	//Positions only for admins who see map markers (or use ESP), health and blood only for the selected player

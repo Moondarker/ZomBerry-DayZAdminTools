@@ -1,0 +1,122 @@
+FrameWidgetClass LocationRow {
+ position 0 0
+ size 276 26
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  ButtonWidgetClass LocRowName {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 2
+   size 150 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LocRowNameLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text " Name"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" left
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass LocRowGo {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 154 2
+   size 36 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LocRowGoLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Go"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass LocRowPlayer {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 194 2
+   size 52 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LocRowPlayerLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Player"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass LocRowDelete {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 250 2
+   size 26 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LocRowDeleteLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "X"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+ }
+}

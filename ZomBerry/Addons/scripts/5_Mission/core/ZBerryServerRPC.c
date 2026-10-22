@@ -3,10 +3,12 @@
 class ZBerryServerRPC {
 	protected ZBerryAuth m_Auth;
 	protected ZBerryBans m_Bans;
+	protected ZBerryLocations m_Locations;
 
-	void ZBerryServerRPC(ZBerryAuth auth, ZBerryBans bans) {
+	void ZBerryServerRPC(ZBerryAuth auth, ZBerryBans bans, ZBerryLocations locations) {
 		m_Auth = auth;
 		m_Bans = bans;
+		m_Locations = locations;
 
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctionsRequest, "SyncFunctionsRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.ExecuteCommand, "ExecuteCommand", this, ZBerrySPExec.Client );
@@ -17,6 +19,9 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Unban, "Unban", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.BansRequest, "BansRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Message, "Message", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationAdd, "LocationAdd", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationDelete, "LocationDelete", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationTeleport, "LocationTeleport", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -216,13 +221,27 @@ class ZBerryServerRPC {
 		if (forPlayer && intoInventory && result.IndexOf("couldn't") != 0) ZomberryStockFunctions.MessagePlayer(recipient, "An admin gave you " + ZBerrySpawner.GetDisplayName(className));
 	}
 
+	//Map clicks and typed coordinates: the height comes from the surface
 	void MapTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param2< vector, int > teleParam; //Map position, selected player (-1: the admin themselves)
 		if ( !ctx.Read( teleParam ) ) return;
 
-		vector position = Vector(teleParam.param1[0], GetGame().SurfaceY(teleParam.param1[0], teleParam.param1[2]), teleParam.param1[2]);
-		if (teleParam.param2 >= 0 && teleParam.param2 != GetSenderId(sender)) {
-			TeleportPlayer(type, sender, teleParam.param2, position);
+		float x = teleParam.param1[0];
+		float z = teleParam.param1[2];
+		float worldSize = GetGame().GetWorld().GetWorldSize();
+		if (x < 0 || z < 0 || x > worldSize || z > worldSize) {
+			Tell(sender, "Teleport failed: X " + Math.Round(x) + " Y " + Math.Round(z) + " is outside the map (0 to " + Math.Round(worldSize) + ")");
+			return;
+		}
+
+		vector position = Vector(x, GetGame().SurfaceY(x, z), z);
+		Teleport(type, sender, teleParam.param2, position, ZBDescribePosition(position));
+	}
+
+	//The admin (targetId -1 or their own) or another player; 'where' names the place in the log
+	protected void Teleport(ZBerryCallType type, PlayerIdentity sender, int targetId, vector position, string where) {
+		if (targetId >= 0 && targetId != GetSenderId(sender)) {
+			TeleportPlayer(type, sender, targetId, position, where);
 			return;
 		}
 
@@ -236,12 +255,12 @@ class ZBerryServerRPC {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " tried to teleport, but was in vehicle");
 		} else {
 			adminPly.SetPosition(position);
-			ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, NULL, "{actor} teleported to " + ZBDescribePosition(position) );
+			ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, NULL, "{actor} teleported to " + where );
 		}
 	}
 
-	//Another player to a map position: harmful, so the rank protections apply
-	protected void TeleportPlayer(ZBerryCallType type, PlayerIdentity sender, int targetId, vector position) {
+	//Another player: harmful, so the rank protections apply
+	protected void TeleportPlayer(ZBerryCallType type, PlayerIdentity sender, int targetId, vector position, string where) {
 		if (!CanRun(type, sender, {ZBerryPermissions.MAP_TELEPORT_PLAYERS}, "teleport another player")) return;
 
 		PlayerBase targetPly = ZBGetPlayerById(targetId);
@@ -259,7 +278,7 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, targetPly.GetIdentity(), "{actor} teleported {target} to " + ZBDescribePosition(position), ZBerryEventFlags.HARMFUL );
+		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, targetPly.GetIdentity(), "{actor} teleported {target} to " + where, ZBerryEventFlags.HARMFUL );
 		Tell(sender, "Teleported " + targetPly.GetIdentity().GetName());
 	}
 
@@ -397,6 +416,68 @@ class ZBerryServerRPC {
 		if (!CanRunOnServer(type, sender, ZBerryPermissions.PLAYERS_UNBAN, "see the ban list")) return;
 
 		SendBans(sender);
+	}
+
+	//Saved at the admin's own position, height included
+	void LocationAdd( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< string > locParam; //Name
+		if ( !ctx.Read( locParam ) ) return;
+		if (!CanRun(type, sender, {ZBerryPermissions.MAP_LOCATIONS_MANAGE}, "save a location")) return;
+
+		PlayerBase adminPly = ZBGetPlayerById(GetSenderId(sender));
+		if (!adminPly) {
+			Tell(sender, "Location not saved: you have no character");
+			return;
+		}
+
+		string name = ZBerryLocations.CleanName(locParam.param1);
+		vector position = adminPly.GetPosition();
+		string problem = m_Locations.Add(name, position);
+		if (problem != "") {
+			Tell(sender, "Location not saved: " + problem);
+			return;
+		}
+
+		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} saved location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position) );
+		Tell(sender, "Saved location " + name);
+	}
+
+	void LocationDelete( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< string > locParam; //Name
+		if ( !ctx.Read( locParam ) ) return;
+		if (!CanRun(type, sender, {ZBerryPermissions.MAP_LOCATIONS_MANAGE}, "delete a location")) return;
+
+		ZBerryLocation location = m_Locations.Find(locParam.param1);
+		string name = locParam.param1;
+		vector position = "0 0 0";
+		if (location) {
+			name = location.Name;
+			position = location.Position;
+		}
+
+		string problem = m_Locations.Remove(name);
+		if (problem != "") {
+			Tell(sender, "Location not deleted: " + problem);
+			return;
+		}
+
+		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} deleted location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position) );
+		Tell(sender, "Deleted location " + name);
+	}
+
+	//To the exact saved position, height included
+	void LocationTeleport( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2< string, int > locParam; //Name, session id of the player to move (-1: the admin)
+		if ( !ctx.Read( locParam ) ) return;
+
+		ZBerryLocation location = m_Locations.Find(locParam.param1);
+		if (!location) {
+			Tell(sender, "Teleport failed: there's no location called " + locParam.param1);
+			return;
+		}
+
+		string where = ZBerryMessages.ForLog(location.Name) + " (" + ZBDescribePosition(location.Position) + ")";
+		Teleport(type, sender, locParam.param2, location.Position, where);
 	}
 
 	//Talking to players isn't a function on them, so the rank protections don't apply: any admin may be messaged

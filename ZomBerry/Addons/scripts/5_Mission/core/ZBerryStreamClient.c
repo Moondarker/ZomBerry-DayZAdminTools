@@ -16,9 +16,11 @@ class ZBerryStreamClient {
 	protected ref TIntArray m_Dropped = new TIntArray;
 	protected int m_ServerTime; //ms since the server started, as of the last message
 	protected ref ZBerryPlayerDetails m_Details; //Of the selected player, NULL until the server sent them
+	protected ref ZBerryLocationArray m_Locations = new ZBerryLocationArray; //Saved locations, sorted by name
 
 	ref ScriptInvoker OnPlayersChanged = new ScriptInvoker(); //Roster or states changed
 	ref ScriptInvoker OnMarkersChanged = new ScriptInvoker(); //(int category)
+	ref ScriptInvoker OnLocationsChanged = new ScriptInvoker();
 
 	void ZBerryStreamClient() {
 		for (int i = 0; i < ZBerryEntityCategory.MARKER_COUNT; ++i) {
@@ -30,6 +32,7 @@ class ZBerryStreamClient {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerState, "PlayerState", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Markers, "Markers", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.PlayerDetails, "PlayerDetails", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.Locations, "Locations", this, ZBerrySPExec.Client );
 	}
 
 	void SetListShown(bool shown) {
@@ -156,6 +159,34 @@ class ZBerryStreamClient {
 
 		m_Details = data.param1;
 		OnPlayersChanged.Invoke();
+	}
+
+	void Locations( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2<int, ref ZBerryLocationArray> data; //Version, locations
+		if (type != ZBerryCallType.Client) return;
+		if ( !ctx.Read( data ) || !data.param2 ) return;
+
+		m_Locations = SortByName(data.param2);
+		OnLocationsChanged.Invoke();
+	}
+
+	protected static ZBerryLocationArray SortByName(ZBerryLocationArray locations) {
+		map<string, ref ZBerryLocation> byKey = new map<string, ref ZBerryLocation>;
+		TStringArray keys = new TStringArray;
+		foreach (ZBerryLocation location : locations) {
+			string key = ZBerryLocations.GetKey(location.Name);
+			byKey.Set(key, location);
+			keys.Insert(key);
+		}
+		keys.Sort();
+
+		ZBerryLocationArray sorted = new ZBerryLocationArray;
+		foreach (string sortedKey : keys) sorted.Insert(byKey.Get(sortedKey));
+		return sorted;
+	}
+
+	ZBerryLocationArray GetLocations() {
+		return m_Locations;
 	}
 
 	//The selected player's details, NULL until they arrived (or for another player)

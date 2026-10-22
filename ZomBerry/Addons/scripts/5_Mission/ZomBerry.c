@@ -8,6 +8,7 @@ class ZomberryBase {
 	protected ref ZBerryServerRPC m_ServerRPC;
 	protected ref ZBerryBans m_Bans;
 	protected ref ZBerryStreamServer m_Streams;
+	protected ref ZBerryLocations m_Locations;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -24,8 +25,9 @@ class ZomberryBase {
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) {
 			m_Auth = new ZBerryAuth;
 			m_Bans = new ZBerryBans;
-			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
-			m_Streams = new ZBerryStreamServer(m_Auth);
+			m_Locations = new ZBerryLocations;
+			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans, m_Locations);
+			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
 			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
@@ -114,6 +116,7 @@ class ZomberryBase {
 	void OnServerReady() {
 		m_Auth.LoadAdmins();
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
+		m_Locations.Load(GetConfig().GetConfigDir() + ZBerryLocations.CONFIG_FILE);
 		if (GetGame().IsMultiplayer()) GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
 	}
 

@@ -31,7 +31,11 @@ enum ZBerryRPCOp {
 	LogEvents = 28, //Server -> client: start over, a batch of log events (ZBerryEventLog)
 	LogDamage = 29, //Server -> client: start over, new player and weapon names, a batch of damage records
 	Message = 30, //Client -> server: recipient's session id (-1: everyone), text
-	PlayerDetails = 31 //Server -> client: the selected player's id, ping, position, time online, status (ZBerryPlayerDetails)
+	PlayerDetails = 31, //Server -> client: the selected player's id, ping, position, time online, status (ZBerryPlayerDetails)
+	LocationAdd = 32, //Client -> server: name; saved at the admin's position
+	LocationDelete = 33, //Client -> server: name
+	LocationTeleport = 34, //Client -> server: name, session id of the player to move (-1: the admin)
+	Locations = 35 //Server -> client: version, the saved locations (ZBerryLocations)
 }
 
 //Which side received the call

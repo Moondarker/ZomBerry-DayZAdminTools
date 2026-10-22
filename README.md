@@ -104,8 +104,9 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.messages.announce` | Announcements to everyone online |
 | `zomberry.map.view` | The Map tab |
 | `zomberry.map.player_markers` | Player markers on the map |
-| `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
-| `zomberry.map.teleport_players` | Teleporting the selected player with `Ctrl` + click on the map. Follows the protection nodes |
+| `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map, to typed coordinates or to a saved location |
+| `zomberry.map.teleport_players` | Teleporting the selected player with `Ctrl` + click on the map, to typed coordinates or to a saved location. Follows the protection nodes |
+| `zomberry.map.locations.manage` | Saving and deleting locations on the Map tab |
 | `zomberry.map.markers.<category>` | Object markers on the map: `vehicles`, `tents`, `storage`, `bases` or `bodies`. `zomberry.map.markers.*` grants all of them |
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
@@ -275,13 +276,14 @@ The stock set:
 
 With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. They update every 2 seconds while the map is open.
 
-The buttons along the top of the map switch marker types on and off. Each one only appears with its permission.
+**Filters**, top left, opens a list of marker types when you point at it, and closes shortly after the mouse leaves. Each type only appears with its permission.
 - **Players:** on by default.
 - **Vehicles:** cars and boats, with their names.
 - **Tents:** pitched tents and shelters.
 - **Storage:** barrels, sea chests, wooden crates and buried stashes.
 - **Bases:** fences, watchtowers and flagpoles.
 - **Bodies:** dead players, with their names.
+- **Locations:** saved locations, on by default.
 
 Storage and base parts are grouped: one marker per 50 m square, with a count, such as "Base (23)". Objects in someone's hands or inventory aren't shown. Object markers refresh every 10 seconds, and one map shows up to 1,000 of them. If there are more, the hint below the map says how many were left out.
 - **Teleporting:** hold `Alt` and click a spot.
@@ -290,9 +292,17 @@ Storage and base parts are grouped: one marker per 50 m square, with a count, su
 
 The cursor's coordinates are shown below the map.
 
+**Coordinates**, top centre: type X and Y as the map shows them, then press **Go** to teleport yourself there, or **Player** for the selected player. The height comes from the ground.
+
+**Locations**, top right, opens the saved locations: places all admins share, such as a trader or an admin area.
+- **Click a name** to show it on the map.
+- **Go** teleports you there, **Player** teleports the selected player. You arrive exactly where the location was saved, height included, so a spot inside a building works.
+- **Save here** (with `zomberry.map.locations.manage`) saves your current position under the name you typed. **X** deletes a location: click it twice.
+- The list is kept in `ZomBerryLocations.json` in the server's `ZomBerry` profile folder, up to 100 locations with names of up to 40 characters.
+
 ### Logs
 
-Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, saved locations, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
 - **Kept across restarts:** the server keeps the last 2048 events and 10486 damage records in `ZomBerryEventLog.bin` in its `ZomBerry` profile folder, with the newest additions in `ZomBerryEventLog.bin.journal`.
   - Each start logs "Server started", with how much it restored, and whether the previous run stopped without a clean shutdown. A clean shutdown logs "Server stopping".
   - Even after a crash, everything logged up to it is kept.
