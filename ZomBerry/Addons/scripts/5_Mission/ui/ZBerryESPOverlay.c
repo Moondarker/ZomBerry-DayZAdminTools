@@ -1,10 +1,11 @@
 //ESP overlay (#59), switched on and off by the server's ESP function through the "zomberry_esp" client feature.
 //What it draws is up to this client (ZBerryESPSettings, the ESP tab). It draws what this client's network bubble holds
 //(ZBerryEntityRegistry): players with box, skeleton up close and a label, vehicles with box and name, infected and
-//animals with a box. Players outside the bubble come from the streams as labels
+//animals with a box, loot on the ground with a small square and name. Players outside the bubble come from the
+//streams as labels
 class ZBerryESPOverlay {
 	static const string FEATURE = "zomberry_esp";
-	static const int LABEL_COUNT = 40;
+	static const int LABEL_COUNT = 100; //Loot is drawn last: players and vehicles get labels first
 	static const float SKELETON_DISTANCE = 150; //Metres
 
 	static const int COLOR_PLAYER = 0xFF55AAFF;
@@ -13,6 +14,10 @@ class ZBerryESPOverlay {
 	static const int COLOR_VEHICLE = 0xFFFFC34D;
 	static const int COLOR_INFECTED = 0xFFFF5A5A;
 	static const int COLOR_ANIMAL = 0xFF8FD18F;
+	static const int COLOR_LOOT = 0xFFD8D8D8;
+
+	static const int LOOT_SCAN_MS = 1000; //Loot isn't registered anywhere (there's too much of it): looked for this often
+	static const int LOOT_LIMIT = 300; //Nearest items kept per look
 
 	protected Widget m_Root;
 	protected CanvasWidget m_Canvas;
@@ -20,6 +25,8 @@ class ZBerryESPOverlay {
 	protected int m_LabelsUsed;
 
 	protected bool m_Enabled;
+	protected ref array<ItemBase> m_Loot = new array<ItemBase>; //Nearest first. Weak: NULL once an item is deleted
+	protected int m_LootScanTime = -LOOT_SCAN_MS;
 
 	void ZBerryESPOverlay() {
 		GetZomberryCmdAPI().RegisterClientFeature(FEATURE, this, "OnFeature");
@@ -84,6 +91,7 @@ class ZBerryESPOverlay {
 		if (settings.Vehicles) DrawEntities(ZBerryEntityCategory.VEHICLES, cameraPos, settings.MaxDistance, COLOR_VEHICLE, lineWidth, true);
 		if (settings.Infected) DrawEntities(ZBerryEntityCategory.INFECTED, cameraPos, settings.AIDistance, COLOR_INFECTED, lineWidth, false);
 		if (settings.Animals) DrawEntities(ZBerryEntityCategory.ANIMALS, cameraPos, settings.AIDistance, COLOR_ANIMAL, lineWidth, false);
+		if (settings.Loot) DrawLoot(cameraPos, settings.LootDistance, lineWidth);
 
 		for (int i = m_LabelsUsed; i < m_Labels.Count(); ++i) m_Labels[i].Show(false);
 	}
@@ -172,6 +180,58 @@ class ZBerryESPOverlay {
 			ZBerryESPDraw.DrawBox(m_Canvas, left, top, right, bottom, color, lineWidth);
 			if (withName) AddLabel((left + right) / 2, bottom, entity.GetDisplayName() + " " + Math.Round(distance) + "m", color);
 		}
+	}
+
+	//A small square on each item, and its name while labels are left
+	protected void DrawLoot(vector cameraPos, float maxDistance, float lineWidth) {
+		if (GetGame().GetTime() - m_LootScanTime >= LOOT_SCAN_MS) ScanLoot(cameraPos, maxDistance);
+
+		float half = 3 * ZBerryUIUtils.GetUIScale();
+		foreach (ItemBase item : m_Loot) {
+			if (!item || item.GetHierarchyParent()) continue; //Picked up since the last look
+
+			vector position = item.GetPosition();
+			float distance = vector.Distance(cameraPos, position);
+			if (distance > maxDistance) continue;
+
+			float x, y;
+			if (!ZBerryESPDraw.ToScreen(position, x, y)) continue;
+			ZBerryESPDraw.DrawBox(m_Canvas, x - half, y - half, x + half, y + half, COLOR_LOOT, lineWidth);
+			AddLabel(x, y + half, item.GetDisplayName() + " " + Math.Round(distance) + "m", COLOR_LOOT);
+		}
+	}
+
+	//Items on the ground around the camera, nearest first, at most LOOT_LIMIT
+	protected void ScanLoot(vector cameraPos, float maxDistance) {
+		m_LootScanTime = GetGame().GetTime();
+		m_Loot.Clear();
+		TFloatArray distances = new TFloatArray;
+
+		array<Object> objects = new array<Object>;
+		GetGame().GetObjectsAtPosition3D(cameraPos, maxDistance, objects, NULL);
+		foreach (Object obj : objects) {
+			ItemBase item = ItemBase.Cast(obj);
+			if (!IsGroundLoot(item)) continue;
+
+			float distance = vector.Distance(cameraPos, item.GetPosition());
+			int index = 0;
+			while (index < distances.Count() && distances[index] <= distance) ++index;
+			if (index >= LOOT_LIMIT) continue;
+
+			distances.InsertAt(distance, index);
+			m_Loot.InsertAt(item, index);
+			if (m_Loot.Count() > LOOT_LIMIT) {
+				distances.Remove(LOOT_LIMIT);
+				m_Loot.Remove(LOOT_LIMIT);
+			}
+		}
+	}
+
+	//Lying loose on the ground: not in anyone's inventory or a container, and not something built or placed (bases,
+	//tents, barrels and crates have their own map markers)
+	protected static bool IsGroundLoot(ItemBase item) {
+		if (!item || item.GetHierarchyParent()) return false;
+		return !item.IsInherited(BaseBuildingBase) && !item.IsInherited(TentBase) && !item.IsInherited(DeployableContainer_Base);
 	}
 
 	//Centred under (x, y), from a fixed pool

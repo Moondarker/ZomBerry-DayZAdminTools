@@ -278,6 +278,33 @@ PanelWidgetClass ESPWrapper {
     }
    }
   }
+  ButtonWidgetClass ESPLoot {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 451 148
+   size 139 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass ESPLootLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Loot"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
   TextWidgetClass ESPRangeTitle {
    ignorepointer 1
    position 10 194
@@ -308,10 +335,18 @@ PanelWidgetClass ESPWrapper {
    hexactsize 1
    vexactsize 1
   }
+  PanelWidgetClass ESPLootRangeSlot {
+   position 10 306
+   size 580 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+  }
   TextWidgetClass ESPInfo1 {
    ignorepointer 1
    color 0.75 0.75 0.75 1
-   position 10 318
+   position 10 360
    size 580 22
    hexactpos 1
    vexactpos 1
@@ -326,7 +361,7 @@ PanelWidgetClass ESPWrapper {
   TextWidgetClass ESPInfo2 {
    ignorepointer 1
    color 0.75 0.75 0.75 1
-   position 10 342
+   position 10 384
    size 580 22
    hexactpos 1
    vexactpos 1
@@ -341,7 +376,7 @@ PanelWidgetClass ESPWrapper {
   TextWidgetClass ESPInfo3 {
    ignorepointer 1
    color 0.75 0.75 0.75 1
-   position 10 366
+   position 10 408
    size 580 22
    hexactpos 1
    vexactpos 1

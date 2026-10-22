@@ -333,7 +333,8 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
 Admins who may run the ESP function open this tab from the gear icon in the header. It sets what ESP draws on your own screen. The settings are saved on your computer, in `ZomBerryESP.json` next to `ZomBerryConfig.json`.
 - **Players:** box, skeleton (within 150 m), name, distance and health, each on its own. **Far players** shows players outside your network range as labels, with name and distance.
 - **Vehicles, infected and animals:** each on its own.
-- **Range:** how far players and vehicles are drawn, and separately infected and animals (50–3000 m).
+- **Loot:** items lying on the ground, as a small square with the name and distance. Things that are built or placed (bases, tents, barrels and crates) aren't loot here. With a lot of loot around, the nearest items get names first.
+- **Range:** how far players and vehicles are drawn, and separately infected and animals (50–3000 m), and loot (10–300 m, 50 m by default).
 - **The header button** shows whether ESP is on, and switches it like the ESP function does.
 
 Changes apply right away while ESP is on. The server only sends everyone's position and health while your settings use them (far players or health).

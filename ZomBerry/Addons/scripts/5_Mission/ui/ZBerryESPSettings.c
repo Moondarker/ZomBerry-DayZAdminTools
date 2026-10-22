@@ -10,14 +10,18 @@ class ZBerryESPSettingsData {
 	bool Vehicles = false;
 	bool Infected = false;
 	bool Animals = false;
+	bool Loot = false; //Items lying on the ground
 	int MaxDistance = 1000; //Metres, players and vehicles
 	int AIDistance = 300; //Metres, infected and animals
+	int LootDistance = 50; //Metres: a lot more of it is around than of anything else
 };
 
 class ZBerryESPSettings {
 	static const string FILE_NAME = "ZomBerryESP.json";
 	static const int MIN_DISTANCE = 50;
 	static const int MAX_DISTANCE = 3000;
+	static const int LOOT_MIN_DISTANCE = 10;
+	static const int LOOT_MAX_DISTANCE = 300; //The overlay looks for it around the camera, which gets slow further out
 
 	protected ref ZBerryESPSettingsData m_Data = new ZBerryESPSettingsData;
 	protected bool m_LoadFailed; //An unreadable file is kept as it is: no saving over it
@@ -52,6 +56,7 @@ class ZBerryESPSettings {
 		m_Data = loaded;
 		m_Data.MaxDistance = Math.Clamp(m_Data.MaxDistance, MIN_DISTANCE, MAX_DISTANCE);
 		m_Data.AIDistance = Math.Clamp(m_Data.AIDistance, MIN_DISTANCE, MAX_DISTANCE);
+		m_Data.LootDistance = Math.Clamp(m_Data.LootDistance, LOOT_MIN_DISTANCE, LOOT_MAX_DISTANCE);
 	}
 
 	//After changing Get()'s fields: the overlay follows at once, the file is written by Save

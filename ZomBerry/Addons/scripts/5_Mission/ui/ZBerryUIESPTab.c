@@ -6,8 +6,8 @@ class ZBerryUIESPTab extends ZBerryUITab {
 
 	protected ref array<ButtonWidget> m_Toggles = new array<ButtonWidget>;
 	protected ref TStringArray m_ToggleNames = new TStringArray; //Setting of each toggle, see Get/SetToggle
-	protected ref ZBerryUIFuncParamRow m_RangeRow, m_AIRangeRow;
-	protected ref ZBerryFuncParam m_RangeParam, m_AIRangeParam; //Kept here: the rows only hold weak references
+	protected ref ZBerryUIFuncParamRow m_RangeRow, m_AIRangeRow, m_LootRangeRow;
+	protected ref ZBerryFuncParam m_RangeParam, m_AIRangeParam, m_LootRangeParam; //Kept here: the rows only hold weak references
 	protected bool m_ShownEnabled;
 
 	protected override void OnInit() {
@@ -20,6 +20,7 @@ class ZBerryUIESPTab extends ZBerryUITab {
 		AddToggle("ESPVehicles", "Vehicles");
 		AddToggle("ESPInfected", "Infected");
 		AddToggle("ESPAnimals", "Animals");
+		AddToggle("ESPLoot", "Loot");
 
 		ZBerryESPSettingsData settings = GetZBerryESPSettings().Get();
 		TIntArray range = {ZBerryESPSettings.MIN_DISTANCE, ZBerryESPSettings.MAX_DISTANCE}; //min, max, then the current value
@@ -28,8 +29,12 @@ class ZBerryUIESPTab extends ZBerryUITab {
 		aiRange.Insert(settings.AIDistance);
 		m_RangeParam = new ZBerryFuncParam("Players, vehicles (m)", range);
 		m_AIRangeParam = new ZBerryFuncParam("Infected, animals (m)", aiRange);
+		TIntArray lootRange = {ZBerryESPSettings.LOOT_MIN_DISTANCE, ZBerryESPSettings.LOOT_MAX_DISTANCE};
+		lootRange.Insert(settings.LootDistance);
+		m_LootRangeParam = new ZBerryFuncParam("Loot (m)", lootRange);
 		m_RangeRow = AddRangeRow("ESPRangeSlot", m_RangeParam);
 		m_AIRangeRow = AddRangeRow("ESPAIRangeSlot", m_AIRangeParam);
+		m_LootRangeRow = AddRangeRow("ESPLootRangeSlot", m_LootRangeParam);
 
 		UpdateToggles();
 	}
@@ -64,6 +69,7 @@ class ZBerryUIESPTab extends ZBerryUITab {
 			case "Vehicles": return settings.Vehicles;
 			case "Infected": return settings.Infected;
 			case "Animals": return settings.Animals;
+			case "Loot": return settings.Loot;
 		}
 		return false;
 	}
@@ -80,6 +86,7 @@ class ZBerryUIESPTab extends ZBerryUITab {
 			case "Vehicles": settings.Vehicles = value; break;
 			case "Infected": settings.Infected = value; break;
 			case "Animals": settings.Animals = value; break;
+			case "Loot": settings.Loot = value; break;
 		}
 		GetZBerryESPSettings().Changed();
 	}
@@ -113,6 +120,10 @@ class ZBerryUIESPTab extends ZBerryUITab {
 		}
 		if (m_AIRangeRow && m_AIRangeRow.GetValue() != settings.AIDistance) {
 			settings.AIDistance = m_AIRangeRow.GetValue();
+			changed = true;
+		}
+		if (m_LootRangeRow && m_LootRangeRow.GetValue() != settings.LootDistance) {
+			settings.LootDistance = m_LootRangeRow.GetValue();
 			changed = true;
 		}
 		if (changed) GetZBerryESPSettings().Changed();

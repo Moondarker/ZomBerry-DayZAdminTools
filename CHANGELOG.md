@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Loot on the ESP:** items lying on the ground, with their name and distance, within their own range (10–300 m, 50 m by default).
 - **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.
 - **Keybinds tab** under the gear icon: every function you can bind, with its key, and buttons to unbind one or all of them.
 - **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
