@@ -84,7 +84,7 @@ class ZBerryClientFeatures {
 			}
 			if (feature.RequiredNode == "" || auth.HasPermission(identity, feature.RequiredNode)) continue;
 
-			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, NULL, identity, "Client feature " + feature.Name + " switched off for {target}, its permission " + feature.RequiredNode + " was removed" );
+			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, NULL, identity, "{target} lost " + feature.RequiredNode + ", so client feature " + feature.Name + " was switched off for them" );
 			Set(identity, feature.Name, false);
 		}
 	}
