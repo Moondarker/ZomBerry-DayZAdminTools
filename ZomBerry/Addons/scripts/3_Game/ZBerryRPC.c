@@ -56,14 +56,20 @@ enum ZBerrySPExec {
 }
 
 class ZBerryRPCHandler {
-	protected Class m_Instance;
+	protected Class m_Instance; //Weak, and not cleared when a plain class instance is deleted: see RemoveMissionHandlers
 	protected string m_FuncName;
 	protected int m_SPExec;
+	protected bool m_Persistent;
 
-	void ZBerryRPCHandler(Class instance, string funcName, int spExec) {
+	void ZBerryRPCHandler(Class instance, string funcName, int spExec, bool persistent = false) {
 		m_Instance = instance;
 		m_FuncName = funcName;
 		m_SPExec = spExec;
+		m_Persistent = persistent;
+	}
+
+	bool IsPersistent() {
+		return m_Persistent;
 	}
 
 	Class GetInstance() {
@@ -83,13 +89,24 @@ class ZBerryRPCManager {
 	protected ref map<int, ref ZBerryRPCHandler> m_Handlers = new map<int, ref ZBerryRPCHandler>;
 
 	//Handler signature: void funcName(ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-	bool AddRPC(ZBerryRPCOp opcode, string funcName, Class instance, int spExec = ZBerrySPExec.Server) {
-		m_Handlers.Set(opcode, new ZBerryRPCHandler(instance, funcName, spExec));
+	//persistent: the instance lives as long as the game (DayZGame's), not just the mission
+	bool AddRPC(ZBerryRPCOp opcode, string funcName, Class instance, int spExec = ZBerrySPExec.Server, bool persistent = false) {
+		m_Handlers.Set(opcode, new ZBerryRPCHandler(instance, funcName, spExec, persistent));
 		return true;
 	}
 
 	void RemoveRPC(ZBerryRPCOp opcode) {
 		m_Handlers.Remove(opcode);
+	}
+
+	//Client, when it leaves a server: everything the mission registered goes, its objects are built anew for the next
+	//one. A handler outliving its instance crashed the game on the next join (a deleted plain class still looks set)
+	void RemoveMissionHandlers() {
+		TIntArray stale = new TIntArray;
+		foreach (int opcode, ZBerryRPCHandler handler : m_Handlers) {
+			if (!handler.IsPersistent()) stale.Insert(opcode);
+		}
+		foreach (int staleOpcode : stale) m_Handlers.Remove(staleOpcode);
 	}
 
 	//Only target-less RPCs are routed here: the engine delivers RPCs with a target to that object instead

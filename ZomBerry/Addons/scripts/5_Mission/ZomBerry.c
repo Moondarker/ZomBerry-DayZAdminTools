@@ -274,6 +274,18 @@ modded class MissionGameplay {
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
 	}
 
+	//Leaving the server: the client side is built anew for the next one (constructor above), so nothing of this one may
+	//stay registered. Handlers left pointing at deleted objects crashed the game on the next join
+	override void OnMissionFinish() {
+		GetZBerryRPC().RemoveMissionHandlers();
+		g_ZBerryClientAuth = NULL;
+		g_ZBerryClientFeatures = NULL;
+		g_ZBerryStreamClient = NULL;
+		g_ZBerrySpectate = NULL;
+		if (GetGame().IsClient()) g_ZBerryEventLog = NULL; //Singleplayer: it's the server's log too, written while the mission ends
+		super.OnMissionFinish();
+	}
+
 	void ~MissionGameplay() {
 
 		if (m_ZomberryMenu) delete m_ZomberryMenu;
