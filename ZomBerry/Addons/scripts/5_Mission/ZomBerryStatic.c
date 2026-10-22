@@ -5,7 +5,7 @@ static ref ZomberryCmdAPI g_ZomberryCmdAPI;
 	\return \p ZomberryCmdAPI class
 	@code
 		GetZomberryCmdAPI().AddCategory("BadThings", COLOR_RED); //COLOR_RED = 0xFFF22613
-		GetZomberryCmdAPI().AddCommand("Induce vomiting", "MyModExecEject", this, "OnTarget"); //'this' is a Class reference, examples in other files
+		GetZomberryCmdAPI().AddCommand("Induce vomiting", "MyModExecEject", this, "Punish"); //'this' is a Class reference, examples in other files
 		...
 		void MyModExecEject( string funcName, int adminId, int targetId, vector cursor ) {
 			ZBGetPlayerById(targetId).GetStatStomachVolume().Set(2500);

@@ -19,8 +19,10 @@ class ZomberryKeybinds {
 		m_FuncNames.Clear();
 	}
 
-	void AddFunc(int funcId, string funcName) {
+	//Not keybindable: known by name, but a key saved for it (by an older version) doesn't run it
+	void AddFunc(int funcId, string funcName, bool keybindable = true) {
 		m_FuncNames.Set(funcId, funcName);
+		if (!keybindable) return;
 
 		int key = ZomberryBase.GetConfig().GetKeyByFunc(funcName);
 		if (key != -1) m_KeyToFunc.Set(key, funcId);
@@ -32,6 +34,11 @@ class ZomberryKeybinds {
 			if (name == funcName) return funcId;
 		}
 		return -1;
+	}
+
+	//"" when it isn't in the current list
+	string GetFuncName(int funcId) {
+		return m_FuncNames.Get(funcId);
 	}
 
 	//-1 when the function has no key

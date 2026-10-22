@@ -8,6 +8,12 @@ modded class PlayerBase
 	protected bool m_ZBInvisible;
 	protected bool m_ZBHiddenHere; //What this client last applied
 
+	//Infinite ammo: a server flag on the character, plus the character it's on for its own client (told through a
+	//ZomBerry client feature rather than a synced variable: PlayerBase already has about as many as the engine allows)
+	protected bool m_ZBInfiniteAmmo;
+	protected static bool s_ZBLocalInfiniteAmmo;
+	protected static int s_ZBInfiniteAmmoLow, s_ZBInfiniteAmmoHigh;
+
 	override void Init() {
 		super.Init();
 		RegisterNetSyncVariableBool("m_ZBInvisible");
@@ -37,6 +43,42 @@ modded class PlayerBase
 		m_ZBInvisible = invisible;
 		ZBUpdateAllowDamage();
 		SetSynchDirty();
+	}
+
+	//Server and the character's own client
+	bool ZBHasInfiniteAmmo() {
+		if (GetGame().IsServer()) return m_ZBInfiniteAmmo;
+		if (!s_ZBLocalInfiniteAmmo) return false;
+
+		int low, high;
+		GetNetworkID(low, high);
+		return low == s_ZBInfiniteAmmoLow && high == s_ZBInfiniteAmmoHigh;
+	}
+
+	//Server
+	void ZBSetInfiniteAmmo(bool enabled) {
+		if (GetGame().IsMultiplayer() && GetGame().IsClient()) return;
+		m_ZBInfiniteAmmo = enabled;
+	}
+
+	//Client: which of this client's characters has it
+	static void ZBSetLocalInfiniteAmmo(bool enabled, int networkLow, int networkHigh) {
+		s_ZBLocalInfiniteAmmo = enabled;
+		s_ZBInfiniteAmmoLow = networkLow;
+		s_ZBInfiniteAmmoHigh = networkHigh;
+	}
+
+	//After a shot: the magazine full again, on the server and on the shooter's client like vanilla's debug option
+	void ZBRefillAfterShot(Weapon_Base weapon) {
+		if (!weapon || !ZBHasInfiniteAmmo()) return;
+
+		Magazine magazine = weapon.GetMagazine(weapon.GetCurrentMuzzle());
+		if (!magazine) return;
+		if (GetGame().IsServer()) {
+			magazine.ServerSetAmmoMax();
+		} else {
+			magazine.LocalSetAmmoMax();
+		}
 	}
 
 	//God mode and invisibility each keep damage off, neither switches the other. SetAllowDamage(false) also stops

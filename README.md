@@ -221,29 +221,38 @@ The left panel lists everyone online. Admins are green, and the item in a player
 ### Functions
 
 - **Running a function:** click it in the list, set its parameters if it has any (slider or exact value), then press **Execute** or double-click the function.
-  - Functions in the "OnTarget" and "==" categories act on the selected player. If no player is selected, some of them use you as the target and the rest ask you to select a player first.
+  - Functions in the Teleport, Player and Punish categories act on the selected player. If no player is selected, some of them use you as the target and the rest ask you to select a player first.
   - "Delete object near cursor" deletes what the cursor is on: items, vehicles, bodies, base parts, infected or animals. It never deletes living players or objects that belong to the map. Run it a second time on the same object to confirm.
   - "Clean up around cursor" removes one kind of thing within a radius (5–200 m): infected, dead bodies, loose items, or ruined items.
     - Bases, tents, storage, stashes and fireplaces are never touched.
     - The first run says how many it found, and running it again within 10 seconds deletes them.
   - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
-- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet.
+- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet, and neither can "Teleport all players back", so it never runs by accident.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
-- **Removing all binds:** select any function without parameters, hold `A` and press the button twice.
+- **Removing all binds:** select any function that can be bound, hold `A` and press the button twice.
 
 The stock set:
 
 | Category | Functions |
 |---|---|
-| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, spectate target, toggle freeze, repair item in hands, refuel and repair nearby vehicles |
-| == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
-| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor, clean up around cursor, flip vehicle near cursor, teleport all players to you, ESP |
+| Teleport | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, teleport all players to you and back |
+| Player | Heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, toggle infinite ammo, toggle freeze, repair item in hands |
+| Punish | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
+| Camera | FreeCam, spectate target, ESP |
+| World | Time to day or night, set time, set date, set weather (fog, overcast, rain) |
+| Objects | Delete object near cursor, clean up around cursor, flip vehicle near cursor, refuel and repair nearby vehicles |
+
+Set time, set date and set weather start from the game's current time, date and weather when you select them.
 
 **God mode:** the target takes no damage and their stamina stays full until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
 **Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them until it's switched off again. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
 **Teleport all players to you:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
+
+**Teleport all players back:** undoes it. Everyone who was moved goes back to where they were before the first teleport since the last revert. Players who are offline, in a vehicle or protected from your rank stay saved, so a later run moves them too. Players who died meanwhile are forgotten. The saved spots don't survive a server restart.
+
+**Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
 **Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
@@ -357,14 +366,16 @@ The function list lives on the server and is sent to admins when they open the m
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false)** adds a command:
+**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true)** adds a command:
 - `displayName`: shown in the function list.
 - `functionName`: the method to call on `instance`.
 - `instance`: the object that has the method. Keep it alive for as long as the command exists.
-- `categoryName`: an existing category.
+- `categoryName`: an existing category. The stock ones are Teleport, Player, Punish, Camera, World and Objects. Commands for the categories from before 0.8.0 still work: OnTarget goes to Player, `==` to Punish and OnServer to World.
 - `targetRequired`: if `true`, the admin must select a player first. If `false`, the admin is the target when nobody is selected.
 - `functionParams`: up to 3 integer parameters, shown as sliders with an exact-value box. A parameter can name its values: the box then shows the name, and admins can type either a name or a number. With as many names as values, each value gets its own name. With fewer names, the range is split evenly between them. The function still receives the number.
 - `harmful`: set it to `true` if the command hurts, moves or works against its target. Groups with `zomberry.protect.lower.harm` or `zomberry.protect.same.harm` are then shielded from it.
+- `serverWide`: set it to `true` if the command acts on the world rather than on a player (time, weather, cleanup). The log files it that way.
+- `keybindable`: set it to `false` to keep the command off keys, so it only runs from the menu.
 
 ```c
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);

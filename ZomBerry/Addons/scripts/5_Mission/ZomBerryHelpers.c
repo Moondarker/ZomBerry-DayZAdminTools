@@ -133,10 +133,12 @@ class ZBerryFunction {
 	protected ref ZBerryFuncParamArray m_Parameters;
 	protected bool m_Harmful; //Hurts or moves the target: groups can protect their members from it (zomberry.protect.*.harm)
 	protected bool m_ServerWide; //Acts on the world rather than on a player (time, weather, cleanup), for the log
+	protected bool m_Keybindable; //False: only runs from the menu, so a stray key press can't trigger it
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false, bool keybindable = true ) {
 		m_Harmful = harmful;
 		m_ServerWide = serverWide;
+		m_Keybindable = keybindable;
 		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
@@ -181,6 +183,10 @@ class ZBerryFunction {
 
 	bool IsServerWide() {
 		return m_ServerWide;
+	}
+
+	bool IsKeybindable() {
+		return m_Keybindable;
 	}
 
 	//"Set weather (Fog: 0, Overcast: 80, Rain: 100)", named values by name, for the log

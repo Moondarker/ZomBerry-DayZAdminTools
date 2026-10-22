@@ -80,7 +80,9 @@ class ZomberryCmdAPI {
 	//harmful: the function hurts, moves or otherwise works against its target. Groups can protect their members
 	//from harmful functions run by lower-ranked or same-level admins (zomberry.protect.lower.harm, zomberry.protect.same.harm)
 	//serverWide: it acts on the world rather than on a player (time, weather, cleanup), so the log files it that way
-	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false) {
+	//keybindable: false keeps it off keys, for commands that shouldn't run from a stray key press
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true) {
+		if (!m_oCategoryList.Contains(catName)) catName = MapLegacyCategory(catName);
 		if (m_oCategoryList.Contains(catName)) {
 			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
 				ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Adding " + funcName + ", but function with same name already exists.");
@@ -91,7 +93,7 @@ class ZomberryCmdAPI {
 			ZBerryFuncParamArray params = funcParams; //Local keeps the new empty array alive, arguments are weak references
 			if (!params) params = new ZBerryFuncParamArray;
 
-			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful, serverWide);
+			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful, serverWide, keybindable);
 			++m_lastFuncId;
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);
@@ -100,6 +102,14 @@ class ZomberryCmdAPI {
 		} else {
 			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: Unknown category " + catName + ", cannot add function " + funcName);
 		}
+	}
+
+	//The stock categories before 0.8.0, which other mods' commands may still name
+	protected static string MapLegacyCategory(string catName) {
+		if (catName == "OnTarget") return ZomberryStockFunctions.CATEGORY_PLAYER;
+		if (catName == "==") return ZomberryStockFunctions.CATEGORY_PUNISH;
+		if (catName == "OnServer") return ZomberryStockFunctions.CATEGORY_WORLD;
+		return catName;
 	}
 
 	/**

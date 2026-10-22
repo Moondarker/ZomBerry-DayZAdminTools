@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.
 - **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
   - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).
   - Storage and base parts are grouped per area, with a count.
@@ -17,7 +18,7 @@
   - Harmful stock functions: kill, bite, strip, symptoms, set health or blood, god mode toggle, and teleporting the target.
   - Superadmins ignore protections.
   - Groups with `*` are protected automatically, so a moderator can no longer kill a superadmin.
-- **Developer APIs:** `AddCommand` has a new optional `harmful` parameter, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`), only asked for confirmation (`AwaitConfirmation()`), or describe what they did in the log (`DescribeCall()`, `GetCurrentCall()`).
+- **Developer APIs:** `AddCommand` has new optional `harmful` and `keybindable` parameters, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`), only asked for confirmation (`AwaitConfirmation()`), or describe what they did in the log (`DescribeCall()`, `GetCurrentCall()`).
 - **Admin event log, with a Logs tab in the menu** (needs `zomberry.logs.view`). The tab takes the Permissions tab's old place, which moved under the gear icon.
   - **View:** everyone the log mentions on the left (double-click one to see only their events), a search by text, name or Steam64 id, a type filter, and live updates you can pause.
   - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, respawns, logouts, kills, auth problems and refused attempts.
@@ -45,6 +46,7 @@
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
 - **Teleport all players to me** (#57): a new stock function. You confirm it by running it twice, and players are placed in a ring around you. It skips players in vehicles and admins protected from your rank.
+- **Teleport all players back:** undoes Teleport all players to me, moving everyone back to where they were. Players who are offline or in a vehicle at the time stay saved for a later run. It can't be bound to a key, so it never runs by accident.
 - **Spectate target** (#60): a new stock function that shows the selected player's view.
   - **What it follows:** where their own camera looks, up and down and free look included. In third person the camera sits over their shoulder. While they're watched, their game reports which mode they use and where they look.
   - **Anywhere on the map:** the area your game loads moves with the camera, and the camera follows a target who teleports or drives away. FreeCam works the same way.
@@ -68,6 +70,8 @@
 
 ### Changed
 
+- **Functions are sorted into new categories:** Teleport, Player, Punish, Camera, World and Objects, instead of OnTarget, `==` and OnServer. Commands from other mods that still name the old categories land in Player, Punish and World.
+- **Set time, Set date and Set weather start from the game's current time, date and weather** when you select them, instead of fixed values.
 - **Keybind code reworked** (#51): binding, unbinding and clearing are separate operations instead of magic values. Existing keybinds keep working.
 - **Spawn target picker:** hovering over the Spawn tab's target button opens a list of places above it to pick from. Clicking the button still steps through them. The list closes when the mouse leaves.
 - **Much less network traffic for the player list and the map.** Clients now tell the server what they show, and the server only sends that, only when it changed.
@@ -87,6 +91,7 @@
 ### Fixed
 
 - **Delete object near cursor picked the wrong thing:** it took the first object within 1.5 m, could hit map objects, which only vanish for players who join later, and confirmed by comparing text. It now picks the object the cursor is on (by its bounding box), only networked objects, never living players, and confirms by network ID.
+- **Set date couldn't set the 31st:** days only went up to 30.
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
 - **Set weather barely worked on servers.** The server's own weather took over again right away: a storm often brought no rain at all, and clear weather kept raining for about a minute. The chosen weather now applies at once and holds for 6 minutes.
 - **FreeCam started inside the admin's head.** It now starts just behind it.
