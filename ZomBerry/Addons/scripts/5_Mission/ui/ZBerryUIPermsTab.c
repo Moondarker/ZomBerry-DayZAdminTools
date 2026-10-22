@@ -24,6 +24,8 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected bool m_Dirty = false;
 	protected bool m_ConfirmDelete = false;
 	protected bool m_PreviewMode = false; //Right list shows what the spawn rules allow instead of permissions
+	protected string m_PermsListGroup = ""; //Whose permissions the list shows: same group and rows are updated in place, which keeps the scroll
+	protected string m_ToggledNode = ""; //Kept in view when toggling it rebuilt the list
 	protected float m_LaidOutHeight = -1;
 	protected int m_MouseOnInputs = 0; //Typing must not close the menu
 
@@ -155,7 +157,10 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		m_PermsList = m_PermsLists.GetActive();
 
 		if (groupsChanged) RefreshGroups();
-		if (permsChanged) RefreshPerms();
+		if (permsChanged) {
+			m_PermsListGroup = ""; //The new variant is empty
+			RefreshPerms();
+		}
 		m_LaidOutHeight = -1; //New variants need their position too
 	}
 
@@ -288,6 +293,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	//The classes the edited group's spawn rules allow, from the same configs the Spawn tab lists
 	protected void RefreshPreview() {
 		m_PermsList.ClearItems();
+		m_PermsListGroup = "";
 
 		ZBerryPermGroup group;
 		if (m_Snapshot) group = m_Snapshot.FindGroup(m_EditGroup);
@@ -332,11 +338,13 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		}
 
 		m_PermsTitle.SetText(PERMS_TITLE);
-		m_PermsList.ClearItems();
-		if (!m_Snapshot) return;
-
-		ZBerryPermGroup group = m_Snapshot.FindGroup(m_EditGroup);
-		if (!group) return;
+		ZBerryPermGroup group;
+		if (m_Snapshot) group = m_Snapshot.FindGroup(m_EditGroup);
+		if (!group) {
+			m_PermsList.ClearItems();
+			m_PermsListGroup = "";
+			return;
+		}
 
 		TStringArray rows = new TStringArray;
 		rows.InsertAll(m_Snapshot.KnownNodes);
@@ -346,7 +354,13 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			if (rows.Find(node) == -1) rows.Insert(node);
 		}
 
-		foreach (string row : rows) {
+		//Clearing the list scrolls it to the top: same group, same rows, so update them in place
+		bool inPlace = m_PermsListGroup == m_EditGroup && m_PermsList.GetNumItems() == rows.Count();
+		if (!inPlace) m_PermsList.ClearItems();
+		m_PermsListGroup = m_EditGroup;
+
+		for (int index = 0; index < rows.Count(); ++index) {
+			string row = rows[index];
 			string mark = "[  ] ";
 			int color = ZBerryUIUtils.TEXT_DEFAULT;
 
@@ -361,9 +375,21 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 				color = COLOR_WILDCARD;
 			}
 
-			int index = m_PermsList.AddItem(" " + mark + row, new Param1<string>(row), 0);
+			if (inPlace) {
+				m_PermsList.SetItem(index, " " + mark + row, new Param1<string>(row), 0);
+			} else {
+				m_PermsList.AddItem(" " + mark + row, new Param1<string>(row), 0);
+			}
 			m_PermsList.SetItemColor(index, 0, color);
 		}
+
+		//Rebuilt after a toggle added or dropped a row: back to the toggled one
+		int toggledRow = rows.Find(m_ToggledNode);
+		if (!inPlace && toggledRow != -1) {
+			m_PermsList.SelectRow(toggledRow);
+			m_PermsList.EnsureVisible(toggledRow);
+		}
+		m_ToggledNode = "";
 	}
 
 	protected void RefreshSpawnRules() {
@@ -546,6 +572,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		Param1<string> nodeData;
 		m_PermsList.GetItemData(row, 0, nodeData);
+		m_ToggledNode = nodeData.param1;
 		TogglePermission(nodeData.param1);
 		return true;
 	}
