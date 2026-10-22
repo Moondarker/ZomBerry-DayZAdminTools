@@ -25,7 +25,8 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected bool m_ConfirmDelete = false;
 	protected bool m_PreviewMode = false; //Right list shows what the spawn rules allow instead of permissions
 	protected string m_PermsListGroup = ""; //Whose permissions the list shows: same group and rows are updated in place, which keeps the scroll
-	protected string m_ToggledNode = ""; //Kept in view when toggling it rebuilt the list
+	protected ref map<string, ref TStringArray> m_CustomRows = new map<string, ref TStringArray>; //Group -> patterns listed while the tab is open, kept once unset
+	protected string m_ShowNode = ""; //Scrolled into view by the next rebuild (a pattern just added)
 	protected float m_LaidOutHeight = -1;
 	protected int m_MouseOnInputs = 0; //Typing must not close the menu
 
@@ -143,6 +144,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 	protected override void OnDeactivate() {
 		if (m_PlayersPanel) m_PlayersPanel.SetPermsMode(false);
 		m_MouseOnInputs = 0;
+		m_CustomRows.Clear();
 	}
 
 	override void OnMenuShow() {
@@ -166,6 +168,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	override void OnMenuHide() {
 		m_MouseOnInputs = 0;
+		m_CustomRows.Clear();
 	}
 
 	override bool BlocksClose() {
@@ -346,12 +349,23 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			return;
 		}
 
-		TStringArray rows = new TStringArray;
-		rows.InsertAll(m_Snapshot.KnownNodes);
+		//Known nodes, then the group's other patterns (wildcards, typed nodes). A pattern stays listed, as unset, after
+		//a toggle removes it, until the tab is closed: it can be switched back on, and the rows don't change
+		TStringArray custom = m_CustomRows.Get(m_EditGroup);
+		if (!custom) {
+			custom = new TStringArray;
+			m_CustomRows.Set(m_EditGroup, custom);
+		}
 		foreach (string pattern : group.Permissions) {
 			string node = pattern;
 			if (node.IndexOf("-") == 0) node = node.Substring(1, node.Length() - 1);
-			if (rows.Find(node) == -1) rows.Insert(node);
+			if (m_Snapshot.KnownNodes.Find(node) == -1 && custom.Find(node) == -1) custom.Insert(node);
+		}
+
+		TStringArray rows = new TStringArray;
+		rows.InsertAll(m_Snapshot.KnownNodes);
+		foreach (string customNode : custom) {
+			if (rows.Find(customNode) == -1) rows.Insert(customNode);
 		}
 
 		//Clearing the list scrolls it to the top: same group, same rows, so update them in place
@@ -383,13 +397,12 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			m_PermsList.SetItemColor(index, 0, color);
 		}
 
-		//Rebuilt after a toggle added or dropped a row: back to the toggled one
-		int toggledRow = rows.Find(m_ToggledNode);
-		if (!inPlace && toggledRow != -1) {
-			m_PermsList.SelectRow(toggledRow);
-			m_PermsList.EnsureVisible(toggledRow);
+		int shownRow = rows.Find(m_ShowNode);
+		if (shownRow != -1) {
+			m_PermsList.SelectRow(shownRow);
+			m_PermsList.EnsureVisible(shownRow);
 		}
-		m_ToggledNode = "";
+		m_ShowNode = "";
 	}
 
 	protected void RefreshSpawnRules() {
@@ -431,6 +444,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		if (group.Permissions.Find(pattern) == -1) group.Permissions.Insert(pattern);
 		m_PermInput.SetText("");
+		m_ShowNode = pattern; //A new row: the list is rebuilt, show where it went
 		MarkDirty();
 		RefreshPerms();
 	}
@@ -572,7 +586,6 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		Param1<string> nodeData;
 		m_PermsList.GetItemData(row, 0, nodeData);
-		m_ToggledNode = nodeData.param1;
 		TogglePermission(nodeData.param1);
 		return true;
 	}
