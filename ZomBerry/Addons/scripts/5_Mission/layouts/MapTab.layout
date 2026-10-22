@@ -322,7 +322,7 @@ PanelWidgetClass MapWrapper {
   FrameWidgetClass MapCoords {
    priority 100
    position 0 4
-   size 282 28
+   size 314 28
    halign center_ref
    hexactpos 1
    vexactpos 1
@@ -347,8 +347,8 @@ PanelWidgetClass MapWrapper {
     EditBoxWidgetClass MapCoordX {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 18 2
-     size 70 24
+     position 18 5
+     size 86 18
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -359,7 +359,7 @@ PanelWidgetClass MapWrapper {
     }
     TextWidgetClass MapCoordYLabel {
      ignorepointer 1
-     position 92 0
+     position 108 0
      size 16 28
      hexactpos 1
      vexactpos 1
@@ -375,8 +375,8 @@ PanelWidgetClass MapWrapper {
     EditBoxWidgetClass MapCoordY {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 110 2
-     size 70 24
+     position 126 5
+     size 86 18
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -388,7 +388,7 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapCoordGo {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 186 0
+     position 218 0
      size 40 28
      hexactpos 1
      vexactpos 1
@@ -416,7 +416,7 @@ PanelWidgetClass MapWrapper {
     ButtonWidgetClass MapCoordPlayer {
      priority 100
      color 0.3255 0.3255 0.3255 0.7843
-     position 230 0
+     position 262 0
      size 52 28
      hexactpos 1
      vexactpos 1
@@ -474,7 +474,7 @@ PanelWidgetClass MapWrapper {
   }
   PanelWidgetClass MapLocationsDropdown {
    visible 0
-   color 0 0 0 0.9
+   color 0 0 0 0.95
    position 2 34
    size 300 286
    halign right_ref

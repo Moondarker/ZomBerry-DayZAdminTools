@@ -276,7 +276,7 @@ The stock set:
 
 With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. They update every 2 seconds while the map is open.
 
-**Filters**, top left, opens a list of marker types when you point at it, and closes shortly after the mouse leaves. It works like the Logs tab's type filter: shown types are green and ticked, **All** and **None** switch every type, and the button says what's shown. Each type only appears with its permission.
+**Filters**, top left, opens a list of marker types when you point at it, and closes shortly after the mouse leaves. Each type only appears with its permission.
 - **Players:** on by default.
 - **Vehicles:** cars and boats, with their names.
 - **Tents:** pitched tents and shelters.
