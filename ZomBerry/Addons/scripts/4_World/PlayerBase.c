@@ -7,6 +7,8 @@ modded class PlayerBase
 	//hurt (invisible characters still take bullets). Independent of god mode. Voice chat isn't affected
 	protected bool m_ZBInvisible;
 	protected bool m_ZBHiddenHere; //What this client last applied
+	protected float m_ZBReapplyTimer; //Seconds until the next full re-apply on this client
+	static const float ZB_REAPPLY_INTERVAL = 0.5;
 
 	//Infinite ammo: a server flag on the character, plus the character it's on for its own client (told through a
 	//ZomBerry client feature rather than a synced variable: PlayerBase already has about as many as the engine allows)
@@ -111,9 +113,10 @@ modded class PlayerBase
 		m_ZBHiddenHere = m_ZBInvisible;
 
 		ZBSetTreeInvisible(this, m_ZBInvisible);
-		//Bare head, hands, torso, legs and feet are placeholders of these slots, not attachments: shown while the slot is empty
-		array<string> bodyParts = {"Head", "Gloves", "Body", "Legs", "Feet"};
-		foreach (string bodyPart : bodyParts) ZBSetBodyPartInvisible(InventorySlots.GetSlotIdFromString(bodyPart), m_ZBInvisible);
+		//Bare body parts (head, hands, torso, legs, feet and any other) are placeholders of their slots, not attachments:
+		//shown while the slot is empty. Every slot's, not a list of them: a missed one showed as a stray texture
+		GameInventory inventory = GetInventory();
+		for (int i = 0; i < inventory.GetAttachmentSlotsCount(); ++i) ZBSetBodyPartInvisible(inventory.GetAttachmentSlotId(i), m_ZBInvisible);
 
 		EntityAI inHands = GetHumanInventory().GetEntityInHands();
 		if (inHands) ZBSetTreeInvisible(inHands, m_ZBInvisible);
@@ -174,6 +177,22 @@ modded class PlayerBase
 	override void EEItemOutOfHands(EntityAI item) {
 		super.EEItemOutOfHands(item);
 		if (m_ZBInvisible && ZBHidesHere() && item) ZBSetTreeInvisible(item, false);
+	}
+
+	//The engine shows the item in hands again whenever the hands' state changes (switching items, actions, weapon
+	//handling), and not every change comes through an event: other clients check every frame while the character is
+	//invisible, and re-apply the rest now and then
+	override void EOnFrame(IEntity other, float timeSlice) {
+		super.EOnFrame(other, timeSlice);
+		if (!m_ZBInvisible || !ZBHidesHere()) return;
+
+		HumanItemAccessor accessor = GetItemAccessor();
+		if (accessor && !accessor.IsItemInHandsHidden()) accessor.HideItemInHands(true);
+
+		m_ZBReapplyTimer -= timeSlice;
+		if (m_ZBReapplyTimer > 0) return;
+		m_ZBReapplyTimer = ZB_REAPPLY_INTERVAL;
+		ZBApplyInvisibility();
 	}
 
 	//Steps, movement, clothing, handling and voice sounds (not voice chat), and the noise infected hear
