@@ -13,6 +13,7 @@ class ZBerryServerRPC {
 
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctionsRequest, "SyncFunctionsRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.ExecuteCommand, "ExecuteCommand", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.ExecuteCommandTargets, "ExecuteCommandTargets", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.SpawnObject, "SpawnObject", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.MapTeleport, "MapTeleport", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Kick, "Kick", this, ZBerrySPExec.Client );
@@ -100,24 +101,56 @@ class ZBerryServerRPC {
 		Param4< int, int, vector, autoptr TIntArray > funcParam; //Function id, target session id, admin's cursor, function values
 		if ( !ctx.Read( funcParam ) ) return;
 
-		ZBerryFunction cmdFunc = GetZomberryCmdAPI().GetFunc(funcParam.param1);
-		string funcName = "#" + funcParam.param1;
+		ZBerryFunction cmdFunc = GetRunnableFunction(type, sender, funcParam.param1);
+		if (cmdFunc) RunOnTarget(cmdFunc, sender, funcParam.param2, funcParam.param3, funcParam.param4);
+	}
+
+	//Several selected players. Functions made for that run on each of them; any other function on the last selected
+	//one only, as if it were the only one
+	void ExecuteCommandTargets( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param4< int, autoptr TIntArray, vector, autoptr TIntArray > funcParam; //Function id, target session ids (last: the main one), admin's cursor, function values
+		if ( !ctx.Read( funcParam ) || !funcParam.param2 || funcParam.param2.Count() == 0 ) return;
+
+		ZBerryFunction cmdFunc = GetRunnableFunction(type, sender, funcParam.param1);
+		if (!cmdFunc) return;
+
+		TIntArray targetIds = funcParam.param2;
+		if (!cmdFunc.IsMultiTarget() || targetIds.Count() == 1) {
+			RunOnTarget(cmdFunc, sender, targetIds[targetIds.Count() - 1], funcParam.param3, funcParam.param4);
+			return;
+		}
+		RunOnTargets(cmdFunc, sender, targetIds, funcParam.param3, funcParam.param4);
+	}
+
+	//NULL (and logged) when the sender may not run it or it doesn't exist
+	protected ZBerryFunction GetRunnableFunction(ZBerryCallType type, PlayerIdentity sender, int funcId) {
+		ZBerryFunction cmdFunc = GetZomberryCmdAPI().GetFunc(funcId);
+		string funcName = "#" + funcId;
 		if (cmdFunc) funcName = cmdFunc.GetName();
 
-		if (!CanRun(type, sender, {ZBerryPermissions.FunctionNode(funcName)}, "execute " + funcName)) return;
+		if (!CanRun(type, sender, {ZBerryPermissions.FunctionNode(funcName)}, "execute " + funcName)) return NULL;
 		if (!cmdFunc) {
-			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to run unknown function #" + funcParam.param1 );
-			return;
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to run unknown function #" + funcId );
+			return NULL;
 		}
+		return cmdFunc;
+	}
 
+	//False (logged, and the admin told) when the target's group is protected from the sender's rank
+	protected bool MayTarget(PlayerIdentity sender, ZBerryFunction cmdFunc, int targetId, PlayerBase targetPly) {
+		if (targetId == GetSenderId(sender) || !targetPly || !ZBGetIdentity(targetPly)) return true;
+		if (m_Auth.CanTarget(sender, ZBGetIdentity(targetPly), cmdFunc.IsHarmful())) return true;
+
+		ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, ZBGetIdentity(targetPly), "{actor} tried to run " + cmdFunc.GetDisplayName() + " on {target}, whose group is protected from their rank" );
+		Tell(sender, "Can't run " + cmdFunc.GetDisplayName() + " on " + ZBGetIdentity(targetPly).GetName() + ": their group is protected from your rank");
+		return false;
+	}
+
+	protected void RunOnTarget(ZBerryFunction cmdFunc, PlayerIdentity sender, int targetId, vector cursor, TIntArray values) {
+		string funcName = cmdFunc.GetName();
 		int adminId = GetSenderId(sender);
-		int targetId = funcParam.param2;
 		PlayerBase targetPly = ZBGetPlayerById(targetId);
-		if (targetId != adminId && targetPly && ZBGetIdentity(targetPly) && !m_Auth.CanTarget(sender, ZBGetIdentity(targetPly), cmdFunc.IsHarmful())) {
-			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, ZBGetIdentity(targetPly), "{actor} tried to run " + cmdFunc.GetDisplayName() + " on {target}, whose group is protected from their rank" );
-			Tell(sender, "Can't run " + cmdFunc.GetDisplayName() + " on " + ZBGetIdentity(targetPly).GetName() + ": their group is protected from your rank");
-			return;
-		}
+		if (!MayTarget(sender, cmdFunc, targetId, targetPly)) return;
 
 		bool onTarget = targetId != adminId && targetPly && ZBGetIdentity(targetPly);
 		PlayerIdentity targetIdentity = NULL;
@@ -136,12 +169,83 @@ class ZBerryServerRPC {
 
 		ZomberryCmdAPI api = GetZomberryCmdAPI();
 		ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
-		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
+		RunFunction(cmdFunc, adminId, targetId, cursor, values);
 		api.EndCall(cmdCall);
 
 		vector to;
 		if (moved) to = moved.GetPosition();
-		LogCall(cmdCall, cmdFunc.DescribeCall(funcParam.param4), groupKey, moved != NULL, from, to);
+		LogCall(cmdCall, cmdFunc.DescribeCall(values), groupKey, moved != NULL, from, to);
+	}
+
+	//Once per selected player, each with its own call; refusals are logged one by one as usual, the runs that did
+	//something as one event naming every player
+	protected void RunOnTargets(ZBerryFunction cmdFunc, PlayerIdentity sender, TIntArray targetIds, vector cursor, TIntArray values) {
+		int adminId = GetSenderId(sender);
+		string call = cmdFunc.DescribeCall(values);
+		ZomberryCmdAPI api = GetZomberryCmdAPI();
+		array<ref ZBerryCall> done = new array<ref ZBerryCall>;
+		TIntArray seen = new TIntArray;
+
+		foreach (int targetId : targetIds) {
+			if (seen.Find(targetId) != -1) continue;
+			seen.Insert(targetId);
+
+			PlayerBase targetPly = ZBGetPlayerById(targetId);
+			if (!targetPly || !MayTarget(sender, cmdFunc, targetId, targetPly)) continue; //Left meanwhile, or protected
+
+			PlayerIdentity targetIdentity = NULL;
+			if (targetId != adminId) targetIdentity = ZBGetIdentity(targetPly);
+
+			ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
+			RunFunction(cmdFunc, adminId, targetId, cursor, values);
+			api.EndCall(cmdCall);
+
+			if (cmdCall.GetOutcome() == ZBerryCallOutcome.DONE) {
+				done.Insert(cmdCall);
+			} else {
+				LogCall(cmdCall, call);
+			}
+		}
+		LogCalls(done, call, sender);
+	}
+
+	//The runs of one function on several players as one event. A description every run gave alike (with {target} for
+	//the player) is used for all of them, otherwise "ran <function> on" them
+	protected void LogCalls(array<ref ZBerryCall> done, string call, PlayerIdentity sender) {
+		if (done.Count() == 0) return;
+		if (done.Count() == 1) {
+			LogCall(done[0], call);
+			return;
+		}
+
+		string text = done[0].GetDescription();
+		foreach (ZBerryCall sameCheck : done) {
+			if (sameCheck.GetDescription() != text) text = "";
+		}
+		if (text == "" || !text.Contains("{target}")) text = "{actor} ran " + call + " on {target}";
+
+		int flags = 0;
+		if (done[0].GetFunction().IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
+
+		string actorId, actorName;
+		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+		string firstId, firstName;
+		TStringArray extraIds = new TStringArray;
+		TStringArray extraNames = new TStringArray;
+		for (int i = 0; i < done.Count(); ++i) {
+			PlayerIdentity targetIdentity = done[i].GetTarget();
+			if (!targetIdentity) targetIdentity = sender; //Run on the admin themselves
+			string id, name;
+			ZomberryBase.DescribeIdentity(targetIdentity, id, name);
+			if (i == 0) {
+				firstId = id;
+				firstName = name;
+			} else {
+				extraIds.Insert(id);
+				extraNames.Insert(name);
+			}
+		}
+		ZomberryBase.LogEventRaw(ZBerryEventType.FUNCTION_PLAYER, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
 	}
 
 	//The server is stopping: held-back repeated calls are logged now

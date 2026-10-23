@@ -9,6 +9,7 @@
 - **Loot on the ESP:** items lying on the ground, with their name and distance, within their own range (10–300 m, 50 m by default).
 - **Kicked and banned players see why:** back in the main menu, their game shows the reason, and for bans how long it still lasts and when it ends. This also covers banned players who try to rejoin.
 - **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.
+- **Several players at once:** `Ctrl` + double-click and `Shift` + double-click select more than one player. Functions made for it run on all of them and are logged as one event naming every player; others act on the player selected last. Commands from mods opt in with the new `multiTarget` parameter of `AddCommand`.
 - **Keys in the function list:** each function's key is shown after its name, and the Bind button has no caption for functions that can't be bound.
 - **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
   - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).

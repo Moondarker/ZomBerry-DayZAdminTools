@@ -81,7 +81,9 @@ class ZomberryCmdAPI {
 	//from harmful functions run by lower-ranked or same-level admins (zomberry.protect.lower.harm, zomberry.protect.same.harm)
 	//serverWide: it acts on the world rather than on a player (time, weather, cleanup), so the log files it that way
 	//keybindable: false keeps it off keys, for commands that shouldn't run from a stray key press
-	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true) {
+	//multiTarget: the function can run on several selected players at once. ZomBerry then calls it once per player (the
+	//usual signature) and logs one event with all of them. Without it, it only gets the last selected player
+	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false) {
 		if (!m_oCategoryList.Contains(catName)) catName = MapLegacyCategory(catName);
 		if (m_oCategoryList.Contains(catName)) {
 			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
@@ -93,7 +95,7 @@ class ZomberryCmdAPI {
 			ZBerryFuncParamArray params = funcParams; //Local keeps the new empty array alive, arguments are weak references
 			if (!params) params = new ZBerryFuncParamArray;
 
-			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful, serverWide, keybindable);
+			ref ZBerryFunction funcData = new ZBerryFunction(m_lastFuncId, dispName, funcName, catName, instance, funcColor, onTarget, params, harmful, serverWide, keybindable, multiTarget);
 			++m_lastFuncId;
 
 			m_oCategoryList.GetByName(catName).Insert(funcData);
@@ -210,6 +212,15 @@ class ZomberryCmdAPI {
 			}
 		}
 
+		return NULL;
+	}
+
+	//By the name it was added with (the method name), NULL when there's none
+	ZBerryFunction GetFuncByName(string funcName) {
+		foreach (ZBerryCategory category : m_oCategoryList) {
+			ZBerryFunction funcData = category.GetByName(funcName);
+			if (funcData) return funcData;
+		}
 		return NULL;
 	}
 

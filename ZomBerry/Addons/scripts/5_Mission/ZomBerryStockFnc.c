@@ -123,6 +123,13 @@ class ZomberryStockFunctions {
 		}, false, true);
 		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, CATEGORY_OBJECTS, false, NULL, false, true);
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, CATEGORY_OBJECTS, false);
+
+		//These act on one player each and make sense on several selected players at once
+		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
+		foreach (string multiName : multiTarget) {
+			ZBerryFunction multiFunc = m_ZomberryCmdAPI.GetFuncByName(multiName);
+			if (multiFunc) multiFunc.SetMultiTarget(true);
+		}
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {

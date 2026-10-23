@@ -213,6 +213,7 @@ The left panel lists everyone online. Admins are green, and the item in a player
   - their Steam64 ID. **Copy ID** puts it on the clipboard.
 
   These details refresh every 5 seconds, and only for the selected player.
+- **Several players:** `Ctrl` + double-click adds a player to the selection or takes them out, `Shift` + double-click selects everyone from the last plain double-click to this one. Functions that work on several players (teleport target to cursor or to you, heal, god mode, invisibility, freeze, kill and the other Player and Punish functions) run on all of them and are logged once with every name. Any other function acts on the player selected last, the dark orange one; while such a function is selected, the others aren't highlighted. The info lines show the player selected last.
 - **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
 - **Message:** sends a private message to the selected player, or an announcement to everyone. The **To** button switches between the two (with nobody selected, it's an announcement). Players see it as a notification at the side of the screen for 15 seconds, and in chat. Messages are up to 300 characters, and every one is logged with its text.
@@ -368,7 +369,7 @@ The function list lives on the server and is sent to admins when they open the m
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true)** adds a command:
+**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false)** adds a command:
 - `displayName`: shown in the function list.
 - `functionName`: the method to call on `instance`.
 - `instance`: the object that has the method. Keep it alive for as long as the command exists.
@@ -378,6 +379,7 @@ GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 - `harmful`: set it to `true` if the command hurts, moves or works against its target. Groups with `zomberry.protect.lower.harm` or `zomberry.protect.same.harm` are then shielded from it.
 - `serverWide`: set it to `true` if the command acts on the world rather than on a player (time, weather, cleanup). The log files it that way.
 - `keybindable`: set it to `false` to keep the command off keys, so it only runs from the menu.
+- `multiTarget`: set it to `true` if the command makes sense on several selected players at once. ZomBerry then calls it once per player, with the usual signature, and logs one event naming all of them. Without it, the command gets only the player the admin selected last.
 
 ```c
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);

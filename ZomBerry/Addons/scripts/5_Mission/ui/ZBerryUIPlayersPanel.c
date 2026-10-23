@@ -3,7 +3,8 @@
 //in bans mode (Bans button) the ban list
 class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	static const int COLOR_ADMIN = 0xFF47EB00;
-	static const int COLOR_SELECTED = 0xFFFF751A;
+	static const int COLOR_SELECTED = 0xFFFF751A; //The last selected player: single-target functions act on them
+	static const int COLOR_SELECTED_MORE = 0xFFFFB27A; //The other selected players
 	static const int COLOR_OFFLINE = 0xFF909090;
 
 	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
@@ -28,7 +29,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	protected ZBerryUIKickBanDialog m_Dialog;
 	protected ZBerryUIMessageDialog m_MessageDialog;
 
-	protected int m_SelectedPlayerId = -1;
+	protected int m_SelectedPlayerId = -1; //The last of m_SelectedIds, -1 for none
+	protected ref TIntArray m_SelectedIds = new TIntArray; //Session ids in the order they were selected
+	protected int m_AnchorId = -1; //Shift + double-click selects from here: the last plain double-click
+	protected bool m_SingleFocus; //The selected function takes one player: only the last selected is highlighted
 	protected ref ZBerryPlayerArray m_LastPlayers;
 
 	protected bool m_PermsMode = false;
@@ -326,7 +330,33 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		SetInfo("Group: " + group + " | Id: " + m_EntryIds[row]);
 	}
 
-	//Returns false if nobody is selected (or selected player has left). Kept while the ban list is shown
+	//Everyone selected who's still online, in the order they were selected: the last is GetSelectedPlayerId's
+	TIntArray GetSelectedPlayerIds() {
+		TIntArray ids = new TIntArray;
+		if (m_PermsMode || !m_LastPlayers) return ids;
+
+		foreach (int id : m_SelectedIds) {
+			if (FindPlayer(id)) ids.Insert(id);
+		}
+		return ids;
+	}
+
+	protected ZBerryPlayer FindPlayer(int playerId) {
+		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			if (ply.m_PlayerID == playerId) return ply;
+		}
+		return NULL;
+	}
+
+	//The Functions tab: true while the selected function takes one player, so only the one it acts on stands out
+	void SetSingleFocus(bool singleFocus) {
+		if (m_SingleFocus == singleFocus) return;
+		m_SingleFocus = singleFocus;
+		if (!m_PermsMode && !m_BansMode) RecolorRows();
+	}
+
+	//The last selected player (the one single-target functions act on). False if nobody is selected or they left.
+	//Kept while the ban list is shown
 	bool GetSelectedPlayerId(out int playerId) {
 		if (m_PermsMode || m_SelectedPlayerId < 0 || !m_LastPlayers) return false;
 
@@ -360,11 +390,28 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 			} else {
 				m_PlayersList.AddItem(text, rowData, 0);
 			}
-			ResetRowColor(i);
 		}
 
+		RecolorRows();
 		int selRow = FindPlayerRow(m_SelectedPlayerId);
 		if (selRow != -1) HighlightRow(selRow);
+	}
+
+	//Admins green, the last selected orange, the other selected light orange (unless the function takes one player)
+	protected void RecolorRows() {
+		for (int row = 0; row < m_PlayersList.GetNumItems(); ++row) {
+			Param4<int, bool, int, int> plyData;
+			m_PlayersList.GetItemData( row, 0, plyData );
+			if (!plyData) continue;
+
+			if (plyData.param1 == m_SelectedPlayerId) {
+				m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED );
+			} else if (!m_SingleFocus && m_SelectedIds.Find(plyData.param1) != -1) {
+				m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED_MORE );
+			} else {
+				ResetRowColor(row);
+			}
+		}
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button) {
@@ -434,19 +481,57 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		if (m_PermsMode) return SelectEntry();
 		if (m_BansMode) return SelectBan();
 
-		int oldRow = FindPlayerRow(m_SelectedPlayerId);
-		if (oldRow != -1) ResetRowColor(oldRow);
-
 		int selRow = m_PlayersList.GetSelectedRow();
 		if (selRow == -1) return true;
 
 		Param4<int, bool, int, int> plyData;
 		m_PlayersList.GetItemData( selRow, 0, plyData );
-		m_SelectedPlayerId = plyData.param1;
-		GetZBerryStreams().SetSelected(m_SelectedPlayerId); //The server sends this player's health and blood
+		int clickedId = plyData.param1;
+		bool ctrl = KeyState(KeyCode.KC_LCONTROL) != 0 || KeyState(KeyCode.KC_RCONTROL) != 0;
+		bool shift = KeyState(KeyCode.KC_LSHIFT) != 0 || KeyState(KeyCode.KC_RSHIFT) != 0;
+		int anchorRow = FindPlayerRow(m_AnchorId);
 
-		HighlightRow(selRow);
+		if (shift && anchorRow != -1) {
+			//From the anchor to the clicked player, in list order: the clicked one ends up last
+			m_SelectedIds.Clear();
+			int step = 1;
+			if (selRow < anchorRow) step = -1;
+			for (int row = anchorRow; row != selRow + step; row += step) {
+				Param4<int, bool, int, int> rangeData;
+				m_PlayersList.GetItemData( row, 0, rangeData );
+				if (rangeData) m_SelectedIds.Insert(rangeData.param1);
+			}
+		} else if (ctrl) {
+			int index = m_SelectedIds.Find(clickedId);
+			if (index != -1) {
+				m_SelectedIds.RemoveOrdered(index);
+			} else {
+				m_SelectedIds.Insert(clickedId);
+			}
+			if (m_AnchorId == -1) m_AnchorId = clickedId;
+		} else {
+			m_SelectedIds.Clear();
+			m_SelectedIds.Insert(clickedId);
+			m_AnchorId = clickedId;
+		}
+
+		ApplySelection();
 		return true;
+	}
+
+	//The last selected player is "the" selected one: the server sends their details, the info lines show them
+	protected void ApplySelection() {
+		m_SelectedPlayerId = -1;
+		if (m_SelectedIds.Count() > 0) m_SelectedPlayerId = m_SelectedIds[m_SelectedIds.Count() - 1];
+		GetZBerryStreams().SetSelected(m_SelectedPlayerId);
+
+		RecolorRows();
+		int selRow = FindPlayerRow(m_SelectedPlayerId);
+		if (selRow != -1) {
+			HighlightRow(selRow);
+		} else {
+			SetInfo("");
+		}
 	}
 
 	protected bool SelectEntry() {

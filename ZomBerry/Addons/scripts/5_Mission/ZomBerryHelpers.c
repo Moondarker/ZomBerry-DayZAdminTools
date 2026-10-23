@@ -134,8 +134,10 @@ class ZBerryFunction {
 	protected bool m_Harmful; //Hurts or moves the target: groups can protect their members from it (zomberry.protect.*.harm)
 	protected bool m_ServerWide; //Acts on the world rather than on a player (time, weather, cleanup), for the log
 	protected bool m_Keybindable; //False: only runs from the menu, so a stray key press can't trigger it
+	protected bool m_MultiTarget; //Runs on every selected player at once (once per player, logged as one event)
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false, bool keybindable = true ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false ) {
+		m_MultiTarget = multiTarget;
 		m_Harmful = harmful;
 		m_ServerWide = serverWide;
 		m_Keybindable = keybindable;
@@ -187,6 +189,14 @@ class ZBerryFunction {
 
 	bool IsKeybindable() {
 		return m_Keybindable;
+	}
+
+	bool IsMultiTarget() {
+		return m_MultiTarget;
+	}
+
+	void SetMultiTarget(bool multiTarget) {
+		m_MultiTarget = multiTarget;
 	}
 
 	//"Set weather (Fog: 0, Overcast: 80, Rain: 100)", named values by name, for the log

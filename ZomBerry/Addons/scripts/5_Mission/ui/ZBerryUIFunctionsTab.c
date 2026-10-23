@@ -10,6 +10,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	protected ref array<ref ZBerryUIFuncParamRow> m_ParamRows = new array<ref ZBerryUIFuncParamRow>;
 	protected ref array<ref ZBerryFuncParamArray> m_FuncParams = new array<ref ZBerryFuncParamArray>;
 	protected ref TIntArray m_Unbindable = new TIntArray; //Ids of functions that can't get a key
+	protected ref TIntArray m_MultiTarget = new TIntArray; //Ids of functions that run on every selected player
 	protected ref TStringArray m_RowNames = new TStringArray; //Display name per list row, without the key
 	protected ref TIntArray m_RowColors = new TIntArray;
 	protected ZBerryUIPlayersPanel m_PlayersPanel;
@@ -75,6 +76,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_FunctionsList.ClearItems();
 		m_FuncParams.Clear();
 		m_Unbindable.Clear();
+		m_MultiTarget.Clear();
 		m_RowNames.Clear();
 		m_RowColors.Clear();
 		ZomberryBase.GetKeyBindsMgr().ClearFuncList();
@@ -98,6 +100,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 				int fParamId = m_FuncParams.Insert(funcParams);
 				ZomberryBase.GetKeyBindsMgr().AddFunc(funcData.GetId(), funcData.GetName(), funcData.IsKeybindable());
 				if (!funcData.IsKeybindable() || funcParams.Count() > 0) m_Unbindable.Insert(funcData.GetId());
+				if (funcData.IsMultiTarget()) m_MultiTarget.Insert(funcData.GetId());
 
 				m_RowNames.Insert(funcData.GetDisplayName());
 				m_RowColors.Insert(funcData.GetColor());
@@ -145,8 +148,9 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		}
 	}
 
-	//Nothing selected: no name, no parameter rows, the bind button back to "Bind"
+	//Nothing selected: no name, no parameter rows, the bind button back to "Bind", every selected player highlighted
 	protected void ClearSelection() {
+		if (m_PlayersPanel) m_PlayersPanel.SetSingleFocus(false);
 		m_LastSelFunc = -1;
 		m_SelectedFuncId = -1;
 		m_FncName.SetText("");
@@ -234,6 +238,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 		m_SelectedFuncId = funcData.param1;
 		UpdateBindButtonText(funcData.param1);
+		if (m_PlayersPanel) m_PlayersPanel.SetSingleFocus(m_MultiTarget.Find(funcData.param1) == -1); //Others dimmed: it acts on the last selected only
 		m_FncName.SetText(fncName);
 		ShowParams(m_FuncParams[funcData.param3]);
 
@@ -326,6 +331,15 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 		int adminId = ZBerryUIUtils.GetLocalPlayerId();
 		bool hasTarget = m_PlayersPanel && m_PlayersPanel.GetSelectedPlayerId(selectedPlyId);
+
+		//Several players selected: the server runs functions made for that on each of them, others on the last one
+		TIntArray selectedIds;
+		if (m_PlayersPanel) selectedIds = m_PlayersPanel.GetSelectedPlayerIds();
+		if (hasTarget && selectedIds && selectedIds.Count() > 1 && m_MultiTarget.Find(funcId) != -1) {
+			TIntArray values = GetParamValues(); //Locals: temporaries inside the Param would be freed before it's sent
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.ExecuteCommandTargets, new Param4< int, autoptr TIntArray, vector, autoptr TIntArray >( funcId, selectedIds, ZBerryUIUtils.GetCursorPos(), values ), true );
+			return;
+		}
 
 		if (hasTarget) {
 			targetId = selectedPlyId;
