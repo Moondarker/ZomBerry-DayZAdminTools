@@ -192,7 +192,7 @@ If the file can't be read (broken JSON), the log says why, and ZomBerry runs wit
 
 ### Keybinds
 
-Function keybinds are saved per client in `Documents/DayZ/ZomBerryKeybinds.bin`. By default `Delete` runs "Delete object near cursor". See [Functions](#functions) and the [Keybinds tab](#keybinds-tab) for how to change them.
+Function keybinds are saved per client in `Documents/DayZ/ZomBerryKeybinds.bin`. By default `Delete` runs "Delete object near cursor". See [Functions](#functions) for how to change them.
 
 Keybinds only work while no menu is open, so they don't fire while you type in chat or have the inventory open.
 
@@ -201,7 +201,7 @@ Keybinds only work while no menu is open, so they don't fire while you type in c
 Open and close the menu with `O`, or close it with `Esc` or the **×** in the header's top-right corner. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
 
 - **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu.
-- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions, ESP and Keybinds. Only the pages you may use are listed. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
+- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions and ESP. Only the pages you may use are listed. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
 
 ### Players
 
@@ -227,10 +227,10 @@ The left panel lists everyone online. Admins are green, and the item in a player
     - Bases, tents, storage, stashes and fireplaces are never touched.
     - The first run says how many it found, and running it again within 10 seconds deletes them.
   - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
-- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet, and neither can "Teleport - All players back", so it never runs by accident.
+- **Keys:** each function's key is shown after its name in the list.
+- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound, and neither can "Teleport - All players back", so it never runs by accident; the button has no caption while such a function is selected.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
 - **Removing all binds:** select any function that can be bound, hold `A` and press the button twice.
-- **All keys in one place:** the [Keybinds tab](#keybinds-tab) lists every function you can bind, with its key.
 
 The stock set:
 
@@ -338,15 +338,6 @@ Admins who may run the ESP function open this tab from the gear icon in the head
 - **The header button** shows whether ESP is on, and switches it like the ESP function does.
 
 Changes apply right away while ESP is on. The server only sends everyone's position and health while your settings use them (far players or health).
-
-### Keybinds tab
-
-Every admin can open this tab from the gear icon in the header. It lists the functions you may run that can be bound to a key, by category, with the key next to each one. The line below the list counts how many have keys.
-- **Binding a key:** select a function, press **Bind** in the header (it shows `[...]`), then press the key. `Esc` cancels.
-- **Removing a key:** select the function and press **Unbind**, or press the header button twice.
-- **Removing all keys:** press **Unbind all**, then again to confirm.
-
-Functions with parameters, and "Teleport - All players back", can't be bound, so they aren't listed.
 
 ### Permissions
 

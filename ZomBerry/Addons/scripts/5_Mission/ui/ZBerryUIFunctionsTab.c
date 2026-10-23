@@ -1,4 +1,5 @@
-//Function list, function parameters, execution and keybinding
+//Function list, function parameters, execution and keybinding. Each function's key is shown after its name; the header
+//button binds the selected function, and has no caption when it can't get a key (parameters, or marked unbindable)
 class ZBerryUIFunctionsTab extends ZBerryUITab {
 	static const int MAX_PARAMS = 3; //Server-side functions always receive this many values
 
@@ -9,6 +10,8 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 	protected ref array<ref ZBerryUIFuncParamRow> m_ParamRows = new array<ref ZBerryUIFuncParamRow>;
 	protected ref array<ref ZBerryFuncParamArray> m_FuncParams = new array<ref ZBerryFuncParamArray>;
 	protected ref TIntArray m_Unbindable = new TIntArray; //Ids of functions that can't get a key
+	protected ref TStringArray m_RowNames = new TStringArray; //Display name per list row, without the key
+	protected ref TIntArray m_RowColors = new TIntArray;
 	protected ZBerryUIPlayersPanel m_PlayersPanel;
 
 	protected int m_LastSelFunc = -1;
@@ -72,6 +75,8 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_FunctionsList.ClearItems();
 		m_FuncParams.Clear();
 		m_Unbindable.Clear();
+		m_RowNames.Clear();
+		m_RowColors.Clear();
 		ZomberryBase.GetKeyBindsMgr().ClearFuncList();
 
 		int row = 0;
@@ -79,6 +84,8 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		for (int i = 0; i < catList.Count(); ++i) {
 			ZBerryCategory singleCat = catList.Get(i);
 			m_FunctionsList.AddItem( "==== " + singleCat.GetName() + " ====", new Param3<int, bool, int>(-1, false, -1), 0, row );
+			m_RowNames.Insert("");
+			m_RowColors.Insert(ZBerryUIUtils.TEXT_DEFAULT);
 			++row;
 
 			ZBerryFunctionArray funcArray = singleCat.GetAll();
@@ -90,15 +97,37 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 				int fParamId = m_FuncParams.Insert(funcParams);
 				ZomberryBase.GetKeyBindsMgr().AddFunc(funcData.GetId(), funcData.GetName(), funcData.IsKeybindable());
-				if (!funcData.IsKeybindable()) m_Unbindable.Insert(funcData.GetId());
+				if (!funcData.IsKeybindable() || funcParams.Count() > 0) m_Unbindable.Insert(funcData.GetId());
 
-				m_FunctionsList.AddItem( funcData.GetDisplayName(), new Param3<int, bool, int>(funcData.GetId(), funcData.IsTargetRequired(), fParamId), 0, row );
+				m_RowNames.Insert(funcData.GetDisplayName());
+				m_RowColors.Insert(funcData.GetColor());
+				m_FunctionsList.AddItem( GetRowText(row, funcData.GetId()), new Param3<int, bool, int>(funcData.GetId(), funcData.IsTargetRequired(), fParamId), 0, row );
 				m_FunctionsList.SetItemColor(row, 0, funcData.GetColor());
 				++row;
 			}
 		}
 
 		if (keptFuncId != -1) Reselect(keptFuncId, keptValues);
+	}
+
+	//"Heal   [F5]": the name, and the key when it has one
+	protected string GetRowText(int row, int funcId) {
+		string text = m_RowNames[row];
+		int key = ZomberryBase.GetKeyBindsMgr().GetKey(funcId);
+		if (key != -1) text = text + "   " + ZBerryUIUtils.FormatKeyName(key);
+		return text;
+	}
+
+	//A key was bound or removed: the rows say so again, updated in place so the list keeps its scroll
+	protected void RefreshRowKeys() {
+		Param3<int, bool, int> funcData;
+		for (int row = 0; row < m_FunctionsList.GetNumItems() && row < m_RowNames.Count(); ++row) {
+			m_FunctionsList.GetItemData(row, 0, funcData);
+			if (!funcData || funcData.param1 == -1) continue;
+
+			m_FunctionsList.SetItem(row, GetRowText(row, funcData.param1), funcData, 0);
+			m_FunctionsList.SetItemColor(row, 0, m_RowColors[row]);
+		}
 	}
 
 	protected void Reselect(int funcId, TIntArray values) {
@@ -154,7 +183,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 		m_FunctionsList.GetItemData( selFunc, 0, funcData );
 		if (funcData.param3 == -1) return;
-		if (m_FuncParams[funcData.param3].Count() > 0) { ZBerryUIUtils.Message("This function requires parameters to be executed, so keybinding is disabled (will be available in the future tho)"); return; }
+		if (m_FuncParams[funcData.param3].Count() > 0) { ZBerryUIUtils.Message("This function takes parameters, so it can't be bound to a key. Run it from the menu."); return; }
 		if (m_Unbindable.Find(funcData.param1) != -1) { ZBerryUIUtils.Message("This function can't be bound to a key, so it never runs by accident. Run it from the menu."); return; }
 		bool clearAllHeld = (KeyState(KeyCode.KC_A) & 0x00000001) != 0;
 
@@ -168,10 +197,12 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 			if (clearAllHeld) ZomberryBase.GetKeyBindsMgr().ClearAll();
 			m_BindMode = BIND_IDLE;
+			RefreshRowKeys();
 		} else { //Pressed again while waiting for a key: remove the bind
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "Bind");
 			ZomberryBase.GetKeyBindsMgr().Unbind(funcData.param1);
 			m_BindMode = BIND_IDLE;
+			RefreshRowKeys();
 		}
 	}
 
@@ -185,6 +216,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 		ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(key));
 		m_BindMode = BIND_IDLE;
+		RefreshRowKeys();
 	}
 
 	protected void SelectFunction() {
@@ -197,7 +229,7 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 		m_LastSelFunc = selectedFuncRow;
 
 		m_FunctionsList.GetItemData( selectedFuncRow, 0, funcData );
-		m_FunctionsList.GetItemText( selectedFuncRow, 0, fncName );
+		if (selectedFuncRow < m_RowNames.Count()) fncName = m_RowNames[selectedFuncRow]; //Without the key
 		if (funcData.param3 == -1) return;
 
 		m_SelectedFuncId = funcData.param1;
@@ -242,7 +274,9 @@ class ZBerryUIFunctionsTab extends ZBerryUITab {
 
 		int fKeyBind = ZomberryBase.GetKeyBindsMgr().GetKey(funcId);
 
-		if (m_BindMode == BIND_WAITING_FOR_KEY) {
+		if (m_Unbindable.Find(funcId) != -1) {
+			ZBerryUIUtils.SetButtonText(m_ActionButton, "");
+		} else if (m_BindMode == BIND_WAITING_FOR_KEY) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, "[...]");
 		} else if (fKeyBind != -1) {
 			ZBerryUIUtils.SetButtonText(m_ActionButton, ZBerryUIUtils.FormatKeyName(fKeyBind));

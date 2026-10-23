@@ -19,7 +19,6 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIPermsTab m_PermsTab;
 	protected ref ZBerryUILogsTab m_LogsTab;
 	protected ref ZBerryUIESPTab m_EspTab;
-	protected ref ZBerryUIKeybindsTab m_KeybindsTab;
 	protected ref array<ZBerryUITab> m_DropdownTabs = new array<ZBerryUITab>; //Pages under the gear
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 	protected ref ZBerryUIMessageDialog m_MessageDialog;
@@ -74,12 +73,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_EspTab = new ZBerryUIESPTab();
 		AddTab(m_EspTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/ESPTab.layout", "ESPButton");
 
-		m_KeybindsTab = new ZBerryUIKeybindsTab();
-		AddTab(m_KeybindsTab, sectionWrapper, "ZomBerry/AT/scripts/5_Mission/layouts/KeybindsTab.layout", "KeybindsButton");
-
 		m_DropdownTabs.Insert(m_PermsTab);
 		m_DropdownTabs.Insert(m_EspTab);
-		m_DropdownTabs.Insert(m_KeybindsTab);
 
 		m_KickBanDialog = new ZBerryUIKickBanDialog();
 		m_KickBanDialog.Init(layoutRoot); //Last: drawn above everything else
@@ -125,7 +120,6 @@ class ZomberryMenu extends UIScriptedMenu {
 		ShowTabButton(m_PermsTab, auth.CanManagePermissions());
 		ShowTabButton(m_LogsTab, auth.Has(ZBerryPermissions.LOGS_VIEW));
 		ShowTabButton(m_EspTab, auth.Has(ZBerryPermissions.FunctionNode(ZBerryUIESPTab.FUNCTION)));
-		ShowTabButton(m_KeybindsTab, true); //Lists only what this admin may run
 		UpdateGear();
 
 		foreach (ZBerryUITab tab : m_Tabs) {
@@ -359,8 +353,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		if ( !(type == ZBerryCallType.Client && GetGame().IsClient() || !GetGame().IsMultiplayer()) ) return;
 		if ( !ctx.Read( catListS ) ) return;
 
-		m_FunctionsTab.SetFunctions(catListS.param1); //First: it registers the functions for keybinding
-		m_KeybindsTab.SetFunctions(catListS.param1);
+		m_FunctionsTab.SetFunctions(catListS.param1); //Also registers the functions for keybinding
 	}
 
 	void BansData( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {

@@ -348,43 +348,6 @@ PanelWidgetClass AdminMenu {
        }
       }
      }
-     PanelWidgetClass GearEntryKeybinds {
-      position 0 0
-      size 125 41
-      hexactpos 1
-      vexactpos 1
-      hexactsize 1
-      vexactsize 1
-      {
-       ButtonWidgetClass KeybindsButton {
-        color 0.3255 0.3255 0.3255 0.7843
-        position 5 5
-        size 115 36
-        hexactpos 1
-        vexactpos 1
-        hexactsize 1
-        vexactsize 1
-        style Colorable
-        {
-         TextWidgetClass KeybindsButtonLabel {
-          ignorepointer 1
-          position 0 0
-          size 1 1
-          hexactpos 1
-          vexactpos 1
-          hexactsize 0
-          vexactsize 0
-          text "Keybinds"
-          font "gui/fonts/Metron16"
-          "exact text" 1
-          "exact text size" 16
-          "text halign" center
-          "text valign" center
-         }
-        }
-       }
-      }
-     }
      PanelWidgetClass GearDropdownEnd {
       position 0 0
       size 125 5
