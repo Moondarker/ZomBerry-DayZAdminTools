@@ -161,6 +161,7 @@ class ZBerryEventLog {
 	protected ref map<string, ref ZBerryDamageBurst> m_Bursts = new map<string, ref ZBerryDamageBurst>;
 	protected ref map<int, ref ZBerryLogSubscriber> m_Subscribers = new map<int, ref ZBerryLogSubscriber>;
 	protected ref map<string, int> m_LoginTimes = new map<string, int>; //Steam64 -> ZBerryTime, for logout lines
+	protected ref map<string, int> m_LoginSessions = new map<string, int>; //Steam64 -> session id of that join
 	protected ZBerryAuth m_Auth;
 	protected bool m_Ticking;
 	protected string m_SavePath = ""; //Snapshot path, "" while the log isn't persisted (singleplayer, tests)
@@ -394,15 +395,19 @@ class ZBerryEventLog {
 	}
 
 	//Also runs for each new character of a player who stayed connected (after dying): that's a respawn, and the
-	//session goes on from the first join
+	//session goes on from the first join. Told apart by the session id, which a respawn keeps and every new
+	//connection changes: kicks and dropped connections never reach OnPlayerDisconnected, so the join time can't tell
 	void OnPlayerConnected(PlayerIdentity identity) {
 		if (!identity) return;
 
-		if (m_LoginTimes.Contains(identity.GetPlainId())) {
+		string steamId = identity.GetPlainId();
+		int session;
+		if (m_LoginSessions.Find(steamId, session) && session == identity.GetPlayerId()) {
 			ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} respawned");
 			return;
 		}
-		m_LoginTimes.Set(identity.GetPlainId(), ZBerryTime.Now());
+		m_LoginTimes.Set(steamId, ZBerryTime.Now());
+		m_LoginSessions.Set(steamId, identity.GetPlayerId());
 		ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} joined");
 	}
 
@@ -422,6 +427,7 @@ class ZBerryEventLog {
 			text += " after " + ZBerryTime.FormatDuration(ZBerryTime.Now() - loginTime);
 			m_LoginTimes.Remove(identity.GetPlainId());
 		}
+		m_LoginSessions.Remove(identity.GetPlainId());
 		ZomberryBase.LogEvent(ZBerryEventType.LOGOUT, NULL, identity, text);
 	}
 
