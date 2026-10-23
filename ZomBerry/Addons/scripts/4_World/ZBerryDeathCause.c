@@ -26,8 +26,9 @@ class ZBerryDeathCause {
 		string hitBy = "";
 		bool hit = victim.ZBGetLastHit(age, damageType, ammo, hitBy);
 		bool recent = hit && age <= RECENT_MS;
+		//Drowning before falls: it drains health directly, with no hit, so a fall just before (jumping in) was the last hit
+		if (victim.m_IsDrowning || victim.GetDrowningWaterLevelCheck()) return " drowned";
 		if (recent && IsFall(ammo)) return " died from a fall";
-		if (victim.GetDrowningWaterLevelCheck()) return " drowned";
 		if (recent && damageType == DamageType.EXPLOSION) return " died in an explosion (" + hitBy + ")";
 		if (recent && ammo == "FireDamage") return " burned to death";
 		if (recent && ammo == "BarbedWireHit") return " died on barbed wire";
