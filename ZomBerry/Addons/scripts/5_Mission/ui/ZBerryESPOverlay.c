@@ -21,6 +21,7 @@ class ZBerryESPOverlay {
 
 	protected Widget m_Root;
 	protected CanvasWidget m_Canvas;
+	protected Man m_OwnBody; //The character this client controls or last controlled. Weak: NULL once deleted
 	protected ref array<TextWidget> m_Labels = new array<TextWidget>;
 	protected int m_LabelsUsed;
 
@@ -102,12 +103,13 @@ class ZBerryESPOverlay {
 
 		ZBerryStreamClient streams = GetZBerryStreams();
 		Man localPlayer = GetGame().GetPlayer();
+		if (localPlayer) m_OwnBody = localPlayer; //Remembered: in FreeCam and while spectating this client has no character
 		map<int, bool> drawnIds = new map<int, bool>;
 
 		array<EntityAI> players = ZBerryEntityRegistry.GetEntities(ZBerryEntityCategory.PLAYERS);
 		foreach (EntityAI entity : players) {
 			PlayerBase player = PlayerBase.Cast(entity);
-			if (!player || player == localPlayer || !player.IsAlive()) continue;
+			if (!player || !player.IsAlive()) continue;
 
 			int id = -1;
 			string name = "Player";
@@ -116,6 +118,8 @@ class ZBerryESPOverlay {
 				name = player.GetIdentity().GetName();
 			}
 			drawnIds.Set(id, true);
+			//The view's owner isn't marked: this client's own body, and while spectating the player watched
+			if (player == m_OwnBody || ZomBerryCamSpec.IsTarget(player)) continue;
 			if (!nearShown) continue;
 
 			int color = COLOR_PLAYER;

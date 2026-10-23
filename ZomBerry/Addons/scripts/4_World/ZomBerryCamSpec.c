@@ -33,6 +33,15 @@ class ZomBerryCamSpec extends ZomBerryCamBase {
 		s_HasTarget = true;
 	}
 
+	//The player being watched: ESP leaves them out, the view is theirs
+	static bool IsTarget(Object obj) {
+		if (!s_HasTarget || !obj) return false;
+
+		int low, high;
+		obj.GetNetworkID(low, high);
+		return low == s_TargetLow && high == s_TargetHigh;
+	}
+
 	static void ClearTarget() {
 		s_HasTarget = false;
 		s_HasPosition = false;
