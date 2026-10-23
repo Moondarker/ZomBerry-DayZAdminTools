@@ -4,6 +4,7 @@ class ZBerryServerRPC {
 	protected ZBerryAuth m_Auth;
 	protected ZBerryBans m_Bans;
 	protected ZBerryLocations m_Locations;
+	protected ref ZBerryCallGroups m_CallGroups = new ZBerryCallGroups; //Repeated teleports, logged as one event
 
 	void ZBerryServerRPC(ZBerryAuth auth, ZBerryBans bans, ZBerryLocations locations) {
 		m_Auth = auth;
@@ -122,16 +123,36 @@ class ZBerryServerRPC {
 		PlayerIdentity targetIdentity = NULL;
 		if (onTarget) targetIdentity = ZBGetIdentity(targetPly);
 
+		//Functions run again and again are logged as one event per run, with where the moved player started and ended
+		string groupKey = "";
+		PlayerBase moved;
+		vector from;
+		if (ZBerryCallGroups.IsGrouped(funcName)) {
+			groupKey = adminId.ToString() + ":" + funcName + ":" + targetId;
+			moved = ZBGetPlayerById(adminId);
+			if (ZBerryCallGroups.MovesTarget(funcName)) moved = targetPly;
+			if (moved) from = moved.GetPosition();
+		}
+
 		ZomberryCmdAPI api = GetZomberryCmdAPI();
 		ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
 		RunFunction(cmdFunc, adminId, targetId, funcParam.param3, funcParam.param4);
 		api.EndCall(cmdCall);
-		LogCall(cmdCall, cmdFunc.DescribeCall(funcParam.param4));
+
+		vector to;
+		if (moved) to = moved.GetPosition();
+		LogCall(cmdCall, cmdFunc.DescribeCall(funcParam.param4), groupKey, moved != NULL, from, to);
+	}
+
+	//The server is stopping: held-back repeated calls are logged now
+	void FlushCallGroups() {
+		if (m_CallGroups) m_CallGroups.FlushAll();
 	}
 
 	//One event per call: refused (with the reason), the command's own description, or "ran <function>".
 	//Confirmation prompts aren't logged, the confirmed run is
-	protected void LogCall(ZBerryCall cmdCall, string call) {
+	//groupKey: a function run repeatedly (ZBerryCallGroups), logged once the run ends
+	protected void LogCall(ZBerryCall cmdCall, string call, string groupKey = "", bool hasPositions = false, vector from = "0 0 0", vector to = "0 0 0") {
 		PlayerIdentity admin = cmdCall.GetAdmin();
 		PlayerIdentity target = cmdCall.GetTarget();
 		if (cmdCall.GetOutcome() == ZBerryCallOutcome.CONFIRMING) return;
@@ -157,6 +178,10 @@ class ZBerryServerRPC {
 		}
 		if (cmdCall.GetDescription() != "") text = cmdCall.GetDescription();
 
+		if (groupKey != "") {
+			m_CallGroups.Add(groupKey, type, admin, target, text, flags, hasPositions, from, to);
+			return;
+		}
 		ZomberryBase.LogEvent( type, admin, target, text, flags );
 	}
 

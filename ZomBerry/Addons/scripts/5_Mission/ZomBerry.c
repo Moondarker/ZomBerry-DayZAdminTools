@@ -120,6 +120,11 @@ class ZomberryBase {
 		if (GetGame().IsMultiplayer()) GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
 	}
 
+	//Server, before the log's last save: repeated calls still held back are logged
+	void OnServerStopping() {
+		if (m_ServerRPC) m_ServerRPC.FlushCallGroups();
+	}
+
 	//Server only, NULL on clients
 	ZBerryBans GetBans() {
 		return m_Bans;
@@ -165,6 +170,7 @@ modded class MissionServer {
 
 	//A clean shutdown only: after a crash the next start finds the last periodic save
 	override void OnMissionFinish() {
+		if (m_ZomberryBase) m_ZomberryBase.OnServerStopping();
 		if (g_ZBerryEventLog) g_ZBerryEventLog.OnServerStopping();
 		super.OnMissionFinish();
 	}
