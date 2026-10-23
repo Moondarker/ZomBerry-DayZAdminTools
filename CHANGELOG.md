@@ -46,6 +46,7 @@
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation. The confirming run deletes what the prompt counted: things that arrived since stay, and so do items someone picked up.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
+- **God mode and invisibility protect gear:** nothing the player wears or carries is damaged (weapons don't wear from firing either), and their body temperature stays comfortable.
 - **Toggle invisibility:** a new stock function. Other players don't see or hear the target (voice chat still works), infected and animals ignore them, and nothing can hurt them while it lasts. It survives logging out and respawning. Mods can check it with `PlayerBase.ZBIsInvisible()`, on the server and on clients.
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).

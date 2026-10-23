@@ -10,6 +10,12 @@ modded class PlayerBase
 	protected float m_ZBReapplyTimer; //Seconds until the next full re-apply on this client
 	static const float ZB_REAPPLY_INTERVAL = 0.5;
 
+	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
+	//weapons included). Only items this switched off are switched back on, when they leave the player or protection ends
+	protected ref array<EntityAI> m_ZBProtectedGear = new array<EntityAI>; //Weak: NULL once an item is deleted
+	protected float m_ZBGearTimer;
+	static const float ZB_GEAR_INTERVAL = 2; //Seconds between checks for gear picked up or put away
+
 	//Infinite ammo: a server flag on the character, plus the character it's on for its own client (told through a
 	//ZomBerry client feature rather than a synced variable: PlayerBase already has about as many as the engine allows)
 	protected bool m_ZBInfiniteAmmo;
@@ -86,7 +92,39 @@ modded class PlayerBase
 	//God mode and invisibility each keep damage off, neither switches the other. SetAllowDamage(false) also stops
 	//health and blood lost from script (bleeding, hunger), which EEOnDamageCalculated below doesn't see
 	protected void ZBUpdateAllowDamage() {
-		SetAllowDamage(!ZBGodMode && !m_ZBInvisible);
+		SetAllowDamage(!ZBProtected());
+		ZBUpdateGearProtection();
+	}
+
+	//God mode or invisibility: the player, their gear and their temperature are looked after
+	bool ZBProtected() {
+		return ZBGodMode || m_ZBInvisible;
+	}
+
+	//Server: everything the player carries can't be damaged while they're protected; items that left, or all of them
+	//once protection ends, get their damage back
+	protected void ZBUpdateGearProtection() {
+		if (GetGame().IsMultiplayer() && GetGame().IsClient()) return;
+
+		array<EntityAI> carried = new array<EntityAI>;
+		if (ZBProtected()) {
+			GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, carried);
+			EntityAI inHands = GetHumanInventory().GetEntityInHands();
+			if (inHands && carried.Find(inHands) == -1) carried.Insert(inHands);
+		}
+
+		for (int i = m_ZBProtectedGear.Count() - 1; i >= 0; --i) {
+			EntityAI protectedItem = m_ZBProtectedGear[i];
+			if (protectedItem && carried.Find(protectedItem) != -1) continue;
+			if (protectedItem) protectedItem.SetAllowDamage(true);
+			m_ZBProtectedGear.Remove(i);
+		}
+
+		foreach (EntityAI item : carried) {
+			if (!item || item == this || !item.GetAllowDamage() || m_ZBProtectedGear.Find(item) != -1) continue; //Already undamageable: not ours to switch back
+			item.SetAllowDamage(false);
+			m_ZBProtectedGear.Insert(item);
+		}
 	}
 
 	//Other players' clients hide the character; its own client keeps seeing itself
@@ -184,6 +222,16 @@ modded class PlayerBase
 	//invisible, and re-apply the rest now and then
 	override void EOnFrame(IEntity other, float timeSlice) {
 		super.EOnFrame(other, timeSlice);
+
+		//Server: gear picked up or put away since the last check
+		if ((!GetGame().IsMultiplayer() || GetGame().IsServer()) && (ZBProtected() || m_ZBProtectedGear.Count() > 0)) {
+			m_ZBGearTimer -= timeSlice;
+			if (m_ZBGearTimer <= 0) {
+				m_ZBGearTimer = ZB_GEAR_INTERVAL;
+				ZBUpdateGearProtection();
+			}
+		}
+
 		if (!m_ZBInvisible || !ZBHidesHere()) return;
 
 		HumanItemAccessor accessor = GetItemAccessor();

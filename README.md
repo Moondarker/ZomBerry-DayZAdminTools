@@ -245,9 +245,9 @@ The stock set:
 
 Set time, set date and set weather start from the game's current time, date and weather when you select them.
 
-**God mode:** the target takes no damage and their stamina stays full until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+**God mode:** the target takes no damage and their stamina stays full until the function is run again. Nothing they wear or carry is damaged either, weapons included, and their body temperature stays comfortable. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
-**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them until it's switched off again. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
+**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them or their gear until it's switched off again, and their body temperature stays comfortable. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
 **Teleport - All players to Me:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
 
