@@ -20,6 +20,7 @@ class ZomBerryCamSpec extends ZomBerryCamBase {
 
 	protected float m_Yaw, m_Pitch;
 	protected bool m_Initialised;
+	protected bool m_UsingServerPosition; //For the log: when the target isn't in this client's bubble
 
 	static void SetTarget(int networkLow, int networkHigh, bool thirdPerson) {
 		if (!s_HasTarget || networkLow != s_TargetLow || networkHigh != s_TargetHigh) {
@@ -58,6 +59,14 @@ class ZomBerryCamSpec extends ZomBerryCamBase {
 		Human target = Human.Cast(camTarget);
 		if (target && s_HasPosition && vector.Distance(target.GetPosition(), s_Position) > FAR) target = NULL; //Left the bubble
 		if (!target && !s_HasPosition) return;
+		if (m_UsingServerPosition != (target == NULL)) {
+			m_UsingServerPosition = target == NULL;
+			if (m_UsingServerPosition) {
+				Print("[ZomBerry] Spectating: target not in this client's network bubble, following the server's position " + s_Position);
+			} else {
+				Print("[ZomBerry] Spectating: target in the network bubble again");
+			}
+		}
 
 		vector head;
 		if (target) head = target.GetBonePositionWS(target.GetBoneIndexByName("Head"));
