@@ -83,10 +83,11 @@ class ZomberryBase {
 	}
 
 	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name
-	static void LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0 ) {
+	//extraIds/extraNames: further targets of a function run on several players at once ({target} names them all)
+	static void LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL ) {
 		if (!GetGame() || !GetGame().IsServer()) return;
 
-		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags);
+		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags, extraIds, extraNames);
 		if (ZBerryEventType.IsInGameOnly(type)) return;
 
 		string line = logEvent.Format(false); //The server's language
@@ -94,7 +95,8 @@ class ZomberryBase {
 		GetLogger().Log( ZBerryEventType.GetModule(type), line );
 	}
 
-	protected static void DescribeIdentity(PlayerIdentity identity, out string id, out string name) {
+	//Steam64 id and name of a player for an event, "" and "Singleplayer" for none in singleplayer
+	static void DescribeIdentity(PlayerIdentity identity, out string id, out string name) {
 		id = "";
 		name = "";
 		if (!identity) {

@@ -52,25 +52,14 @@ class ZBerryCallGroups {
 			group.Text = text;
 			group.HasPositions = hasPositions;
 			group.From = from;
-			DescribeIdentity(actor, group.ActorId, group.ActorName);
-			DescribeIdentity(target, group.TargetId, group.TargetName);
+			ZomberryBase.DescribeIdentity(actor, group.ActorId, group.ActorName);
+			ZomberryBase.DescribeIdentity(target, group.TargetId, group.TargetName);
 			m_Groups.Set(key, group);
 		}
 
 		++group.Count;
 		group.To = to;
 		group.LastMs = now;
-	}
-
-	protected static void DescribeIdentity(PlayerIdentity identity, out string id, out string name) {
-		id = "";
-		name = "";
-		if (!identity) {
-			if (!GetGame().IsMultiplayer()) name = "Singleplayer";
-			return;
-		}
-		id = identity.GetPlainId();
-		name = identity.GetName();
 	}
 
 	protected void Tick() {

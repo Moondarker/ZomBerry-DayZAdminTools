@@ -62,6 +62,7 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 			ZBerryLogParty actor = AddParty(byId, logEvent.ActorId, logEvent.ActorName, logEvent.Time, true);
 			if (actor && IsAdminAction(logEvent.Type)) actor.Admin = true;
 			AddParty(byId, logEvent.TargetId, logEvent.TargetName, logEvent.Time, true);
+			for (int extra = 0; extra < logEvent.ExtraTargetIds.Count() && extra < logEvent.ExtraTargetNames.Count(); ++extra) AddParty(byId, logEvent.ExtraTargetIds[extra], logEvent.ExtraTargetNames[extra], logEvent.Time, true);
 		}
 
 		for (int i = 0; i < log.GetClientPlayerCount(); ++i) {

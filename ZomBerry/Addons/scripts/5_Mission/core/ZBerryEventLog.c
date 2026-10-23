@@ -43,8 +43,9 @@ class ZBerryEventFlags {
 	static const int HARMFUL = 1; //A harmful function (see AddCommand)
 };
 
-//One event of the in-game log. Text is a template: {actor} and {target} stand for the two players, so the log view can
-//highlight them (or make them clickable) without parsing names out of text
+//One event of the in-game log. Text is a template: {actor} and {target} stand for the players, so the log view can
+//highlight them (or make them clickable) without parsing names out of text. A function run on several players at once
+//has the first as the target and the others in ExtraTarget*: {target} then names them all
 class ZBerryLogEvent {
 	int Id; //Increasing, for syncing
 	int Time; //ZBerryTime seconds (UTC)
@@ -55,26 +56,51 @@ class ZBerryLogEvent {
 	string TargetId;
 	string TargetName;
 	string Text;
+	ref TStringArray ExtraTargetIds = new TStringArray; //Since FILE_VERSION 2
+	ref TStringArray ExtraTargetNames = new TStringArray;
 
 	//As the log file writes it: players as "Name (Steam64 id)". Game names (ZBerryLocText tags) in this game's language,
 	//or with translate false in the server's, as the event was logged
 	string Format(bool translate = true) {
 		string text = ZBerryLocText.Resolve(Text, translate); //Before the players: their names can't make tags
 		text.Replace("{actor}", DescribeParty(ActorName, ActorId));
-		text.Replace("{target}", DescribeParty(TargetName, TargetId));
+		text.Replace("{target}", DescribeTargets(true));
 		return text;
+	}
+
+	//"A", "A and B", "A, B and C"; with ids as DescribeParty writes them
+	string DescribeTargets(bool withIds) {
+		TStringArray parts = new TStringArray;
+		parts.Insert(DescribeTarget(TargetName, TargetId, withIds));
+		for (int i = 0; i < ExtraTargetIds.Count() && i < ExtraTargetNames.Count(); ++i) parts.Insert(DescribeTarget(ExtraTargetNames[i], ExtraTargetIds[i], withIds));
+
+		string text = parts[0];
+		for (int j = 1; j < parts.Count(); ++j) {
+			if (j == parts.Count() - 1) {
+				text += " and ";
+			} else {
+				text += ", ";
+			}
+			text += parts[j];
+		}
+		return text;
+	}
+
+	protected static string DescribeTarget(string name, string id, bool withIds) {
+		if (withIds) return DescribeParty(name, id);
+		return name;
 	}
 
 	//Names only, for the log view's rows (the ids are in Format)
 	string FormatNames() {
 		string text = ZBerryLocText.Resolve(Text, true);
 		text.Replace("{actor}", ActorName);
-		text.Replace("{target}", TargetName);
+		text.Replace("{target}", DescribeTargets(false));
 		return text;
 	}
 
 	bool Involves(string steamId) {
-		return steamId != "" && (ActorId == steamId || TargetId == steamId);
+		return steamId != "" && (ActorId == steamId || TargetId == steamId || ExtraTargetIds.Find(steamId) != -1);
 	}
 
 	static string DescribeParty(string name, string id) {
@@ -139,7 +165,7 @@ class ZBerryEventLog {
 
 	static const string FILE_NAME = "ZomBerryEventLog.bin";
 	static const string FILE_MAGIC = "ZBLOG";
-	static const int FILE_VERSION = 1; //Fields are only ever appended, under a new version that still reads the old ones
+	static const int FILE_VERSION = 2; //Fields are only ever appended, under a new version that still reads the old ones. 2: extra targets
 	static const string JOURNAL_SUFFIX = ".journal";
 	static const string JOURNAL_MAGIC = "ZBJRN";
 	static const int JOURNAL_MAX = 4096; //Entries before the snapshot is rewritten and the journal starts over
@@ -204,7 +230,8 @@ class ZBerryEventLog {
 	//---------------------------------------------------------------- Server: recording
 
 	//Through ZomberryBase.LogEvent/LogEventRaw
-	ZBerryLogEvent Add(int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0) {
+	//extraIds/extraNames: further targets of a function run on several players at once
+	ZBerryLogEvent Add(int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL) {
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
 		logEvent.Id = m_NextEventId;
 		++m_NextEventId;
@@ -217,6 +244,10 @@ class ZBerryEventLog {
 		logEvent.TargetName = targetName;
 		logEvent.Text = text;
 		if (text.Length() > MAX_TEXT) logEvent.Text = text.Substring(0, MAX_TEXT) + "...";
+		if (extraIds && extraNames && extraIds.Count() == extraNames.Count()) {
+			logEvent.ExtraTargetIds.InsertAll(extraIds);
+			logEvent.ExtraTargetNames.InsertAll(extraNames);
+		}
 
 		InsertEvent(logEvent);
 		if (m_SavePath != "") JournalEvent(logEvent);
@@ -638,7 +669,7 @@ class ZBerryEventLog {
 		if (!file.Read(nextEventId) || !file.Read(eventCount) || eventCount < 0 || eventCount > 65536) return false; //Garbage: reads don't fail at the end
 		ZBerryLogEventArray events = new ZBerryLogEventArray;
 		for (int i = 0; i < eventCount; ++i) {
-			ZBerryLogEvent logEvent = ReadEvent(file);
+			ZBerryLogEvent logEvent = ReadEvent(file, version);
 			if (!logEvent) return false;
 			events.Insert(logEvent);
 		}
@@ -708,7 +739,8 @@ class ZBerryEventLog {
 		string magic = "";
 		int version = 0;
 		int generation = 0;
-		if (!file.Read(magic) || magic != JOURNAL_MAGIC || !file.Read(version) || version != FILE_VERSION || !file.Read(generation) || generation != m_Generation) {
+		//Older versions too: the journal a previous ZomBerry left is replayed once, then the next snapshot replaces it
+		if (!file.Read(magic) || magic != JOURNAL_MAGIC || !file.Read(version) || version < 1 || version > FILE_VERSION || !file.Read(generation) || generation != m_Generation) {
 			file.Close();
 			return 0; //Stale (already in the snapshot) or not a journal
 		}
@@ -718,7 +750,7 @@ class ZBerryEventLog {
 			int kind = 0;
 			file.Read(kind);
 			if (kind == JOURNAL_EVENT) {
-				ZBerryLogEvent logEvent = ReadEvent(file);
+				ZBerryLogEvent logEvent = ReadEvent(file, version);
 				if (!logEvent || !ReadEndMark(file)) break;
 				InsertEvent(logEvent);
 			} else if (kind == JOURNAL_DAMAGE) {
@@ -827,9 +859,12 @@ class ZBerryEventLog {
 		file.Write(logEvent.TargetId);
 		file.Write(logEvent.TargetName);
 		file.Write(logEvent.Text);
+		file.Write(logEvent.ExtraTargetIds);
+		file.Write(logEvent.ExtraTargetNames);
 	}
 
-	protected static ZBerryLogEvent ReadEvent(FileSerializer file) {
+	//version: the file's, older files lack the later fields
+	protected static ZBerryLogEvent ReadEvent(FileSerializer file, int version) {
 		int id = 0;
 		int time = 0;
 		int type = 0;
@@ -841,6 +876,9 @@ class ZBerryEventLog {
 		string text = "";
 		if (!file.Read(id) || !file.Read(time) || !file.Read(type) || !file.Read(flags)) return NULL;
 		if (!file.Read(actorId) || !file.Read(actorName) || !file.Read(targetId) || !file.Read(targetName) || !file.Read(text)) return NULL;
+		TStringArray extraIds = new TStringArray;
+		TStringArray extraNames = new TStringArray;
+		if (version >= 2 && (!file.Read(extraIds) || !file.Read(extraNames) || extraIds.Count() != extraNames.Count())) return NULL;
 
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
 		logEvent.Id = id;
@@ -852,6 +890,8 @@ class ZBerryEventLog {
 		logEvent.TargetId = targetId;
 		logEvent.TargetName = targetName;
 		logEvent.Text = text;
+		logEvent.ExtraTargetIds.InsertAll(extraIds);
+		logEvent.ExtraTargetNames.InsertAll(extraNames);
 		return logEvent;
 	}
 
