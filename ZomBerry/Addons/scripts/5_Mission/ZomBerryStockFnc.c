@@ -73,6 +73,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Toggle infinite ammo", "InfiniteAmmoTarget", this, CATEGORY_PLAYER, false, NULL, true); //Can switch it off for an admin
 		m_ZomberryCmdAPI.AddCommand("Toggle freeze", "FreezeTarget", this, CATEGORY_PLAYER, true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, CATEGORY_PLAYER, false);
+		m_ZomberryCmdAPI.AddCommand("Repair all gear", "RepairTargetGear", this, CATEGORY_PLAYER, false);
 
 		m_ZomberryCmdAPI.AddCategory(CATEGORY_PUNISH, 0xFFFF7C75);
 		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, CATEGORY_PUNISH, true, NULL, true);
@@ -125,7 +126,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, CATEGORY_OBJECTS, false);
 
 		//These act on one player each and make sense on several selected players at once
-		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
+		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "RepairTargetGear", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
 		foreach (string multiName : multiTarget) {
 			ZBerryFunction multiFunc = m_ZomberryCmdAPI.GetFuncByName(multiName);
 			if (multiFunc) multiFunc.SetMultiTarget(true);
@@ -390,6 +391,37 @@ class ZomberryStockFunctions {
 		}
 
 		MessagePlayer(admin, "Repaired item to the best condition it can achieve");
+	}
+
+	//Everything the target wears and carries, what's inside and attached to it, and the item in hands
+	void RepairTargetGear( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+
+		array<EntityAI> items = new array<EntityAI>;
+		target.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items);
+		EntityAI inHands = target.GetHumanInventory().GetEntityInHands();
+		if (inHands) {
+			array<EntityAI> handItems = new array<EntityAI>;
+			inHands.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, handItems);
+			foreach (EntityAI handItem : handItems) {
+				if (items.Find(handItem) == -1) items.Insert(handItem);
+			}
+		}
+
+		int repaired = 0;
+		foreach (EntityAI item : items) {
+			if (!item || item == target) continue; //The character itself is in the list
+			item.SetHealthMax("", "");
+			++repaired;
+		}
+		if (repaired == 0) {
+			Refuse(admin, GetPlayerName(target) + " has nothing to repair");
+			return;
+		}
+
+		MessagePlayer(admin, "Repaired " + repaired + " items of " + GetPlayerName(target));
+		DescribeOnTarget(adminId, targetId, "repaired all gear (" + repaired + " items)");
 	}
 
 	void RefuelAndRepair( string funcName, int adminId, int targetId, vector cursor ) {
