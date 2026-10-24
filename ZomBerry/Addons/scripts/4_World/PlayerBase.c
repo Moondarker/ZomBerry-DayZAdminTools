@@ -14,6 +14,7 @@ modded class PlayerBase
 	protected float m_ZBSelfTimer;
 	static const float ZB_SELF_INTERVAL = 0.5;
 	protected static int s_ZBOwnLow, s_ZBOwnHigh; //Network id of this client's own character, also once detached
+	protected static bool s_ZBOwnKnown;
 
 	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
 	//weapons included). Only items this switched off are switched back on, when they leave the player or protection ends
@@ -148,23 +149,30 @@ modded class PlayerBase
 	//the camera follows its bones, which a shrunk or frozen character would take along
 	protected bool ZBHidesHere() {
 		if (!GetGame().IsClient() || GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
+		if (ZBIsOwnBody()) return false; //Detached in FreeCam: this client takes it back, see ZBInFreeCamHere
 		return !ZomBerryCamSpec.IsTarget(this);
 	}
 
-	//Sounds and noise are dropped everywhere but on the character's own client, and on a client that hides it
-	protected bool ZBSilent() {
-		return (m_ZBInvisible && GetInstanceType() != DayZPlayerInstanceType.INSTANCETYPE_CLIENT) || m_ZBShrunkHere;
-	}
-
-	//In FreeCam the admin's client controls only the camera, and their body is left behind: hidden and frozen on that
-	//client too, so it isn't in the way and plays no sounds when the camera moves
-	protected bool ZBInFreeCamHere() {
-		if (!GetGame().IsClient() || GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
-		if (!ZomBerryCamFree.IsUsedHere()) return false;
+	//This client's own character, also while it's detached (FreeCam) and controlled by no one here
+	protected bool ZBIsOwnBody() {
+		if (!s_ZBOwnKnown) return false;
 
 		int low, high;
 		GetNetworkID(low, high);
 		return low == s_ZBOwnLow && high == s_ZBOwnHigh;
+	}
+
+	//Sounds and noise are dropped everywhere but on the character's own client, and on a client that hides it
+	protected bool ZBSilent() {
+		return (m_ZBInvisible && GetInstanceType() != DayZPlayerInstanceType.INSTANCETYPE_CLIENT) || m_ZBShrunkHere || ZBInFreeCamHere();
+	}
+
+	//In FreeCam the admin's client controls only the camera, and their body is left behind: hidden and silent on that
+	//client too, so it isn't in the way and plays no sounds when the camera moves. Only drawn invisible, never shrunk or
+	//frozen: this client takes the body back when FreeCam ends, and taking back a shrunk one crashed the game
+	protected bool ZBInFreeCamHere() {
+		if (!GetGame().IsClient() || GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
+		return ZomBerryCamFree.IsUsedHere() && ZBIsOwnBody();
 	}
 
 	//Other players can't target an invisible character with actions (check pulse, give, restrain...): their clients
@@ -186,7 +194,7 @@ modded class PlayerBase
 	//Not simulated and not colliding on this client either. Only on other players' clients: on the server and its own
 	//client the same physics body keeps the character on the ground
 	protected void ZBApplyInvisibility() {
-		if ((m_ZBInvisible && ZBHidesHere()) || ZBInFreeCamHere()) {
+		if (m_ZBInvisible && ZBHidesHere()) {
 			if (!m_ZBShrunkHere) {
 				m_ZBSavedLayer = -1;
 				if (dBodyIsSet(this)) m_ZBSavedLayer = dBodyGetInteractionLayer(this);
@@ -204,16 +212,20 @@ modded class PlayerBase
 	}
 
 	//The invisible player's own client hides their body, bare body parts and what they wear, as a reminder that others
-	//don't see them. Not shrunk: the camera and aiming follow the body. The item in hands stays, for aiming. Re-applied
-	//twice a second, as the engine shows hidden parts again now and then
+	//don't see them. Not shrunk: the camera and aiming follow the body. The item in hands stays, for aiming. The same for
+	//the body left behind in FreeCam, item in hands included. Re-applied twice a second, as the engine shows hidden
+	//parts again now and then
 	protected void ZBApplySelfInvisibility() {
-		bool hide = m_ZBInvisible && GetGame().IsClient() && GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT;
+		bool inFreeCam = ZBInFreeCamHere();
+		bool hide = inFreeCam || (m_ZBInvisible && GetGame().IsClient() && GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT);
 		if (!hide && !m_ZBSelfHidden) return;
 		m_ZBSelfHidden = hide;
 
 		ZBSetTreeInvisible(this, hide);
 		GameInventory inventory = GetInventory();
 		for (int i = 0; i < inventory.GetAttachmentSlotsCount(); ++i) ZBSetBodyPartInvisible(inventory.GetAttachmentSlotId(i), hide);
+		EntityAI inHands = GetHumanInventory().GetEntityInHands();
+		if (inHands) ZBSetTreeInvisible(inHands, inFreeCam);
 	}
 
 	//Bare body parts (head, hands, torso, legs, feet and any other) are placeholders of their slots, shown while the
@@ -272,11 +284,14 @@ modded class PlayerBase
 			}
 		}
 
-		if (GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) GetNetworkID(s_ZBOwnLow, s_ZBOwnHigh);
+		if (GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) {
+			GetNetworkID(s_ZBOwnLow, s_ZBOwnHigh);
+			s_ZBOwnKnown = true;
+		}
 		if (m_ZBInvisible || m_ZBMadeNonSolid) ZBUpdateSolid();
-		if (m_ZBInvisible || m_ZBShrunkHere || ZomBerryCamFree.IsUsedHere()) ZBApplyInvisibility();
+		if (m_ZBInvisible || m_ZBShrunkHere) ZBApplyInvisibility();
 
-		if (!m_ZBInvisible && !m_ZBSelfHidden) return;
+		if (!m_ZBInvisible && !m_ZBSelfHidden && !ZomBerryCamFree.IsUsedHere()) return;
 		m_ZBSelfTimer -= timeSlice;
 		if (m_ZBSelfTimer > 0) return;
 		m_ZBSelfTimer = ZB_SELF_INTERVAL;
@@ -301,7 +316,7 @@ modded class PlayerBase
 	//Again right before drawing, in case the frame's updates gave the character its size, simulation or collisions back
 	override void EOnPostFrame(IEntity other, int extra) {
 		super.EOnPostFrame(other, extra);
-		if (m_ZBInvisible || m_ZBShrunkHere || ZomBerryCamFree.IsUsedHere()) ZBApplyInvisibility();
+		if (m_ZBInvisible || m_ZBShrunkHere) ZBApplyInvisibility();
 	}
 
 	//Steps, movement, clothing, handling and voice sounds (not voice chat), and the noise infected hear
