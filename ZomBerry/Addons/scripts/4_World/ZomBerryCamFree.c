@@ -43,8 +43,11 @@ class ZomBerryCamFree extends ZomBerryCamBase {
 		vector strafeChange = strafe * timeSlice * directionAside * speed;
 		vector verticalChange = vertical * timeSlice * vector.Up * speed;
 		vector newPos = oldPos + forwardChange + strafeChange + verticalChange;
+		//Kept above the terrain while it's above it. Underground areas (bunkers) are below the terrain: a camera already
+		//under it moves freely, it was lifted to the surface there
 		float yMin = GetGame().SurfaceY(newPos[0], newPos[2]);
-		if( newPos[1] < yMin )
+		bool aboveGround = oldPos[1] >= GetGame().SurfaceY(oldPos[0], oldPos[2]) - 0.1;
+		if( aboveGround && newPos[1] < yMin )
 			newPos[1] = yMin;
 
 		SetPosition(newPos);
