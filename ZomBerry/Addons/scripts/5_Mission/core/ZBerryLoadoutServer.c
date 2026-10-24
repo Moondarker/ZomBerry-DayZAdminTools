@@ -246,8 +246,8 @@ class ZBerryLoadoutServer {
 	void LoadoutTry( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		Param3<bool, string, ref ZBerryLoadout> data; //Shared, name, the admin's own loadout (empty for a shared one)
 		if (!ctx.Read(data)) return;
-		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_USE, "try on a loadout")) return;
-		if (!CanRun(type, sender, ZBerryPermissions.SPAWN_INVENTORY, "try on a loadout")) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_USE, "apply a loadout")) return;
+		if (!CanRun(type, sender, ZBerryPermissions.SPAWN_INVENTORY, "apply a loadout")) return;
 
 		ZBerryLoadout loadout = data.param3;
 		string source = "their loadout ";
@@ -255,12 +255,14 @@ class ZBerryLoadoutServer {
 			loadout = m_Shared.Find(data.param2);
 			source = "shared loadout ";
 			if (!loadout) {
-				Tell(sender, "Loadout not tried on: there's no shared loadout called " + data.param2);
+				Tell(sender, "Loadout not applied: there's no shared loadout called " + data.param2);
 				return;
 			}
 		} else if (!ZBerryLoadoutKit.Sanitize(loadout)) {
-			Tell(sender, "Loadout not tried on: it's empty");
+			Tell(sender, "Loadout not applied: it's empty");
 			return;
+		} else if (loadout.OwnerId != "" && loadout.OwnerId != GetOwnerKey(sender)) {
+			source = ""; //Another player's current gear (LoadoutPlayerRequest): logged with them as the target
 		}
 
 		StartTry(sender, loadout, source);
@@ -268,12 +270,12 @@ class ZBerryLoadoutServer {
 
 	//The admin's own gear is saved first, unless it already is
 	protected void StartTry(PlayerIdentity sender, ZBerryLoadout loadout, string source) {
-		PlayerBase player = GetCharacter(sender, "try on a loadout");
+		PlayerBase player = GetCharacter(sender, "apply a loadout");
 		if (!player) return;
 
 		string problem = SaveOriginal(player, sender);
 		if (problem != "") { //Their gear would be lost
-			Tell(sender, "Loadout not tried on: your gear can't be saved, " + problem);
+			Tell(sender, "Loadout not applied: your gear can't be saved, " + problem);
 			return;
 		}
 
@@ -293,15 +295,22 @@ class ZBerryLoadoutServer {
 		}
 
 		ZBerryLoadoutResult result = job.Result;
-		string text = "{actor} tried on " + source + ZBerryMessages.ForLog(job.Loadout.Name);
-		string told = "Tried on " + job.Loadout.Name;
+		string text = "{actor} applied " + source + ZBerryMessages.ForLog(job.Loadout.Name);
+		if (source == "") text = "{actor} applied {target}'s current gear";
+		string told = "Applied " + job.Loadout.Name;
 		if (result.Restricted > 0) {
 			text += ", without " + result.Restricted + " items their spawn rules don't allow";
 			told += ", without " + result.Restricted + " items your spawn rules don't allow";
 		}
 		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
 		told += result.DescribeLosses();
-		ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, text );
+		if (source == "") { //Another player's current gear: they're the target, they may be offline by now
+			string actorId, actorName;
+			ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.Loadout.OwnerId, job.Loadout.OwnerName, text );
+		} else {
+			ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, text );
+		}
 		Tell(sender, told);
 	}
 
@@ -378,6 +387,8 @@ class ZBerryLoadoutServer {
 		} else {
 			string name = ZomberryStockFunctions.GetPlayerName(player) + "'s gear";
 			loadout = ZBerryLoadoutKit.Capture(player, ZBerryLoadoutKit.CleanName(name));
+			loadout.OwnerId = GetOwnerKey(ZBGetIdentity(player)); //Whose it is, for the log when it's applied or given
+			loadout.OwnerName = ZomberryStockFunctions.GetPlayerName(player);
 		}
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutPlayer, new Param3<int, string, ref ZBerryLoadout>(sessionId, reason, loadout), true, sender );
 	}
@@ -401,6 +412,8 @@ class ZBerryLoadoutServer {
 		} else if (!ZBerryLoadoutKit.Sanitize(loadout)) {
 			Tell(sender, "Loadout not given: it's empty");
 			return;
+		} else if (loadout.OwnerId != "") {
+			source = ""; //A player's current gear, named "<player>'s gear"
 		}
 
 		TIntArray targets = data.param4;
@@ -572,7 +585,7 @@ class ZBerryLoadoutServer {
 
 		ZBerryDeathLoadout death = FindDeath(data.param1);
 		if (!death) {
-			Tell(sender, "Not tried on: " + DescribeNotKept());
+			Tell(sender, "Not applied: " + DescribeNotKept());
 			return;
 		}
 		StartTry(sender, death.Loadout, "the gear of ");
