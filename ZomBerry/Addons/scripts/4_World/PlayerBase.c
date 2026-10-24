@@ -9,6 +9,8 @@ modded class PlayerBase
 	protected bool m_ZBHiddenHere; //What this client last applied
 	protected float m_ZBReapplyTimer; //Seconds until the next full re-apply on this client
 	static const float ZB_REAPPLY_INTERVAL = 0.5;
+	protected float m_ZBDiagTimer; //TEMPORARY diagnostics, not for release
+	protected int m_ZBDiagShownFrame, m_ZBDiagShownPost, m_ZBDiagFrames;
 
 	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
 	//weapons included). Only items this switched off are switched back on, when they leave the player or protection ends
@@ -235,12 +237,74 @@ modded class PlayerBase
 		if (!m_ZBInvisible || !ZBHidesHere()) return;
 
 		HumanItemAccessor accessor = GetItemAccessor();
-		if (accessor && !accessor.IsItemInHandsHidden()) accessor.HideItemInHands(true);
+		++m_ZBDiagFrames;
+		if (accessor && !accessor.IsItemInHandsHidden()) {
+			++m_ZBDiagShownFrame;
+			accessor.HideItemInHands(true);
+		}
+
+		m_ZBDiagTimer -= timeSlice;
+		if (m_ZBDiagTimer <= 0) {
+			m_ZBDiagTimer = 5;
+			ZBDiagnose();
+		}
 
 		m_ZBReapplyTimer -= timeSlice;
 		if (m_ZBReapplyTimer > 0) return;
 		m_ZBReapplyTimer = ZB_REAPPLY_INTERVAL;
 		ZBApplyInvisibility();
+	}
+
+	//Again after the frame's animation and inventory updates, right before drawing: the engine switches the item in
+	//hands back on during the frame, and hiding it only at the start of the next one let it show every other frame
+	override void EOnPostFrame(IEntity other, int extra) {
+		super.EOnPostFrame(other, extra);
+		if (!m_ZBInvisible || !ZBHidesHere()) return;
+
+		HumanItemAccessor accessor = GetItemAccessor();
+		if (accessor) {
+			if (!accessor.IsItemInHandsHidden()) ++m_ZBDiagShownPost;
+			accessor.HideItemInHands(true);
+		}
+		EntityAI inHands = GetHumanInventory().GetEntityInHands();
+		if (inHands && inHands.IsFlagSet(EntityFlags.VISIBLE)) ZBSetTreeInvisible(inHands, true);
+	}
+
+	//TEMPORARY diagnostics, not for release: what near this invisible character is still drawn on this client
+	protected void ZBDiagnose() {
+		string who = GetType();
+		if (GetIdentity()) who = GetIdentity().GetName();
+		Print("[ZBDIAG] " + who + ": in-hands item found shown at frame start " + m_ZBDiagShownFrame + "x, after the frame " + m_ZBDiagShownPost + "x, in " + m_ZBDiagFrames + " frames. Body visible: " + IsFlagSet(EntityFlags.VISIBLE));
+		m_ZBDiagShownFrame = 0;
+		m_ZBDiagShownPost = 0;
+		m_ZBDiagFrames = 0;
+
+		EntityAI inHands = GetHumanInventory().GetEntityInHands();
+		if (inHands) Print("[ZBDIAG]   in hands: " + inHands.GetType() + " visible " + inHands.IsFlagSet(EntityFlags.VISIBLE));
+
+		GameInventory inventory = GetInventory();
+		for (int i = 0; i < inventory.GetAttachmentSlotsCount(); ++i) {
+			int slotId = inventory.GetAttachmentSlotId(i);
+			EntityAI placeholder = inventory.FindPlaceholderForSlot(slotId);
+			EntityAI attached = inventory.FindAttachment(slotId);
+			string line = "[ZBDIAG]   slot " + InventorySlots.GetSlotName(slotId);
+			if (placeholder) line += " placeholder " + placeholder.GetType() + " visible " + placeholder.IsFlagSet(EntityFlags.VISIBLE) + " model " + placeholder.GetShapeName();
+			if (attached) line += " attached " + attached.GetType() + " visible " + attached.IsFlagSet(EntityFlags.VISIBLE);
+			if (placeholder || attached) Print(line);
+		}
+
+		array<Object> near = new array<Object>;
+		vector center = GetPosition() + "0 1 0";
+		GetGame().GetObjectsAtPosition3D(center, 3, near, NULL);
+		foreach (Object obj : near) {
+			if (obj == this || !obj.IsFlagSet(EntityFlags.VISIBLE)) continue;
+			string objLine = "[ZBDIAG]   near and visible: " + obj.GetType() + " model " + obj.GetShapeName();
+			Object parent = Object.Cast(obj.GetParent());
+			if (parent) objLine += " parent " + parent.GetType();
+			EntityAI entity = EntityAI.Cast(obj);
+			if (entity && entity.GetHierarchyRootPlayer()) objLine += " carried by " + entity.GetHierarchyRootPlayer().GetType();
+			Print(objLine);
+		}
 	}
 
 	//Steps, movement, clothing, handling and voice sounds (not voice chat), and the noise infected hear
