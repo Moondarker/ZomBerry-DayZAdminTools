@@ -114,6 +114,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.loadouts.use` | Loadouts in the Spawn tab: saving your own, trying loadouts on (together with `zomberry.spawn.inventory`) and getting your gear back, and using shared ones |
 | `zomberry.loadouts.share` | Sharing loadouts with the other admins, and replacing or deleting your own shared ones and those of lower-ranked admins |
 | `zomberry.loadouts.manage` | Replacing or deleting anyone's shared loadouts, whatever their rank |
+| `zomberry.loadouts.restore` | Giving players back the gear they died with, from the Logs tab |
 | `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
 | `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
@@ -259,8 +260,6 @@ Set time, set date and set weather start from the game's current time, date and 
 
 **Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
-**Restore to a previous loadout slot:** the server remembers what each player wore and held, hotbar included, at their last five deaths since the last restart (in memory only). The first run puts on the target the gear from their last death, each further run goes one death further back, and after the oldest the next run gives back what they wore before the first run. A new death starts over. Your spawn rules apply to the death gear, not to the gear given back. It replaces the target's gear, so it counts as harmful.
-
 **Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
 **Spectate target:** see through the selected player's eyes.
@@ -339,6 +338,12 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - A file that can't be read is set aside as `.bad`, and the log starts empty.
   - Delete both files, with the server stopped, to clear the log.
 - **Deaths** say what killed the player: another player, an infected, an animal, a vehicle, an explosion, a fall, drowning, fire, bleeding, poisoning, thirst or hunger. The damage log only covers damage between players.
+- **Gear at death:** with `zomberry.loadouts.use`, right-click a death and choose **Loadout overview**, or double-click it. The window shows what the player wore and held when they died, hotbar included, marked like loadouts in the Spawn tab.
+  - **Try on** puts it on you, like a loadout: your own gear is saved first, and **Restore** in the Spawn tab gives it back. It needs `zomberry.spawn.inventory` too.
+  - **Restore on victim** (with `zomberry.loadouts.restore`) gives it back to the player, if they're online and alive. It replaces what they wear, so their group's protection from harmful functions applies.
+  - **Save as my loadout** keeps a copy among your own loadouts.
+  - Your spawn rules apply when it's put on anyone.
+  - The server keeps each player's last 5 deaths, up to 500 in all. They're written to `ZomBerryDeathLoadouts.json` only when the server stops cleanly, and read back (and the file deleted) at the next start. After a crash or a killed server, the deaths before it are gone.
 - **Language:** names from the game (animals, vehicles, weapons, objects) show in your game's language. The server's log file has them in the server's language.
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
