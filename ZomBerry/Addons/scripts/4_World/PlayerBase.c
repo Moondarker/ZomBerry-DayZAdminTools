@@ -167,6 +167,13 @@ modded class PlayerBase
 		return low == s_ZBOwnLow && high == s_ZBOwnHigh;
 	}
 
+	//Other players can't target an invisible character with actions (check pulse, give, restrain...): their clients
+	//pick action targets with this. The server and its own client keep vanilla's answer, for actions on themselves
+	override bool CanBeActionTarget() {
+		if (m_ZBInvisible && GetGame().IsClient() && GetInstanceType() != DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
+		return super.CanBeActionTarget();
+	}
+
 	override void OnVariablesSynchronized() {
 		super.OnVariablesSynchronized();
 		ZBApplyInvisibility();
