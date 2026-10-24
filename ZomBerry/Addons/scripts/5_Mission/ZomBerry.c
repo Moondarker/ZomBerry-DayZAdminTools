@@ -30,7 +30,7 @@ class ZomberryBase {
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans, m_Locations);
 			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
 			m_Loadouts = new ZBerryLoadoutServer(m_Auth);
-			g_ZBerryDeathLoadouts = new ZBerryDeathLoadouts(m_Auth);
+			g_ZBerryDeathLoadouts = new ZBerryDeathLoadouts();
 			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
@@ -87,15 +87,17 @@ class ZomberryBase {
 
 	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name
 	//extraIds/extraNames: further targets of a function run on several players at once ({target} names them all)
-	static void LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL ) {
-		if (!GetGame() || !GetGame().IsServer()) return;
+	//Returns the event, NULL on clients
+	static ZBerryLogEvent LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL ) {
+		if (!GetGame() || !GetGame().IsServer()) return NULL;
 
 		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags, extraIds, extraNames);
-		if (ZBerryEventType.IsInGameOnly(type)) return;
+		if (ZBerryEventType.IsInGameOnly(type)) return logEvent;
 
 		string line = logEvent.Format(false); //The server's language
 		if (type == ZBerryEventType.REFUSED) line = "WARN: " + line;
 		GetLogger().Log( ZBerryEventType.GetModule(type), line );
+		return logEvent;
 	}
 
 	//Steam64 id and name of a player for an event, "" and "Singleplayer" for none in singleplayer
@@ -123,12 +125,16 @@ class ZomberryBase {
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
 		m_Locations.Load(GetConfig().GetConfigDir() + ZBerryLocations.CONFIG_FILE);
 		m_Loadouts.Load(GetConfig().GetConfigDir());
-		if (GetGame().IsMultiplayer()) GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
+		if (GetGame().IsMultiplayer()) {
+			GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
+			g_ZBerryDeathLoadouts.Load(GetConfig().GetConfigDir(), GetZBerryEventLog().GetNextEventId()); //After the log: the ids it has
+		}
 	}
 
-	//Server, before the log's last save: repeated calls still held back are logged
+	//Server, before the log's last save: repeated calls still held back are logged, death loadouts saved
 	void OnServerStopping() {
 		if (m_ServerRPC) m_ServerRPC.FlushCallGroups();
+		if (g_ZBerryDeathLoadouts && GetGame().IsMultiplayer()) g_ZBerryDeathLoadouts.Save(GetConfig().GetConfigDir());
 	}
 
 	//Server only, NULL on clients

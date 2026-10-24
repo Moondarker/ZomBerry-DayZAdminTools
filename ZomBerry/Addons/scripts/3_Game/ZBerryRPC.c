@@ -50,7 +50,11 @@ enum ZBerryRPCOp {
 	LoadoutTry = 47, //Client -> server: shared, name, the loadout (the admin's own; empty for a shared one)
 	LoadoutRestore = 48, //Client -> server: put the gear from before the first try back on
 	LoadoutShare = 49, //Client -> server: a loadout to share (replaces the shared one of that name)
-	LoadoutDelete = 50 //Client -> server: name of a shared loadout
+	LoadoutDelete = 50, //Client -> server: name of a shared loadout
+	DeathLoadoutRequest = 51, //Client -> server: id of a kill event; the gear comes back as DeathLoadout
+	DeathLoadout = 52, //Server -> client: event id, why it's not kept ("" if it is), the gear, the victim's state (ZBerryVictimState)
+	DeathLoadoutTry = 53, //Client -> server: id of a kill event, its gear goes on the admin
+	DeathLoadoutRestore = 54 //Client -> server: id of a kill event, its gear goes back on the victim
 }
 
 //Which side received the call

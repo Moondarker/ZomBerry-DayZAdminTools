@@ -73,7 +73,6 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Toggle infinite ammo", "InfiniteAmmoTarget", this, CATEGORY_PLAYER, false, NULL, true); //Can switch it off for an admin
 		m_ZomberryCmdAPI.AddCommand("Toggle freeze", "FreezeTarget", this, CATEGORY_PLAYER, true, NULL, true);
 		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, CATEGORY_PLAYER, false);
-		m_ZomberryCmdAPI.AddCommand("Restore to a previous loadout slot", "RestoreDeathLoadout", this, CATEGORY_PLAYER, false, NULL, true); //Replaces their gear
 
 		m_ZomberryCmdAPI.AddCategory(CATEGORY_PUNISH, 0xFFFF7C75);
 		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, CATEGORY_PUNISH, true, NULL, true);
@@ -126,7 +125,7 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, CATEGORY_OBJECTS, false);
 
 		//These act on one player each and make sense on several selected players at once
-		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "RestoreDeathLoadout", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
+		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
 		foreach (string multiName : multiTarget) {
 			ZBerryFunction multiFunc = m_ZomberryCmdAPI.GetFuncByName(multiName);
 			if (multiFunc) multiFunc.SetMultiTarget(true);
@@ -364,46 +363,6 @@ class ZomberryStockFunctions {
 			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + GetPlayerName(target));
 			DescribeOnTarget(adminId, targetId, "switched god mode on");
 		}
-	}
-
-	//Each run one death further back (ZBerryDeathLoadouts), after the oldest back to the gear from before the first run
-	void RestoreDeathLoadout( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase admin, target;
-		if (!GetTargets(adminId, targetId, admin, target)) return;
-		if (!target.IsAlive()) {
-			Refuse(admin, GetPlayerName(target) + " is dead, try again once they've respawned");
-			return;
-		}
-
-		ZBerryLoadoutJob job;
-		int slot = -1;
-		if (g_ZBerryDeathLoadouts) slot = g_ZBerryDeathLoadouts.Step(target, ZBGetIdentity(admin), job);
-		if (slot < 0) {
-			Refuse(admin, GetPlayerName(target) + " hasn't died since the server started");
-			return;
-		}
-
-		string what = "the gear from before the previous loadout slots";
-		if (slot == 1) what = "the gear from their last death";
-		if (slot > 1) what = "the gear from " + slot + " deaths ago";
-		int stored = g_ZBerryDeathLoadouts.CountDeaths(g_ZBerryDeathLoadouts.GetKey(target));
-		DescribeOnTarget(adminId, targetId, "put back " + what);
-		job.Note = GetPlayerName(target) + " got " + what + " (slot -" + slot + " of " + stored + ")";
-		if (slot == 0) job.Note = GetPlayerName(target) + " got " + what + " back";
-		job.OnDone.Insert(OnDeathLoadoutDone);
-	}
-
-	void OnDeathLoadoutDone(ZBerryLoadoutJob job) {
-		PlayerBase admin = ZBGetPlayerById(job.SessionId);
-		if (!job.Dressed) {
-			MessagePlayer(admin, "Loadout not put on: the player is gone or dead");
-			return;
-		}
-
-		string message = job.Note;
-		if (job.Result.Restricted > 0) message += ", without " + job.Result.Restricted + " items your spawn rules don't allow";
-		message += job.Result.DescribeLosses();
-		MessagePlayer(admin, message);
 	}
 
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {

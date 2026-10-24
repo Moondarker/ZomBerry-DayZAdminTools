@@ -262,6 +262,11 @@ class ZBerryEventLog {
 		if (logEvent.Id >= m_NextEventId) m_NextEventId = logEvent.Id + 1;
 	}
 
+	//Server: the id the next event gets
+	int GetNextEventId() {
+		return m_NextEventId;
+	}
+
 	int GetEventCount() {
 		return m_Events.Count();
 	}
@@ -401,7 +406,7 @@ class ZBerryEventLog {
 		if (vehicle) {
 			PlayerBase driver = PlayerBase.Cast(vehicle.CrewDriver());
 			if (driver && driver != victim) {
-				ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + ZBerryLocText.Name(vehicle) + where);
+				AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + ZBerryLocText.Name(vehicle) + where));
 				return;
 			}
 		}
@@ -410,11 +415,16 @@ class ZBerryEventLog {
 			string text = "{target} was killed by {actor}";
 			if (killerEntity != killerPlayer) text += " with " + ZBerryLocText.Name(killerEntity);
 			float distance = vector.Distance(victim.GetPosition(), killerPlayer.GetPosition());
-			ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(killerPlayer), GetName(killerPlayer), GetSteamId(victim), GetName(victim), text + " from " + Math.Round(distance) + " m" + where);
+			AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(killerPlayer), GetName(killerPlayer), GetSteamId(victim), GetName(victim), text + " from " + Math.Round(distance) + " m" + where));
 			return;
 		}
 
-		ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + ZBerryDeathCause.Describe(victim, killer) + where);
+		AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + ZBerryDeathCause.Describe(victim, killer) + where));
+	}
+
+	//The gear captured just before the death is kept under the kill event, for the Logs tab's loadout overview
+	protected static void AttachDeath(PlayerBase victim, ZBerryLogEvent killEvent) {
+		if (g_ZBerryDeathLoadouts) g_ZBerryDeathLoadouts.Attach(victim, killEvent);
 	}
 
 	//Player against player only: infected, animals and falls aren't logged

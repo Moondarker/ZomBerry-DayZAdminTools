@@ -112,6 +112,9 @@ class ZBerryLoadoutServer {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutRestore, "LoadoutRestore", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutShare, "LoadoutShare", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutDelete, "LoadoutDelete", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutRequest, "DeathLoadoutRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutTry, "DeathLoadoutTry", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutRestore, "DeathLoadoutRestore", this, ZBerrySPExec.Client );
 	}
 
 	void Load(string dir) {
@@ -256,6 +259,11 @@ class ZBerryLoadoutServer {
 			return;
 		}
 
+		StartTry(sender, loadout, source);
+	}
+
+	//The admin's own gear is saved first, unless it already is
+	protected void StartTry(PlayerIdentity sender, ZBerryLoadout loadout, string source) {
 		PlayerBase player = GetCharacter(sender, "try on a loadout");
 		if (!player) return;
 
@@ -335,6 +343,110 @@ class ZBerryLoadoutServer {
 		told += job.Result.DescribeLosses();
 		Tell(sender, told);
 		if (sender || !GetGame().IsMultiplayer()) SendList(sender);
+	}
+
+	//---------------------------------------------------------------- Deaths (Logs tab)
+
+	//Why a death's gear can't be shown, for the admin
+	static string DescribeNotKept() {
+		return "This death's gear isn't kept: only the last " + ZBerryDeathLoadouts.MAX_PER_PLAYER + " deaths of each player are, and only until the server crashes or is killed";
+	}
+
+	protected ZBerryDeathLoadout FindDeath(int eventId) {
+		if (!g_ZBerryDeathLoadouts) return NULL;
+		return g_ZBerryDeathLoadouts.Find(eventId);
+	}
+
+	void DeathLoadoutRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<int> data; //Kill event id
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOGS_VIEW, "see the gear of a death")) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_USE, "see the gear of a death")) return;
+
+		int eventId = data.param1;
+		ZBerryDeathLoadout death = FindDeath(eventId);
+		string reason = "";
+		ZBerryLoadout loadout = new ZBerryLoadout("");
+		int state = ZBerryVictimState.OFFLINE;
+		if (death) {
+			loadout = death.Loadout;
+			state = ZBerryDeathLoadouts.GetVictimState(death);
+		} else {
+			reason = DescribeNotKept();
+		}
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.DeathLoadout, new Param4<int, string, ref ZBerryLoadout, int>(eventId, reason, loadout, state), true, sender );
+	}
+
+	//On the admin, like any loadout: their own gear is saved first, their spawn rules apply
+	void DeathLoadoutTry( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<int> data; //Kill event id
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_USE, "try on the gear of a death")) return;
+		if (!CanRun(type, sender, ZBerryPermissions.SPAWN_INVENTORY, "try on the gear of a death")) return;
+
+		ZBerryDeathLoadout death = FindDeath(data.param1);
+		if (!death) {
+			Tell(sender, "Not tried on: " + DescribeNotKept());
+			return;
+		}
+		StartTry(sender, death.Loadout, "the gear of ");
+	}
+
+	//Back on the victim, who must be online and alive. Rank protection as for harmful functions, the admin's spawn
+	//rules apply
+	void DeathLoadoutRestore( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<int> data; //Kill event id
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_RESTORE, "give a player the gear they died with")) return;
+
+		ZBerryDeathLoadout death = FindDeath(data.param1);
+		if (!death) {
+			Tell(sender, "Not restored: " + DescribeNotKept());
+			return;
+		}
+
+		ZBerryLoadout loadout = death.Loadout;
+		PlayerBase victim = ZBerryDeathLoadouts.FindVictim(death);
+		if (!victim) {
+			Tell(sender, "Not restored: " + loadout.OwnerName + " isn't online");
+			return;
+		}
+		if (!victim.IsAlive()) {
+			Tell(sender, "Not restored: " + loadout.OwnerName + " is dead, try again once they've respawned");
+			return;
+		}
+		PlayerIdentity victimIdentity = ZBGetIdentity(victim);
+		if (!m_Auth.CanTarget(sender, victimIdentity, true)) {
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, victimIdentity, "{actor} tried to give {target} the gear they died with, but their group is protected from their rank" );
+			Tell(sender, "Not restored: " + loadout.OwnerName + "'s group is protected from your rank");
+			return;
+		}
+
+		ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(victim, loadout, m_Auth, sender);
+		job.OnDone.Insert(OnDeathRestored);
+	}
+
+	protected void OnDeathRestored(ZBerryLoadoutJob job) {
+		PlayerIdentity sender = GetJobIdentity(job);
+		ZBerryLoadout loadout = job.Loadout;
+		if (!job.Dressed) {
+			Tell(sender, "Not restored: " + loadout.OwnerName + " left, died or is busy, their gear was taken off");
+			return;
+		}
+
+		string actorId, actorName;
+		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+		ZBerryLoadoutResult result = job.Result;
+		string text = "{actor} gave {target} the gear they died with";
+		string told = loadout.OwnerName + " got the gear they died with";
+		if (result.Restricted > 0) {
+			text += ", without " + result.Restricted + " items their spawn rules don't allow";
+			told += ", without " + result.Restricted + " items your spawn rules don't allow";
+		}
+		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		told += result.DescribeLosses();
+		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, loadout.OwnerId, loadout.OwnerName, text, ZBerryEventFlags.HARMFUL );
+		Tell(sender, told);
 	}
 
 	//Replaces the shared loadout of that name, if the admin may change it
