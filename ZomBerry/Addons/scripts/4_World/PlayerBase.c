@@ -2,13 +2,12 @@ modded class PlayerBase
 {
 	private bool ZBGodMode;
 
-	//Invisibility (the "Toggle invisibility" function): synced to every client, which then doesn't draw this character
-	//or its gear and plays none of its sounds. The server keeps it out of the AI's noise and targets, and it can't be
-	//hurt (invisible characters still take bullets). Independent of god mode. Voice chat isn't affected
+	//Invisibility (the "Toggle invisibility" function): synced to every client, which then shrinks this character to
+	//nothing and plays none of its sounds. The server keeps it out of the AI's noise and targets, and it can't be hurt.
+	//Independent of god mode. Voice chat isn't affected
 	protected bool m_ZBInvisible;
-	protected bool m_ZBHiddenHere; //What this client last applied
-	protected float m_ZBReapplyTimer; //Seconds until the next full re-apply on this client
-	static const float ZB_REAPPLY_INTERVAL = 0.5;
+	protected bool m_ZBShrunkHere; //What this client last applied
+	static const float ZB_HIDDEN_SCALE = 0.00001;
 
 	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
 	//weapons included). Only items this switched off are switched back on, when they leave the player or protection ends
@@ -142,84 +141,21 @@ modded class PlayerBase
 		ZBApplyInvisibility();
 	}
 
-	//The body, everything attached to it (clothing, their attachments), the bare body parts and the item in hands.
-	//Re-applied on every sync while hidden, only once when shown again: showing the item in hands would undo an
-	//action that hid it
+	//Shrunk rather than hidden piece by piece: clothing, bare body parts and the item in hands are all drawn relative
+	//to the character and shrink with it, while the engine kept showing hidden ones again (the item in hands flickered,
+	//a body part showed as a stray texture). Not 0: a degenerate transform could break the maths that inverts it
 	protected void ZBApplyInvisibility() {
 		if (!ZBHidesHere()) return;
-		if (!m_ZBInvisible && !m_ZBHiddenHere) return;
-		m_ZBHiddenHere = m_ZBInvisible;
 
-		ZBSetTreeInvisible(this, m_ZBInvisible);
-		//Bare body parts (head, hands, torso, legs, feet and any other) are placeholders of their slots, not attachments:
-		//shown while the slot is empty. Every slot's, not a list of them: a missed one showed as a stray texture
-		GameInventory inventory = GetInventory();
-		for (int i = 0; i < inventory.GetAttachmentSlotsCount(); ++i) ZBSetBodyPartInvisible(inventory.GetAttachmentSlotId(i), m_ZBInvisible);
-
-		EntityAI inHands = GetHumanInventory().GetEntityInHands();
-		if (inHands) ZBSetTreeInvisible(inHands, m_ZBInvisible);
 		if (m_ZBInvisible) {
-			GetItemAccessor().HideItemInHands(true);
-		} else if (!IsSwimming() && !IsClimbingLadder() && !IsInVehicle()) { //Where vanilla keeps it hidden
-			GetItemAccessor().HideItemInHands(false);
+			if (GetScale() > ZB_HIDDEN_SCALE * 2) SetScale(ZB_HIDDEN_SCALE);
+			m_ZBShrunkHere = true;
+		} else if (m_ZBShrunkHere) {
+			SetScale(1);
+			m_ZBShrunkHere = false;
 		}
 	}
 
-	protected void ZBSetBodyPartInvisible(int slotId, bool invisible) {
-		EntityAI bodyPart = GetInventory().FindPlaceholderForSlot(slotId);
-		if (!bodyPart) return;
-
-		bodyPart.SetInvisible(invisible);
-		bodyPart.OnInvisibleSet(invisible);
-	}
-
-	protected static void ZBSetTreeInvisible(EntityAI entity, bool invisible) {
-		entity.SetInvisible(invisible);
-		entity.OnInvisibleSet(invisible);
-
-		GameInventory inventory = entity.GetInventory();
-		if (!inventory) return;
-		for (int i = 0; i < inventory.AttachmentCount(); ++i) {
-			EntityAI attachment = inventory.GetAttachmentFromIndex(i);
-			if (attachment) ZBSetTreeInvisible(attachment, invisible);
-		}
-	}
-
-	//New gear is hidden too; gear that leaves the character is shown again (vanilla's OnWasDetached does that for
-	//attachments, the hands are done here)
-	override void EEItemAttached(EntityAI item, string slot_name) {
-		super.EEItemAttached(item, slot_name);
-		if (m_ZBInvisible && ZBHidesHere()) ZBSetTreeInvisible(item, true);
-	}
-
-	//Taking clothing off uncovers the body part under it
-	override void EEItemDetached(EntityAI item, string slot_name) {
-		super.EEItemDetached(item, slot_name);
-		if (m_ZBInvisible && ZBHidesHere()) ZBSetBodyPartInvisible(InventorySlots.GetSlotIdFromString(slot_name), true);
-	}
-
-	override void EEItemIntoHands(EntityAI item) {
-		super.EEItemIntoHands(item);
-		if (m_ZBInvisible && ZBHidesHere()) {
-			ZBSetTreeInvisible(item, true);
-			GetItemAccessor().HideItemInHands(true);
-		}
-	}
-
-	//The item in hands is drawn by the engine's own switch, which actions turn back on when they finish
-	override void TryHideItemInHands(bool hide, bool force = false) {
-		super.TryHideItemInHands(hide, force);
-		if (m_ZBInvisible && ZBHidesHere()) GetItemAccessor().HideItemInHands(true);
-	}
-
-	override void EEItemOutOfHands(EntityAI item) {
-		super.EEItemOutOfHands(item);
-		if (m_ZBInvisible && ZBHidesHere() && item) ZBSetTreeInvisible(item, false);
-	}
-
-	//The engine shows the item in hands again whenever the hands' state changes (switching items, actions, weapon
-	//handling), and not every change comes through an event: other clients check every frame while the character is
-	//invisible, and re-apply the rest now and then
 	override void EOnFrame(IEntity other, float timeSlice) {
 		super.EOnFrame(other, timeSlice);
 
@@ -232,15 +168,13 @@ modded class PlayerBase
 			}
 		}
 
-		if (!m_ZBInvisible || !ZBHidesHere()) return;
+		if (m_ZBInvisible) ZBApplyInvisibility();
+	}
 
-		HumanItemAccessor accessor = GetItemAccessor();
-		if (accessor && !accessor.IsItemInHandsHidden()) accessor.HideItemInHands(true);
-
-		m_ZBReapplyTimer -= timeSlice;
-		if (m_ZBReapplyTimer > 0) return;
-		m_ZBReapplyTimer = ZB_REAPPLY_INTERVAL;
-		ZBApplyInvisibility();
+	//Again right before drawing, in case the frame's movement updates set the character's transform back to full size
+	override void EOnPostFrame(IEntity other, int extra) {
+		super.EOnPostFrame(other, extra);
+		if (m_ZBInvisible) ZBApplyInvisibility();
 	}
 
 	//Steps, movement, clothing, handling and voice sounds (not voice chat), and the noise infected hear
