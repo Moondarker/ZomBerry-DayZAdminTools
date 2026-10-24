@@ -111,6 +111,9 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
 | `zomberry.spawn.player` | Spawning for the selected player: at their feet or into their inventory (together with `zomberry.spawn.ground` or `.inventory`). Follows the protection nodes |
+| `zomberry.loadouts.use` | Loadouts in the Spawn tab: saving your own, trying loadouts on (together with `zomberry.spawn.inventory`) and getting your gear back, and using shared ones |
+| `zomberry.loadouts.share` | Sharing loadouts with the other admins, and replacing or deleting your own shared ones and those of lower-ranked admins |
+| `zomberry.loadouts.manage` | Replacing or deleting anyone's shared loadouts, whatever their rank |
 | `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
 | `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
@@ -286,6 +289,16 @@ Set time, set date and set weather start from the game's current time, date and 
   - **Player's feet** and **Player's inv.:** the same for the player you double-clicked in the list. They get a chat message when something lands in their inventory.
 - **Safe and Expert:** the header button switches between the two lists. Safe (green) hides classes without a proper display name, such as test and placeholder items. Expert (red) shows everything.
 
+#### Loadouts
+
+The **Loadouts** button (with `zomberry.loadouts.use`) swaps the spawn list for your loadouts: sets of gear you can put on yourself. The list on the left has your own loadouts first, then the shared ones with who shared them. The right side shows what the selected one holds.
+- **Save** keeps what you wear and hold right now, under the name typed next to it. A loadout keeps everything: clothing, attachments, what's in each pocket and where, the item in hands, quantities and liquids, magazines and chambered rounds, health and wetness, so it can also be a worn-out kit on purpose. Saving under an existing name replaces that loadout. Your own loadouts are kept in `ZomBerryMyLoadouts.json` in your game's profile folder, so they go with you to every server.
+- **Try on** (or a double-click) replaces your gear with the loadout. Before the first try, the server keeps your own gear; more tries don't replace it.
+- **Restore** puts that gear back as it was and forgets it. It's kept until then, also when you log out or the server restarts (`ZomBerryLoadoutOriginals.json` in the server's `ZomBerry` profile folder). Restore replaces whatever you're wearing at that moment.
+- **Spawn rules apply:** items your group's spawn rules don't allow are shown in red, the list says how many each loadout has, and trying it on leaves them out. Whatever was inside them is put wherever there's room.
+- **Share** (with `zomberry.loadouts.share`) puts the selected one of your loadouts on the server, for every admin with `zomberry.loadouts.use` to try on. Sharing under the name of a shared loadout replaces it, if you may change it: your own, those of admins ranked below you (by their current rank, even when they're offline), or anyone's with `zomberry.loadouts.manage`. Shared loadouts are kept in `ZomBerryLoadouts.json`, up to 100.
+- **Delete** asks for a second click, then deletes the selected loadout: one of yours, or a shared one you may change.
+
 ### Map
 
 With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. They update every 2 seconds while the map is open.
@@ -316,7 +329,7 @@ The cursor's coordinates are shown below the map.
 
 ### Logs
 
-Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, saved locations, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, saved locations, loadouts, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
 - **Kept across restarts:** the server keeps the last 2048 events and 10486 damage records in `ZomBerryEventLog.bin` in its `ZomBerry` profile folder, with the newest additions in `ZomBerryEventLog.bin.journal`.
   - Each start logs "Server started", with how much it restored, and whether the previous run stopped without a clean shutdown. A clean shutdown logs "Server stopping".
   - Even after a crash, everything logged up to it is kept.

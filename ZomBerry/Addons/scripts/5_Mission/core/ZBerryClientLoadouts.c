@@ -4,7 +4,8 @@ class ZBerryClientLoadouts {
 	static const string LOCAL_FILE = "ZomBerryMyLoadouts.json";
 	static const int MAX_LOCAL = 100;
 
-	ref ScriptInvoker OnChanged = new ScriptInvoker;
+	ref ScriptInvoker OnChanged = new ScriptInvoker; //The lists or the saved original
+	ref ScriptInvoker OnDetailsChanged = new ScriptInvoker; //A shared loadout's items arrived
 
 	protected ref ZBerryLoadoutsConfig m_Local = new ZBerryLoadoutsConfig;
 	protected bool m_LocalLoaded;
@@ -160,7 +161,7 @@ class ZBerryClientLoadouts {
 		if (type != ZBerryCallType.Client || !ctx.Read(data) || !data.param1) return;
 
 		m_Details.Set(ZBerryLoadoutKit.GetKey(data.param1.Name), data.param1);
-		OnChanged.Invoke();
+		OnDetailsChanged.Invoke();
 	}
 
 	//Saved under its name, replacing the one of the same name

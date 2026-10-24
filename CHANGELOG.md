@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Loadouts in the Spawn tab:** save what you wear as a loadout and try loadouts on yourself. The gear you wore before the first try is kept on the server until you restore it, also across logouts and restarts. Loadouts keep everything, wear and wetness included. Your own are kept on your side; with `zomberry.loadouts.share` you can share them with the other admins. Shared loadouts can be changed by their owner, by higher-ranked admins, and by anyone with `zomberry.loadouts.manage`. Items your spawn rules don't allow are marked and left out. New permissions: `zomberry.loadouts.use`, `.share` and `.manage`; new log event type "Loadout".
 - **Loot on the ESP:** items lying on the ground, with their name and distance, within their own range (10–300 m, 50 m by default).
 - **Kicked and banned players see why:** back in the main menu, their game shows the reason, and for bans how long it still lasts and when it ends. This also covers banned players who try to rejoin.
 - **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.

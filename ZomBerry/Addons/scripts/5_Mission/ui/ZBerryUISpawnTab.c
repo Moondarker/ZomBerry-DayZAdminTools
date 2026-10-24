@@ -1,8 +1,13 @@
-//Object spawner: category filters, search, spawn target and Safe/Expert mode
+//Object spawner: category filters, search, spawn target and Safe/Expert mode. The Loadouts button switches to the
+//admin's own and the shared loadouts instead (GetZBerryClientLoadouts)
 class ZBerryUISpawnTab extends ZBerryUITab {
 	static const int COLOR_CATEGORY = 0xFFBCCDE8;
 	static const int COLOR_CATEGORY_HIDDEN = 0xFF6767E0;
+	static const int COLOR_RESTRICTED = 0xFFFF6060;
+	static const int COLOR_PARTLY = 0xFFE8A060; //A loadout with items this admin's spawn rules leave out
+	static const int COLOR_SAVED = 0xFF47EB00;
 	static const float DROPUP_LINGER = 0.25; //Seconds the target drop-up stays open after the mouse left it and the button
+	static const float DELETE_CONFIRM = 3; //Seconds a first click on Delete waits for the second
 
 	protected TextListboxWidget m_ObjectsList; //The visible variant of m_ObjectsLists
 	protected ref ZBerryScaledList m_ObjectsLists;
@@ -25,6 +30,18 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected float m_DropupTimer = 0; //Seconds since the mouse left them
 	protected bool m_ListDirty = true;
 
+	protected ButtonWidget m_LoadoutsButton;
+	protected Widget m_ContentWrapper, m_LoadoutsWrapper;
+	protected TextListboxWidget m_LoadoutsList, m_LoadoutItemsList; //Visible variants
+	protected ref ZBerryScaledList m_LoadoutsLists, m_LoadoutItemsLists;
+	protected EditBoxWidget m_LoadoutName;
+	protected ButtonWidget m_LoadoutSave, m_LoadoutShare, m_LoadoutDelete, m_LoadoutTry, m_LoadoutRestore;
+	protected bool m_LoadoutMode;
+	protected bool m_MouseOnName;
+	protected bool m_SelectedShared; //The selected loadout: shared or the admin's own, and its name ("" for none)
+	protected string m_SelectedName = "";
+	protected float m_DeleteTimer = -1; //Running after a first click on Delete
+
 	protected override void OnInit() {
 		m_ObjectsLists = new ZBerryScaledList(m_Root, "ObjectsList", this);
 		m_ObjectsLists.Pick();
@@ -43,15 +60,39 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_FilterButtons.Insert( ButtonWidget.Cast( BindWidget("ItemsButton") ) );
 		m_FilterButtons.Insert( ButtonWidget.Cast( BindWidget("ObjectsButton") ) );
 		m_FilterButtons.Insert( ButtonWidget.Cast( BindWidget("AIButton") ) );
+
+		m_LoadoutsButton = ButtonWidget.Cast( BindWidget("LoadoutsButton") );
+		m_ContentWrapper = m_Root.FindAnyWidget("SContentWrapper");
+		m_LoadoutsWrapper = m_Root.FindAnyWidget("LoadoutsWrapper");
+		m_LoadoutsLists = new ZBerryScaledList(m_Root, "LoadoutsList", this);
+		m_LoadoutItemsLists = new ZBerryScaledList(m_Root, "LoadoutItemsList", this);
+		m_LoadoutsLists.Pick();
+		m_LoadoutItemsLists.Pick();
+		m_LoadoutsList = m_LoadoutsLists.GetActive();
+		m_LoadoutItemsList = m_LoadoutItemsLists.GetActive();
+		m_LoadoutName = EditBoxWidget.Cast( BindWidget("LoadoutName") );
+		m_LoadoutSave = ButtonWidget.Cast( BindWidget("LoadoutSave") );
+		m_LoadoutShare = ButtonWidget.Cast( BindWidget("LoadoutShare") );
+		m_LoadoutDelete = ButtonWidget.Cast( BindWidget("LoadoutDelete") );
+		m_LoadoutTry = ButtonWidget.Cast( BindWidget("LoadoutTry") );
+		m_LoadoutRestore = ButtonWidget.Cast( BindWidget("LoadoutRestore") );
+	}
+
+	void ~ZBerryUISpawnTab() {
+		if (!g_ZBerryClientLoadouts) return;
+		g_ZBerryClientLoadouts.OnChanged.Remove(OnLoadoutsChanged);
+		g_ZBerryClientLoadouts.OnDetailsChanged.Remove(RefreshItems);
 	}
 
 	protected override void OnActivate() {
 		UpdateModeButton();
 		if (m_ListDirty) UpdateObjList();
+		if (m_LoadoutMode) GetZBerryClientLoadouts().RequestList();
 	}
 
 	protected override void OnDeactivate() {
 		ShowDropup(false);
+		DisarmDelete();
 	}
 
 	override void OnMenuHide() {
@@ -59,6 +100,11 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	override void Update(float tDelta) {
+		if (m_DeleteTimer >= 0) {
+			m_DeleteTimer += tDelta;
+			if (m_DeleteTimer >= DELETE_CONFIRM) DisarmDelete();
+		}
+
 		if (!m_TargetDropup || !m_TargetDropup.IsVisible() || m_MouseOnTargets) return;
 
 		m_DropupTimer += tDelta;
@@ -67,6 +113,19 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 	override void OnMenuShow() {
 		if (m_ObjectsLists.Pick()) m_ObjectsList = m_ObjectsLists.GetActive(); //Rebuilt below (m_ListDirty)
+		m_LoadoutsLists.Pick();
+		m_LoadoutItemsLists.Pick();
+		m_LoadoutsList = m_LoadoutsLists.GetActive();
+		m_LoadoutItemsList = m_LoadoutItemsLists.GetActive();
+
+		//Again on every show: the client side is built anew for each server, the menu isn't
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		loadouts.OnChanged.Remove(OnLoadoutsChanged);
+		loadouts.OnChanged.Insert(OnLoadoutsChanged);
+		loadouts.OnDetailsChanged.Remove(RefreshItems);
+		loadouts.OnDetailsChanged.Insert(RefreshItems);
+		UpdateLoadoutMode();
+		if (m_LoadoutMode && IsVisible()) loadouts.RequestList();
 		m_SpawnMenuGroups = ZomberryBase.GetConfig().GetSpawnMenuData();
 
 		for (int i = 0; i < m_FilterButtons.Count(); ++i) {
@@ -86,7 +145,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	override bool BlocksClose() {
-		return m_MouseOnSearch;
+		return m_MouseOnSearch || m_MouseOnName;
 	}
 
 	override void OnActionButtonClick() {
@@ -101,9 +160,20 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		if (btn) filterIdx = m_FilterButtons.Find(btn);
 
 		if (filterIdx != -1) {
-			ToggleFilter(filterIdx);
+			bool fromLoadouts = m_LoadoutMode;
+			m_LoadoutMode = false;
+			UpdateLoadoutMode();
+			if (!fromLoadouts || m_ObjFilter != m_SpawnMenuGroups[filterIdx].BaseClassNames) ToggleFilter(filterIdx); //Back to the filter shown before: kept on
 			return true;
 		}
+
+		if (w == m_LoadoutsButton) {
+			m_LoadoutMode = !m_LoadoutMode;
+			UpdateLoadoutMode();
+			if (m_LoadoutMode) GetZBerryClientLoadouts().RequestList();
+			return true;
+		}
+		if (OnLoadoutClick(w)) return true;
 
 		int targetIdx = -1;
 		if (btn) targetIdx = m_TargetButtons.Find(btn);
@@ -202,6 +272,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	override void OnPermissionsChanged() {
+		UpdateLoadoutMode();
 		if (!IsTargetAllowed(m_ObjTarget)) m_ObjTarget = NextAllowedTarget(m_ObjTarget);
 		ZBerryUIUtils.SetButtonText(m_TargetButton, m_ObjTarget);
 		if (m_TargetDropup && m_TargetDropup.IsVisible()) LayoutDropup();
@@ -211,6 +282,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	}
 
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
+		if (w == m_LoadoutsList) {
+			TrySelected();
+			return true;
+		}
 		if (w != m_ObjectsList) return false;
 
 		int selectedObjRow = m_ObjectsList.GetSelectedRow();
@@ -262,6 +337,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			m_MouseOnSearch = true;
 			return true;
 		}
+		if (w == m_LoadoutName) {
+			m_MouseOnName = true;
+			return true;
+		}
 		if (IsTargetWidget(w)) {
 			if (m_TargetDropup && !m_TargetDropup.IsVisible()) ShowDropup(true);
 			m_MouseOnTargets = true;
@@ -273,6 +352,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y) {
 		if (w == m_SearchInput) {
 			m_MouseOnSearch = false;
+			return true;
+		}
+		if (w == m_LoadoutName) {
+			m_MouseOnName = false;
 			return true;
 		}
 		if (IsTargetWidget(w) && !IsTargetWidget(enterW)) {
@@ -387,5 +470,267 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			int infoRow = m_ObjectsList.AddItem(" (" + (classCount - deniedCount) + " of " + classCount + " classes allowed by your group's spawn rules)", new Param2<string, string>("Info", ""), 0);
 			m_ObjectsList.SetItemColor(infoRow, 0, COLOR_CATEGORY_HIDDEN);
 		}
+	}
+
+	//Loadouts mode: the spawn list and its controls make way for the loadout lists
+	protected void UpdateLoadoutMode() {
+		bool allowed = GetZBerryClientAuth().Has(ZBerryPermissions.LOADOUTS_USE);
+		if (!allowed) m_LoadoutMode = false;
+		if (m_LoadoutsButton) {
+			m_LoadoutsButton.Show(allowed);
+			ZBerryUIUtils.SetButtonActive(m_LoadoutsButton, m_LoadoutMode);
+		}
+		if (m_ContentWrapper) m_ContentWrapper.Show(!m_LoadoutMode);
+		if (m_LoadoutsWrapper) m_LoadoutsWrapper.Show(m_LoadoutMode);
+
+		for (int i = 0; i < m_FilterButtons.Count(); ++i) {
+			bool active = !m_LoadoutMode && m_SpawnMenuGroups && i < m_SpawnMenuGroups.Count() && m_ObjFilter == m_SpawnMenuGroups[i].BaseClassNames;
+			ZBerryUIUtils.SetButtonActive(m_FilterButtons[i], active);
+		}
+
+		if (m_LoadoutMode) {
+			ShowDropup(false);
+			RefreshLoadouts();
+		} else {
+			DisarmDelete();
+		}
+		UpdateLoadoutButtons();
+	}
+
+	protected void UpdateLoadoutButtons() {
+		if (!m_LoadoutSave) return;
+
+		ZBerryClientAuth auth = GetZBerryClientAuth();
+		m_LoadoutShare.Show(auth.Has(ZBerryPermissions.LOADOUTS_SHARE));
+		m_LoadoutTry.Show(auth.Has(ZBerryPermissions.SPAWN_INVENTORY));
+		m_LoadoutRestore.Show(GetZBerryClientLoadouts().IsOriginalSaved());
+	}
+
+	void OnLoadoutsChanged() {
+		UpdateLoadoutButtons();
+		if (m_LoadoutMode) RefreshLoadouts();
+	}
+
+	//The admin's own first, then the shared ones. Those with items this admin may not spawn say how many
+	protected void RefreshLoadouts() {
+		if (!m_LoadoutsList) return;
+		m_LoadoutsList.ClearItems();
+
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		string selectedKey = ZBerryLoadoutKit.GetKey(m_SelectedName);
+		int selectedRow = -1;
+
+		ZBerryLoadoutArray own = loadouts.GetLocal();
+		foreach (ZBerryLoadout mine : own) {
+			int ownRestricted = mine.CountRestricted();
+			string ownText = mine.Name;
+			if (ownRestricted > 0) ownText += "  (" + ownRestricted + " not allowed)";
+			int ownRow = m_LoadoutsList.AddItem(ownText, new Param2<bool, string>(false, mine.Name), 0);
+			if (ownRestricted > 0) m_LoadoutsList.SetItemColor(ownRow, 0, COLOR_PARTLY);
+			if (!m_SelectedShared && ZBerryLoadoutKit.GetKey(mine.Name) == selectedKey) selectedRow = ownRow;
+		}
+
+		ZBerryLoadoutHeaderArray shared = loadouts.GetShared();
+		foreach (ZBerryLoadoutHeader header : shared) {
+			string sharedText = header.Name + "  (shared by " + header.OwnerName + ")";
+			if (header.Restricted > 0) sharedText += "  (" + header.Restricted + " not allowed)";
+			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param2<bool, string>(true, header.Name), 0);
+			int color = COLOR_CATEGORY;
+			if (header.Restricted > 0) color = COLOR_PARTLY;
+			m_LoadoutsList.SetItemColor(sharedRow, 0, color);
+			if (m_SelectedShared && ZBerryLoadoutKit.GetKey(header.Name) == selectedKey) selectedRow = sharedRow;
+		}
+
+		if (m_LoadoutsList.GetNumItems() == 0) {
+			int infoRow = m_LoadoutsList.AddItem("No loadouts yet: type a name, then Save keeps what you wear", new Param2<bool, string>(false, ""), 0);
+			m_LoadoutsList.SetItemColor(infoRow, 0, COLOR_CATEGORY_HIDDEN);
+		}
+
+		if (selectedRow != -1) {
+			m_LoadoutsList.SelectRow(selectedRow);
+			m_LoadoutsList.EnsureVisible(selectedRow);
+		} else {
+			m_SelectedName = "";
+		}
+		RefreshItems();
+	}
+
+	override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn) {
+		if (w != m_LoadoutsList) return false;
+
+		Param2<bool, string> data; //Shared, name ("" for the info row)
+		if (row >= 0) m_LoadoutsList.GetItemData(row, 0, data);
+		DisarmDelete();
+		if (!data || data.param2 == "") {
+			m_SelectedName = "";
+			RefreshItems();
+			return true;
+		}
+
+		m_SelectedShared = data.param1;
+		m_SelectedName = data.param2;
+		m_LoadoutName.SetText(m_SelectedName);
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (m_SelectedShared && !loadouts.GetSharedDetails(m_SelectedName)) loadouts.RequestDetails(m_SelectedName);
+		RefreshItems();
+		return true;
+	}
+
+	//What the selected loadout holds, items the spawn rules don't allow in red
+	void RefreshItems() {
+		if (!m_LoadoutItemsList) return;
+		m_LoadoutItemsList.ClearItems();
+
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (loadouts.IsOriginalSaved()) AddInfoRow("Your own gear is saved: Restore puts it back", COLOR_SAVED);
+		if (m_SelectedName == "") {
+			AddInfoRow("Select a loadout to see what's in it, double-click to try it on", COLOR_CATEGORY_HIDDEN);
+			return;
+		}
+
+		ZBerryLoadout loadout;
+		if (m_SelectedShared) {
+			ZBerryLoadoutHeader header = loadouts.FindShared(m_SelectedName);
+			if (!header) return;
+			AddInfoRow(header.Name + ": shared by " + header.OwnerName + ", " + header.ItemCount + " items", COLOR_CATEGORY);
+			loadout = loadouts.GetSharedDetails(m_SelectedName);
+			if (!loadout) {
+				AddInfoRow("Loading...", COLOR_CATEGORY_HIDDEN);
+				return;
+			}
+		} else {
+			loadout = loadouts.FindLocal(m_SelectedName);
+			if (!loadout) return;
+			AddInfoRow(loadout.Name + ": yours, " + loadout.CountAll() + " items", COLOR_CATEGORY);
+		}
+
+		int restricted = loadout.CountRestricted();
+		if (restricted > 0) AddInfoRow(restricted.ToString() + " items your spawn rules don't allow are left out when you try it on", COLOR_PARTLY);
+		AddItemRows(loadout.Items, 0);
+	}
+
+	protected void AddInfoRow(string text, int color) {
+		int row = m_LoadoutItemsList.AddItem(text, NULL, 0);
+		m_LoadoutItemsList.SetItemColor(row, 0, color);
+	}
+
+	//Recursive: parameters are copied into locals first, a nested call overwrote the caller's (see AGENTS.md)
+	protected void AddItemRows(ZBerryLoadoutItemArray itemsArg, int depthArg) {
+		ZBerryLoadoutItemArray items = itemsArg;
+		int depth = depthArg;
+		string indent = "";
+		for (int level = 0; level < depth; ++level) indent += "    ";
+
+		foreach (ZBerryLoadoutItem item : items) {
+			string text = indent + DescribeLoadoutItem(item);
+			bool allowed = GetZBerryClientAuth().CanSpawn(item.Type);
+			if (!allowed) text += " - not allowed";
+			int row = m_LoadoutItemsList.AddItem(text, NULL, 0);
+			if (!allowed) m_LoadoutItemsList.SetItemColor(row, 0, COLOR_RESTRICTED);
+			AddItemRows(item.Items, depth + 1);
+		}
+	}
+
+	protected static string DescribeLoadoutItem(ZBerryLoadoutItem item) {
+		string text = ZBerrySpawner.GetDisplayName(item.Type);
+		if (item.Place == ZBerryLoadoutItem.PLACE_HANDS) text = "In hands: " + text;
+		if (item.Ammo >= 0) text += ", " + item.Ammo + " rounds";
+
+		float percent = item.Health;
+		percent = percent * 100;
+		int health = Math.Round(percent);
+		if (health < 100) text += ", " + health + "% health";
+		if (item.Wet > 0.05) text += ", wet";
+		return text;
+	}
+
+	protected bool OnLoadoutClick(Widget w) {
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (w == m_LoadoutSave) {
+			string name = ZBerryLoadoutKit.CleanName(m_LoadoutName.GetText());
+			if (name == "") {
+				ZBerryUIUtils.Message("Type a name for the loadout first");
+				return true;
+			}
+			m_SelectedShared = false; //Selected once it's saved
+			m_SelectedName = name;
+			loadouts.SaveCurrentGear(name);
+			return true;
+		}
+		if (w == m_LoadoutShare) {
+			if (m_SelectedName == "" || m_SelectedShared) {
+				ZBerryUIUtils.Message("Select one of your own loadouts to share it");
+			} else {
+				loadouts.Share(m_SelectedName);
+			}
+			return true;
+		}
+		if (w == m_LoadoutDelete) {
+			DeleteSelected();
+			return true;
+		}
+		if (w == m_LoadoutTry) {
+			TrySelected();
+			return true;
+		}
+		if (w == m_LoadoutRestore) {
+			loadouts.Restore();
+			return true;
+		}
+		return false;
+	}
+
+	protected void TrySelected() {
+		if (m_SelectedName == "") {
+			ZBerryUIUtils.Message("Select a loadout first");
+			return;
+		}
+
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (m_SelectedShared) {
+			loadouts.TryShared(m_SelectedName);
+		} else {
+			loadouts.TryLocal(m_SelectedName);
+		}
+	}
+
+	//The first click asks, a second one within DELETE_CONFIRM deletes
+	protected void DeleteSelected() {
+		if (m_SelectedName == "") {
+			ZBerryUIUtils.Message("Select a loadout first");
+			return;
+		}
+
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (m_SelectedShared) {
+			ZBerryLoadoutHeader header = loadouts.FindShared(m_SelectedName);
+			if (header && !header.Editable) {
+				ZBerryUIUtils.Message("You may not delete " + header.OwnerName + "'s loadouts");
+				return;
+			}
+		}
+		if (m_DeleteTimer < 0) {
+			m_DeleteTimer = 0;
+			ZBerryUIUtils.SetButtonText(m_LoadoutDelete, "Sure?");
+			ZBerryUIUtils.SetButtonTextColor(m_LoadoutDelete, COLOR_RED);
+			return;
+		}
+
+		DisarmDelete();
+		string name = m_SelectedName;
+		m_SelectedName = "";
+		if (m_SelectedShared) {
+			loadouts.DeleteShared(name); //The new list comes from the server
+		} else if (loadouts.DeleteLocal(name)) {
+			ZBerryUIUtils.Message("Deleted " + name);
+		}
+		RefreshLoadouts();
+	}
+
+	protected void DisarmDelete() {
+		m_DeleteTimer = -1;
+		if (!m_LoadoutDelete) return;
+		ZBerryUIUtils.SetButtonText(m_LoadoutDelete, "Delete");
+		ZBerryUIUtils.SetButtonTextColor(m_LoadoutDelete, ZBerryUIUtils.TEXT_DEFAULT);
 	}
 };
