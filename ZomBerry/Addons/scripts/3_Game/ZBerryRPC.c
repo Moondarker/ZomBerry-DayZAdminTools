@@ -54,7 +54,11 @@ enum ZBerryRPCOp {
 	DeathLoadoutRequest = 51, //Client -> server: id of a kill event; the gear comes back as DeathLoadout
 	DeathLoadout = 52, //Server -> client: event id, why it's not kept ("" if it is), the gear, the victim's state (ZBerryVictimState)
 	DeathLoadoutTry = 53, //Client -> server: id of a kill event, its gear goes on the admin
-	DeathLoadoutRestore = 54 //Client -> server: id of a kill event, its gear goes back on the victim
+	DeathLoadoutRestore = 54, //Client -> server: id of a kill event, its gear goes back on the victim
+	LoadoutPlayerRequest = 55, //Client -> server: session id of a player whose current gear to copy
+	LoadoutPlayer = 56, //Server -> client: session id, why it can't be copied ("" if it can), the gear
+	LoadoutGive = 57, //Client -> server: shared, name, the loadout (empty for a shared one), session ids of the players to put it on
+	LoadoutUndo = 58 //Client -> server: session ids of players whose replaced gear goes back on
 }
 
 //Which side received the call

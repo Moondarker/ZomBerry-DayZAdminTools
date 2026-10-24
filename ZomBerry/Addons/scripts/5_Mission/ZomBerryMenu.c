@@ -24,6 +24,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIMessageDialog m_MessageDialog;
 	protected ref ZBerryUIDeathLoadoutDialog m_DeathDialog;
 	protected ref ZBerryUIActionsMenu m_ActionsMenu;
+	protected ref ZBerryUIConfirmDialog m_ConfirmDialog;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -89,6 +90,9 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_ActionsMenu = new ZBerryUIActionsMenu();
 		m_ActionsMenu.Init(layoutRoot); //Above the dialogs
 		m_LogsTab.SetDialogs(m_ActionsMenu, m_DeathDialog);
+		m_ConfirmDialog = new ZBerryUIConfirmDialog();
+		m_ConfirmDialog.Init(layoutRoot); //Above everything
+		m_SpawnTab.SetConfirmDialog(m_ConfirmDialog);
 
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
@@ -175,6 +179,10 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	//Esc: closes an open dialog first, returns false if there was none
 	bool CloseDialogs() {
+		if (m_ConfirmDialog && m_ConfirmDialog.IsVisible()) {
+			m_ConfirmDialog.Close();
+			return true;
+		}
 		if (m_ActionsMenu && m_ActionsMenu.IsVisible()) {
 			m_ActionsMenu.Close();
 			return true;
@@ -269,6 +277,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_MessageDialog.Close();
 		m_DeathDialog.Close();
 		m_ActionsMenu.Close();
+		m_ConfirmDialog.Close();
 		ShowDropdown(false);
 		m_MouseOnDropdown = false;
 		UpdateGearIcon();

@@ -1,0 +1,120 @@
+FrameWidgetClass ConfirmDialog {
+ visible 0
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ priority 15
+ {
+  PanelWidgetClass ConfirmShade {
+   color 0 0 0 0.5
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass ConfirmBox {
+   color 0 0 0 0.9
+   size 480 230
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass ConfirmTitle {
+     ignorepointer 1
+     position 15 12
+     size 450 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Are you sure?"
+     "text valign" center
+     font "gui/fonts/Metron22"
+     "exact text" 1
+     "exact text size" 22
+    }
+    MultilineTextWidgetClass ConfirmText {
+     ignorepointer 1
+     position 15 48
+     size 450 112
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     wrap 1
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+    }
+    ButtonWidgetClass ConfirmCancel {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass ConfirmCancelLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Cancel"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass ConfirmOk {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 165 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass ConfirmOkLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "OK"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

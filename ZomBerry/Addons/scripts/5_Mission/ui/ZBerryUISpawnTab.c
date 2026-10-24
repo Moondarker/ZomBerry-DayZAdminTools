@@ -1,10 +1,12 @@
 //Object spawner: category filters, search, spawn target and Safe/Expert mode. The Loadouts button switches to the
-//admin's own and the shared loadouts instead (GetZBerryClientLoadouts)
+//admin's own and the shared loadouts instead (GetZBerryClientLoadouts), and the gear online players wear now, which
+//can be saved, tried on or given. Give and Undo act on the players selected in the players panel
 class ZBerryUISpawnTab extends ZBerryUITab {
 	static const int COLOR_CATEGORY = 0xFFBCCDE8;
 	static const int COLOR_CATEGORY_HIDDEN = 0xFF6767E0;
 	static const int COLOR_PARTLY = 0xFFE8A060; //A loadout with items this admin's spawn rules leave out
 	static const int COLOR_SAVED = 0xFF47EB00;
+	static const int COLOR_PLAYER = 0xFFA0E0A0; //Online players' current gear
 	static const float DROPUP_LINGER = 0.25; //Seconds the target drop-up stays open after the mouse left it and the button
 	static const float DELETE_CONFIRM = 3; //Seconds a first click on Delete waits for the second
 
@@ -34,11 +36,16 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected TextListboxWidget m_LoadoutsList, m_LoadoutItemsList; //Visible variants
 	protected ref ZBerryScaledList m_LoadoutsLists, m_LoadoutItemsLists;
 	protected EditBoxWidget m_LoadoutName;
-	protected ButtonWidget m_LoadoutSave, m_LoadoutShare, m_LoadoutDelete, m_LoadoutTry, m_LoadoutRestore;
+	protected ButtonWidget m_LoadoutSave, m_LoadoutShare, m_LoadoutDelete, m_LoadoutTry, m_LoadoutRestore, m_LoadoutGive, m_LoadoutUndo;
+	protected ZBerryUIConfirmDialog m_ConfirmDialog; //The menu's
 	protected bool m_LoadoutMode;
 	protected bool m_MouseOnName;
 	protected bool m_SelectedShared; //The selected loadout: shared or the admin's own, and its name ("" for none)
 	protected string m_SelectedName = "";
+	protected int m_SelectedPlayer = -1; //Session id when a player's current gear is selected (m_SelectedName is theirs)
+	protected string m_RosterKey = ""; //The players listed, to rebuild the list only when they change
+	protected ref TIntArray m_PendingTargets = new TIntArray; //Waiting for the confirmation
+	protected bool m_PendingUndo;
 	protected float m_DeleteTimer = -1; //Running after a first click on Delete
 
 	protected override void OnInit() {
@@ -75,9 +82,16 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_LoadoutDelete = ButtonWidget.Cast( BindWidget("LoadoutDelete") );
 		m_LoadoutTry = ButtonWidget.Cast( BindWidget("LoadoutTry") );
 		m_LoadoutRestore = ButtonWidget.Cast( BindWidget("LoadoutRestore") );
+		m_LoadoutGive = ButtonWidget.Cast( BindWidget("LoadoutGive") );
+		m_LoadoutUndo = ButtonWidget.Cast( BindWidget("LoadoutUndo") );
+	}
+
+	void SetConfirmDialog(ZBerryUIConfirmDialog dialog) {
+		m_ConfirmDialog = dialog;
 	}
 
 	void ~ZBerryUISpawnTab() {
+		if (g_ZBerryStreamClient) g_ZBerryStreamClient.OnPlayersChanged.Remove(OnRoster);
 		if (!g_ZBerryClientLoadouts) return;
 		g_ZBerryClientLoadouts.OnChanged.Remove(OnLoadoutsChanged);
 		g_ZBerryClientLoadouts.OnDetailsChanged.Remove(RefreshItems);
@@ -123,6 +137,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		loadouts.OnChanged.Insert(OnLoadoutsChanged);
 		loadouts.OnDetailsChanged.Remove(RefreshItems);
 		loadouts.OnDetailsChanged.Insert(RefreshItems);
+		GetZBerryStreams().OnPlayersChanged.Remove(OnRoster);
+		GetZBerryStreams().OnPlayersChanged.Insert(OnRoster);
 		UpdateLoadoutMode();
 		if (m_LoadoutMode && IsVisible()) loadouts.RequestList();
 		m_SpawnMenuGroups = ZomberryBase.GetConfig().GetSpawnMenuData();
@@ -503,6 +519,36 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_LoadoutShare.Show(auth.Has(ZBerryPermissions.LOADOUTS_SHARE));
 		m_LoadoutTry.Show(auth.Has(ZBerryPermissions.SPAWN_INVENTORY));
 		m_LoadoutRestore.Show(GetZBerryClientLoadouts().IsOriginalSaved());
+		bool mayGive = auth.Has(ZBerryPermissions.LOADOUTS_GIVE);
+		m_LoadoutGive.Show(mayGive);
+		m_LoadoutUndo.Show(mayGive);
+	}
+
+	//Players joined, left or were renamed: their rows follow (state updates alone don't rebuild the list)
+	protected void OnRoster() {
+		if (!m_LoadoutMode || !IsVisible()) return;
+		if (BuildRosterKey() != m_RosterKey) RefreshLoadouts();
+	}
+
+	//Everyone online but the admin
+	protected ZBerryPlayerArray GetOtherPlayers() {
+		ZBerryPlayerArray others = new ZBerryPlayerArray;
+		ZBerryPlayerArray players = GetZBerryStreams().BuildPlayers();
+		int selfId = ZBerryUIUtils.GetLocalPlayerId();
+		foreach (ZBerryPlayer ply : players) {
+			if (ply.m_PlayerID != selfId) others.Insert(ply);
+		}
+		return others;
+	}
+
+	protected string BuildRosterKey() {
+		string key = "";
+		ZBerryPlayerArray others = GetOtherPlayers();
+		foreach (ZBerryPlayer ply : others) {
+			string part = ply.m_PlayerID.ToString() + ":" + ply.m_PlayerName + "|";
+			key += part;
+		}
+		return key;
 	}
 
 	void OnLoadoutsChanged() {
@@ -524,24 +570,32 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			int ownRestricted = mine.CountRestricted();
 			int ownMissing = mine.CountMissing();
 			string ownText = mine.Name + DescribeLeftOut(ownRestricted, ownMissing);
-			int ownRow = m_LoadoutsList.AddItem(ownText, new Param2<bool, string>(false, mine.Name), 0);
+			int ownRow = m_LoadoutsList.AddItem(ownText, new Param3<bool, string, int>(false, mine.Name, -1), 0);
 			if (ownRestricted + ownMissing > 0) m_LoadoutsList.SetItemColor(ownRow, 0, COLOR_PARTLY);
-			if (!m_SelectedShared && ZBerryLoadoutKit.GetKey(mine.Name) == selectedKey) selectedRow = ownRow;
+			if (m_SelectedPlayer < 0 && !m_SelectedShared && ZBerryLoadoutKit.GetKey(mine.Name) == selectedKey) selectedRow = ownRow;
 		}
 
 		ZBerryLoadoutHeaderArray shared = loadouts.GetShared();
 		foreach (ZBerryLoadoutHeader header : shared) {
 			string sharedText = header.Name + "  (shared by " + header.OwnerName + ")" + DescribeLeftOut(header.Restricted, header.Missing);
-			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param2<bool, string>(true, header.Name), 0);
+			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param3<bool, string, int>(true, header.Name, -1), 0);
 			int color = COLOR_CATEGORY;
 			if (header.Restricted + header.Missing > 0) color = COLOR_PARTLY;
 			m_LoadoutsList.SetItemColor(sharedRow, 0, color);
-			if (m_SelectedShared && ZBerryLoadoutKit.GetKey(header.Name) == selectedKey) selectedRow = sharedRow;
+			if (m_SelectedPlayer < 0 && m_SelectedShared && ZBerryLoadoutKit.GetKey(header.Name) == selectedKey) selectedRow = sharedRow;
 		}
 
 		if (m_LoadoutsList.GetNumItems() == 0) {
-			int infoRow = m_LoadoutsList.AddItem("No loadouts yet: type a name, then Save keeps what you wear", new Param2<bool, string>(false, ""), 0);
+			int infoRow = m_LoadoutsList.AddItem("No loadouts yet: type a name, then Save keeps what you wear", new Param3<bool, string, int>(false, "", -1), 0);
 			m_LoadoutsList.SetItemColor(infoRow, 0, COLOR_CATEGORY_HIDDEN);
+		}
+
+		ZBerryPlayerArray others = GetOtherPlayers();
+		m_RosterKey = BuildRosterKey();
+		foreach (ZBerryPlayer ply : others) {
+			int playerRow = m_LoadoutsList.AddItem(ply.m_PlayerName + "  (wearing now)", new Param3<bool, string, int>(false, ply.m_PlayerName, ply.m_PlayerID), 0);
+			m_LoadoutsList.SetItemColor(playerRow, 0, COLOR_PLAYER);
+			if (m_SelectedPlayer == ply.m_PlayerID) selectedRow = playerRow;
 		}
 
 		if (selectedRow != -1) {
@@ -549,6 +603,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			m_LoadoutsList.EnsureVisible(selectedRow);
 		} else {
 			m_SelectedName = "";
+			m_SelectedPlayer = -1;
 		}
 		RefreshItems();
 	}
@@ -568,20 +623,28 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn) {
 		if (w != m_LoadoutsList) return false;
 
-		Param2<bool, string> data; //Shared, name ("" for the info row)
+		Param3<bool, string, int> data; //Shared, name ("" for the info row), a player's session id (-1 for loadouts)
 		if (row >= 0) m_LoadoutsList.GetItemData(row, 0, data);
 		DisarmDelete();
 		if (!data || data.param2 == "") {
 			m_SelectedName = "";
+			m_SelectedPlayer = -1;
 			RefreshItems();
 			return true;
 		}
 
 		m_SelectedShared = data.param1;
 		m_SelectedName = data.param2;
-		m_LoadoutName.SetText(m_SelectedName);
+		m_SelectedPlayer = data.param3;
 		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
-		if (m_SelectedShared && !loadouts.GetSharedDetails(m_SelectedName)) loadouts.RequestDetails(m_SelectedName);
+		if (m_SelectedPlayer >= 0) {
+			string gearName = m_SelectedName + "'s gear";
+			m_LoadoutName.SetText(ZBerryLoadoutKit.CleanName(gearName)); //Save keeps it under this name
+			loadouts.RequestPlayer(m_SelectedPlayer); //Again on every selection: what they wear changes
+		} else {
+			m_LoadoutName.SetText(m_SelectedName);
+		}
+		if (m_SelectedPlayer < 0 && m_SelectedShared && !loadouts.GetSharedDetails(m_SelectedName)) loadouts.RequestDetails(m_SelectedName);
 		RefreshItems();
 		return true;
 	}
@@ -599,7 +662,18 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		}
 
 		ZBerryLoadout loadout;
-		if (m_SelectedShared) {
+		if (m_SelectedPlayer >= 0) {
+			string reason;
+			if (!loadouts.GetPlayerGear(m_SelectedPlayer, loadout, reason)) {
+				AddInfoRow(m_SelectedName + " is wearing...", COLOR_CATEGORY_HIDDEN);
+				return;
+			}
+			if (!loadout) {
+				AddInfoRow("Can't copy " + m_SelectedName + "'s gear: " + reason, COLOR_PARTLY);
+				return;
+			}
+			AddInfoRow(m_SelectedName + " is wearing " + loadout.CountAll() + " items: Save keeps a copy", COLOR_PLAYER);
+		} else if (m_SelectedShared) {
 			ZBerryLoadoutHeader header = loadouts.FindShared(m_SelectedName);
 			if (!header) return;
 			AddInfoRow(header.Name + ": shared by " + header.OwnerName + ", " + header.ItemCount + " items", COLOR_CATEGORY);
@@ -634,13 +708,18 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 				ZBerryUIUtils.Message("Type a name for the loadout first");
 				return true;
 			}
+			if (m_SelectedPlayer >= 0) { //A copy of their gear
+				ZBerryLoadout gear = GetSelectedPlayerGear();
+				if (gear) loadouts.SaveCopy(gear, name);
+				return true;
+			}
 			m_SelectedShared = false; //Selected once it's saved
 			m_SelectedName = name;
 			loadouts.SaveCurrentGear(name);
 			return true;
 		}
 		if (w == m_LoadoutShare) {
-			if (m_SelectedName == "" || m_SelectedShared) {
+			if (m_SelectedName == "" || m_SelectedShared || m_SelectedPlayer >= 0) {
 				ZBerryUIUtils.Message("Select one of your own loadouts to share it");
 			} else {
 				loadouts.Share(m_SelectedName);
@@ -659,7 +738,105 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			loadouts.Restore();
 			return true;
 		}
+		if (w == m_LoadoutGive) {
+			AskGive();
+			return true;
+		}
+		if (w == m_LoadoutUndo) {
+			AskUndo();
+			return true;
+		}
 		return false;
+	}
+
+	//The selected player's gear, NULL (and the admin told) while it isn't there
+	protected ZBerryLoadout GetSelectedPlayerGear() {
+		ZBerryLoadout gear;
+		string reason;
+		if (!GetZBerryClientLoadouts().GetPlayerGear(m_SelectedPlayer, gear, reason)) {
+			ZBerryUIUtils.Message("Wait until " + m_SelectedName + "'s gear is loaded");
+			return NULL;
+		}
+		if (!gear) ZBerryUIUtils.Message("Can't copy " + m_SelectedName + "'s gear: " + reason);
+		return gear;
+	}
+
+	//The players selected in the players panel, NULL (and the admin told) if nobody is
+	protected TIntArray GetGiveTargets() {
+		TIntArray targets;
+		if (m_PlayersPanel) targets = m_PlayersPanel.GetSelectedPlayerIds();
+		if (!targets || targets.Count() == 0) {
+			ZBerryUIUtils.Message("Select the players in the list on the left first (Ctrl or Shift + double-click for several)");
+			return NULL;
+		}
+		return targets;
+	}
+
+	//"A", "A and B", "A, B and 3 more"
+	protected static string DescribePlayers(TIntArray targets) {
+		ZBerryStreamClient streams = GetZBerryStreams();
+		string text = "";
+		for (int i = 0; i < targets.Count(); ++i) {
+			if (i == 3 && targets.Count() > 4) {
+				int more = targets.Count() - 3;
+				text += " and " + more + " more";
+				break;
+			}
+			if (i > 0 && i == targets.Count() - 1) {
+				text += " and ";
+			} else if (i > 0) {
+				text += ", ";
+			}
+			text += streams.GetName(targets[i]);
+		}
+		return text;
+	}
+
+	protected void AskGive() {
+		if (m_SelectedName == "") {
+			ZBerryUIUtils.Message("Select a loadout first");
+			return;
+		}
+		if (m_SelectedPlayer >= 0 && !GetSelectedPlayerGear()) return;
+		TIntArray targets = GetGiveTargets();
+		if (!targets || !m_ConfirmDialog) return;
+
+		m_PendingTargets = targets;
+		m_PendingUndo = false;
+		string what = m_SelectedName;
+		if (m_SelectedPlayer >= 0) what = m_SelectedName + "'s current gear";
+		string text = "Put " + what + " on " + DescribePlayers(targets) + "?\n\nWhat they wear now is replaced. It's kept, and Undo for selected players gives it back. Your spawn rules apply.";
+		m_ConfirmDialog.Open("Give loadout", text, "Give");
+		m_ConfirmDialog.OnConfirm.Insert(OnConfirmed);
+	}
+
+	protected void AskUndo() {
+		TIntArray targets = GetGiveTargets();
+		if (!targets || !m_ConfirmDialog) return;
+
+		m_PendingTargets = targets;
+		m_PendingUndo = true;
+		string text = "Give " + DescribePlayers(targets) + " back what they wore before the first loadout put on them?\n\nWhat they wear now is replaced.";
+		m_ConfirmDialog.Open("Undo loadout", text, "Undo");
+		m_ConfirmDialog.OnConfirm.Insert(OnConfirmed);
+	}
+
+	protected void OnConfirmed() {
+		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
+		if (m_PendingUndo) {
+			loadouts.Undo(m_PendingTargets);
+			return;
+		}
+
+		if (m_SelectedPlayer >= 0) {
+			ZBerryLoadout gear = GetSelectedPlayerGear();
+			if (gear) loadouts.Give(false, gear.Name, gear, m_PendingTargets);
+		} else if (m_SelectedShared) {
+			loadouts.Give(true, m_SelectedName, NULL, m_PendingTargets);
+		} else {
+			ZBerryLoadout mine = loadouts.FindLocal(m_SelectedName);
+			if (mine) loadouts.Give(false, mine.Name, mine, m_PendingTargets);
+		}
 	}
 
 	protected void TrySelected() {
@@ -669,7 +846,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		}
 
 		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
-		if (m_SelectedShared) {
+		if (m_SelectedPlayer >= 0) {
+			ZBerryLoadout gear = GetSelectedPlayerGear();
+			if (gear) loadouts.TryLoadout(gear);
+		} else if (m_SelectedShared) {
 			loadouts.TryShared(m_SelectedName);
 		} else {
 			loadouts.TryLocal(m_SelectedName);
@@ -680,6 +860,10 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected void DeleteSelected() {
 		if (m_SelectedName == "") {
 			ZBerryUIUtils.Message("Select a loadout first");
+			return;
+		}
+		if (m_SelectedPlayer >= 0) {
+			ZBerryUIUtils.Message("That's what " + m_SelectedName + " wears now, not a loadout");
 			return;
 		}
 

@@ -5,7 +5,7 @@ class ZBerryClientLoadouts {
 	static const int MAX_LOCAL = 100;
 
 	ref ScriptInvoker OnChanged = new ScriptInvoker; //The lists or the saved original
-	ref ScriptInvoker OnDetailsChanged = new ScriptInvoker; //A shared loadout's items arrived
+	ref ScriptInvoker OnDetailsChanged = new ScriptInvoker; //A shared loadout's or a player's items arrived
 	ref ScriptInvoker OnDeathLoadout = new ScriptInvoker; //(int eventId): the server answered RequestDeath
 
 	protected ref ZBerryLoadoutsConfig m_Local = new ZBerryLoadoutsConfig;
@@ -14,6 +14,10 @@ class ZBerryClientLoadouts {
 	protected ref ZBerryLoadoutHeaderArray m_Shared = new ZBerryLoadoutHeaderArray;
 	protected ref map<string, ref ZBerryLoadout> m_Details = new map<string, ref ZBerryLoadout>; //Shared loadouts' items, by key
 	protected bool m_OriginalSaved; //The server keeps the gear from before the first try
+
+	//Players' current gear (RequestPlayer), by session id: the gear, or why it can't be copied
+	protected ref map<int, ref ZBerryLoadout> m_PlayerGear = new map<int, ref ZBerryLoadout>;
+	protected ref map<int, string> m_PlayerReasons = new map<int, string>;
 
 	//The last death asked about (RequestDeath)
 	protected int m_DeathEventId = -1;
@@ -27,6 +31,7 @@ class ZBerryClientLoadouts {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutDetails, "LoadoutDetails", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutCaptured, "LoadoutCaptured", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadout, "DeathLoadout", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutPlayer, "LoadoutPlayer", this, ZBerrySPExec.Client );
 	}
 
 	protected string GetPath() {
@@ -121,6 +126,12 @@ class ZBerryClientLoadouts {
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutTry, new Param3<bool, string, ref ZBerryLoadout>(false, loadout.Name, loadout), true );
 	}
 
+	//Any loadout the admin has the items of (their own, or a player's gear)
+	void TryLoadout(ZBerryLoadout loadout) {
+		if (!loadout) return;
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutTry, new Param3<bool, string, ref ZBerryLoadout>(false, loadout.Name, loadout), true );
+	}
+
 	void TryShared(string name) {
 		ZBerryLoadout empty = new ZBerryLoadout(name); //A local: a temporary in the Param would be freed before it's sent
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutTry, new Param3<bool, string, ref ZBerryLoadout>(true, name, empty), true );
@@ -138,6 +149,51 @@ class ZBerryClientLoadouts {
 
 	void DeleteShared(string name) {
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutDelete, new Param1<string>(name), true );
+	}
+
+	//---------------------------------------------------------------- Other players
+
+	//Asked again on every call: what they wear changes
+	void RequestPlayer(int sessionId) {
+		m_PlayerGear.Remove(sessionId);
+		m_PlayerReasons.Remove(sessionId);
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutPlayerRequest, new Param1<int>(sessionId), true );
+	}
+
+	//False while the server hasn't answered. loadout NULL with a reason when it can't be copied
+	bool GetPlayerGear(int sessionId, out ZBerryLoadout loadout, out string reason) {
+		if (!m_PlayerReasons.Contains(sessionId)) return false;
+
+		reason = m_PlayerReasons.Get(sessionId);
+		loadout = m_PlayerGear.Get(sessionId);
+		return true;
+	}
+
+	void LoadoutPlayer( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param3<int, string, ref ZBerryLoadout> data; //Session id, why it can't be copied, the gear
+		if (type != ZBerryCallType.Client || !ctx.Read(data)) return;
+
+		ZBerryLoadout loadout = data.param3;
+		if (data.param2 != "" || !loadout) {
+			m_PlayerGear.Remove(data.param1);
+		} else {
+			if (!loadout.Items) loadout.Items = new ZBerryLoadoutItemArray;
+			ZBerryLoadoutKit.Sanitize(loadout);
+			m_PlayerGear.Set(data.param1, loadout);
+		}
+		m_PlayerReasons.Set(data.param1, data.param2);
+		OnDetailsChanged.Invoke();
+	}
+
+	//shared: by name, the server has it. Otherwise the loadout's items are sent
+	void Give(bool shared, string name, ZBerryLoadout loadout, TIntArray sessionIds) {
+		ZBerryLoadout sent = loadout;
+		if (shared || !sent) sent = new ZBerryLoadout(name); //A local: a temporary in the Param would be freed before it's sent
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutGive, new Param4<bool, string, ref ZBerryLoadout, ref TIntArray>(shared, name, sent, sessionIds), true );
+	}
+
+	void Undo(TIntArray sessionIds) {
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutUndo, new Param1<ref TIntArray>(sessionIds), true );
 	}
 
 	//---------------------------------------------------------------- Deaths (Logs tab)

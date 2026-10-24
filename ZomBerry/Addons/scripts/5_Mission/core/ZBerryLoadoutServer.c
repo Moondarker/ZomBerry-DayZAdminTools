@@ -115,6 +115,9 @@ class ZBerryLoadoutServer {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutRequest, "DeathLoadoutRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutTry, "DeathLoadoutTry", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadoutRestore, "DeathLoadoutRestore", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutPlayerRequest, "LoadoutPlayerRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutGive, "LoadoutGive", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutUndo, "LoadoutUndo", this, ZBerrySPExec.Client );
 	}
 
 	void Load(string dir) {
@@ -267,15 +270,10 @@ class ZBerryLoadoutServer {
 		PlayerBase player = GetCharacter(sender, "try on a loadout");
 		if (!player) return;
 
-		if (!HasOriginal(sender)) {
-			ZBerryLoadout original = ZBerryLoadoutKit.Capture(player, GetOwnerKey(sender));
-			original.OwnerId = GetOwnerKey(sender);
-			original.OwnerName = GetName(sender);
-			string problem = m_Originals.Put(original, MAX_ORIGINALS);
-			if (problem != "") { //Their gear would be lost
-				Tell(sender, "Loadout not tried on: your gear can't be saved, " + problem);
-				return;
-			}
+		string problem = SaveOriginal(player, sender);
+		if (problem != "") { //Their gear would be lost
+			Tell(sender, "Loadout not tried on: your gear can't be saved, " + problem);
+			return;
 		}
 
 		ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(player, loadout, m_Auth, sender);
@@ -304,6 +302,17 @@ class ZBerryLoadoutServer {
 		told += result.DescribeLosses();
 		ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, text );
 		Tell(sender, told);
+	}
+
+	//Keeps what a character wears before a loadout replaces it, unless something is kept already (the gear from before
+	//the first replacement is what goes back). "" when it's kept, otherwise why not
+	protected string SaveOriginal(PlayerBase player, PlayerIdentity owner) {
+		if (HasOriginal(owner)) return "";
+
+		ZBerryLoadout original = ZBerryLoadoutKit.Capture(player, GetOwnerKey(owner));
+		original.OwnerId = GetOwnerKey(owner);
+		original.OwnerName = GetName(owner);
+		return m_Originals.Put(original, MAX_ORIGINALS);
 	}
 
 	//The admin a job ran for, NULL if they left (and in singleplayer)
@@ -343,6 +352,182 @@ class ZBerryLoadoutServer {
 		told += job.Result.DescribeLosses();
 		Tell(sender, told);
 		if (sender || !GetGame().IsMultiplayer()) SendList(sender);
+	}
+
+	//---------------------------------------------------------------- Other players
+
+	static const int MAX_TARGETS = 100;
+
+	//A player's current gear, sent back for the admin to look at, save or put on someone
+	void LoadoutPlayerRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<int> data; //Session id
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_USE, "copy a player's gear")) return;
+
+		int sessionId = data.param1;
+		PlayerBase player = ZBGetPlayerById(sessionId);
+		ZBerryLoadout loadout = new ZBerryLoadout("");
+		string reason = "";
+		if (!player) {
+			reason = "They aren't online any more";
+		} else if (!player.IsAlive()) {
+			reason = "They're dead";
+		} else if (!m_Auth.CanTarget(sender, ZBGetIdentity(player), false)) {
+			reason = "Their group is protected from your rank";
+		} else {
+			string name = ZomberryStockFunctions.GetPlayerName(player) + "'s gear";
+			loadout = ZBerryLoadoutKit.Capture(player, ZBerryLoadoutKit.CleanName(name));
+		}
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutPlayer, new Param3<int, string, ref ZBerryLoadout>(sessionId, reason, loadout), true, sender );
+	}
+
+	//On each player: what they wear is kept first (Undo gives it back), the admin's spawn rules apply. Harmful, so
+	//rank protection applies
+	void LoadoutGive( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param4<bool, string, ref ZBerryLoadout, ref TIntArray> data; //Shared, name, the loadout (empty for a shared one), session ids
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_GIVE, "put a loadout on a player")) return;
+
+		ZBerryLoadout loadout = data.param3;
+		string source = "loadout ";
+		if (data.param1) {
+			loadout = m_Shared.Find(data.param2);
+			source = "shared loadout ";
+			if (!loadout) {
+				Tell(sender, "Loadout not given: there's no shared loadout called " + data.param2);
+				return;
+			}
+		} else if (!ZBerryLoadoutKit.Sanitize(loadout)) {
+			Tell(sender, "Loadout not given: it's empty");
+			return;
+		}
+
+		TIntArray targets = data.param4;
+		if (!targets || targets.Count() == 0) return;
+		for (int i = 0; i < targets.Count() && i < MAX_TARGETS; ++i) {
+			PlayerBase player = GetTarget(sender, targets[i], "put " + loadout.Name + " on");
+			if (!player) continue;
+
+			PlayerIdentity identity = ZBGetIdentity(player);
+			string problem = SaveOriginal(player, identity);
+			if (problem != "") { //Their gear would be lost
+				Tell(sender, "Loadout not put on " + ZomberryStockFunctions.GetPlayerName(player) + ": their gear can't be saved, " + problem);
+				continue;
+			}
+
+			ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(player, loadout, m_Auth, sender);
+			job.Note = source;
+			DescribeTarget(job, player);
+			job.OnDone.Insert(OnGiven);
+		}
+	}
+
+	//What they wore before the first loadout someone put on them, as it was: no spawn rules, it was theirs
+	void LoadoutUndo( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1<ref TIntArray> data; //Session ids
+		if (!ctx.Read(data)) return;
+		if (!CanRun(type, sender, ZBerryPermissions.LOADOUTS_GIVE, "give a player their own gear back")) return;
+
+		TIntArray targets = data.param1;
+		if (!targets) return;
+		for (int i = 0; i < targets.Count() && i < MAX_TARGETS; ++i) {
+			PlayerBase player = GetTarget(sender, targets[i], "give their own gear back to");
+			if (!player) continue;
+
+			ZBerryLoadout original = m_Originals.Find(GetOwnerKey(ZBGetIdentity(player)));
+			if (!original) {
+				Tell(sender, "Nothing to undo for " + ZomberryStockFunctions.GetPlayerName(player) + ": their gear is their own");
+				continue;
+			}
+
+			ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(player, original, NULL, sender);
+			DescribeTarget(job, player);
+			job.OnDone.Insert(OnUndone);
+		}
+	}
+
+	//A living player the admin may act on with something harmful. NULL (and the admin told) otherwise
+	protected PlayerBase GetTarget(PlayerIdentity sender, int sessionId, string action) {
+		PlayerBase player = ZBGetPlayerById(sessionId);
+		if (!player) {
+			Tell(sender, "Can't " + action + " a player who left");
+			return NULL;
+		}
+		string name = ZomberryStockFunctions.GetPlayerName(player);
+		if (!player.IsAlive()) {
+			Tell(sender, "Can't " + action + " " + name + ": they're dead");
+			return NULL;
+		}
+
+		PlayerIdentity identity = ZBGetIdentity(player);
+		if (m_Auth.CanTarget(sender, identity, true)) return player;
+
+		ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, identity, "{actor} tried to " + action + " {target}, whose group is protected from their rank" );
+		Tell(sender, "Can't " + action + " " + name + ": their group is protected from your rank");
+		return NULL;
+	}
+
+	protected static void DescribeTarget(ZBerryLoadoutJob job, PlayerBase player) {
+		string id, name;
+		ZomberryBase.DescribeIdentity(ZBGetIdentity(player), id, name);
+		job.TargetId = id;
+		job.TargetName = ZomberryStockFunctions.GetPlayerName(player);
+	}
+
+	protected void OnGiven(ZBerryLoadoutJob job) {
+		PlayerIdentity sender = GetJobIdentity(job);
+		string actorId, actorName;
+		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+		if (!job.Dressed) {
+			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, "{actor} took off {target}'s gear for " + job.Note + ZBerryMessages.ForLog(job.Loadout.Name) + ", but couldn't put it on", ZBerryEventFlags.HARMFUL );
+			Tell(sender, "Loadout not put on " + job.TargetName + ": they left, died or are busy. Undo gives their gear back");
+			return;
+		}
+
+		ZBerryLoadoutResult result = job.Result;
+		string text = "{actor} put " + job.Note + ZBerryMessages.ForLog(job.Loadout.Name) + " on {target}";
+		string told = "Put " + job.Loadout.Name + " on " + job.TargetName;
+		if (result.Restricted > 0) {
+			text += ", without " + result.Restricted + " items their spawn rules don't allow";
+			told += ", without " + result.Restricted + " items your spawn rules don't allow";
+		}
+		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		told += result.DescribeLosses();
+		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, text, ZBerryEventFlags.HARMFUL );
+		Tell(sender, told);
+		SendListToTarget(job);
+	}
+
+	protected void OnUndone(ZBerryLoadoutJob job) {
+		PlayerIdentity sender = GetJobIdentity(job);
+		if (!job.Dressed) {
+			Tell(sender, job.TargetName + "'s gear not given back: they left, died or are busy, try again");
+			return;
+		}
+
+		m_Originals.Remove(job.Loadout.Name);
+		string actorId, actorName;
+		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, "{actor} gave {target} their own gear back", ZBerryEventFlags.HARMFUL );
+		string told = job.TargetName + " has their own gear back";
+		told += job.Result.DescribeLosses();
+		Tell(sender, told);
+		SendListToTarget(job);
+	}
+
+	//A target who uses loadouts themselves: their Restore button follows their saved gear
+	protected void SendListToTarget(ZBerryLoadoutJob job) {
+		if (!GetGame().IsMultiplayer()) {
+			SendList(NULL);
+			return;
+		}
+
+		array<Man> players = new array<Man>;
+		GetGame().GetPlayers(players);
+		foreach (Man man : players) {
+			PlayerIdentity identity = ZBGetIdentity(man);
+			if (identity && identity.GetPlainId() == job.TargetId && m_Auth.HasPermission(identity, ZBerryPermissions.LOADOUTS_USE)) SendList(identity);
+		}
 	}
 
 	//---------------------------------------------------------------- Deaths (Logs tab)

@@ -172,6 +172,8 @@ class ZBerryLoadoutJob {
 	int SessionId; //Of the admin, for whoever handles OnDone
 	ref ZBerryLoadout Loadout;
 	string Note; //For whoever handles OnDone
+	string TargetId; //Whose gear it replaces when that's not the admin's own: Steam64 id and name, for the log
+	string TargetName;
 
 	protected PlayerBase m_Player; //Weak: NULL once the character is gone
 	protected ZBerryAuth m_Auth;

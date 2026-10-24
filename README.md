@@ -115,6 +115,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.loadouts.share` | Sharing loadouts with the other admins, and replacing or deleting your own shared ones and those of lower-ranked admins |
 | `zomberry.loadouts.manage` | Replacing or deleting anyone's shared loadouts, whatever their rank |
 | `zomberry.loadouts.restore` | Giving players back the gear they died with, from the Logs tab |
+| `zomberry.loadouts.give` | Putting loadouts on other players, and giving them their own gear back |
 | `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
 | `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
@@ -300,6 +301,10 @@ The **Loadouts** button (with `zomberry.loadouts.use`) swaps the spawn list for 
 - **Items from other mods:** a loadout saved on a server with other mods can hold items this server doesn't have. They're marked "not on this server" in red, counted in the list, and left out when you try it on, like items the spawn rules don't allow. So are rounds of ammo this server doesn't have.
 - **Share** (with `zomberry.loadouts.share`) puts the selected one of your loadouts on the server, for every admin with `zomberry.loadouts.use` to try on. Sharing under the name of a shared loadout replaces it, if you may change it: your own, those of admins ranked below you (by their current rank, even when they're offline), or anyone's with `zomberry.loadouts.manage`. Shared loadouts are kept in `ZomBerryLoadouts.json`, up to 100.
 - **Delete** asks for a second click, then deletes the selected loadout: one of yours, or a shared one you may change.
+- **Players online** are listed after the loadouts. Select one to see what they wear now, then **Save** keeps a copy as your own loadout (the name is filled in for you), or **Try on** puts it on you. Players whose group is protected from your rank can't be copied.
+- **Give to selected players** (with `zomberry.loadouts.give`) puts the selected loadout, or the selected player's current gear, on the players selected in the list on the left (`Ctrl` or `Shift` + double-click selects several). It asks first.
+  - What they wore is kept on the server, like your own gear when you try a loadout on. **Undo for selected players** gives it back, and an admin can also get it back with their own **Restore**. Only the gear from before the first replacement is kept until it's given back.
+  - Your spawn rules apply, and it counts as harmful: their group's protection from your rank applies, and it's logged.
 
 ### Map
 
