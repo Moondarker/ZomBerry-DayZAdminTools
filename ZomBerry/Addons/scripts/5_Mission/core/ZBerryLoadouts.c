@@ -159,7 +159,7 @@ class ZBerryLoadoutResult {
 	}
 };
 
-//Replacing a character's gear with a loadout: strip, wait until the hands are empty (deleting what a character holds
+//Replacing a character's gear with a loadout: strip, wait until everything is gone (deleting a live player's items
 //takes a moment), dress. OnDone gets the job once it's dressed, or gave up (Result says what happened)
 class ZBerryLoadoutJob {
 	static const int CHECK_INTERVAL = 100; //ms
@@ -198,7 +198,7 @@ class ZBerryLoadoutJob {
 			Finish();
 			return;
 		}
-		if (m_Player.GetHumanInventory().GetEntityInHands() && m_Checks < MAX_CHECKS) {
+		if (!ZBerryLoadoutKit.IsStripped(m_Player) && m_Checks < MAX_CHECKS) {
 			++m_Checks;
 			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Check, CHECK_INTERVAL, false);
 			return;
@@ -348,11 +348,32 @@ class ZBerryLoadoutKit {
 		}
 	}
 
-	//Takes off everything the character wears and holds. The item in hands goes a moment later: Dress once it has
+	//Takes off everything the character wears and holds, with what's inside and attached: only the top items are
+	//deleted, the rest goes with them. A live player's items go through their client (DeleteSafe, a juncture), as
+	//vanilla's RemoveAllItems and LocalDestroyEntity changed only the server's inventory: the client's got out of step,
+	//and the inventory and hotbar stopped working. That takes a moment: Dress once IsStripped
 	static void Strip(PlayerBase player) {
-		EntityAI inHands = player.GetHumanInventory().GetEntityInHands(); //RemoveAllItems leaves it
-		if (inHands) player.GetHumanInventory().LocalDestroyEntity(inHands);
-		player.RemoveAllItems();
+		array<EntityAI> items = new array<EntityAI>;
+		EntityAI inHands = player.GetHumanInventory().GetEntityInHands();
+		if (inHands) items.Insert(inHands);
+		GameInventory inventory = player.GetInventory();
+		for (int i = 0; i < inventory.AttachmentCount(); ++i) {
+			EntityAI worn = inventory.GetAttachmentFromIndex(i);
+			if (worn) items.Insert(worn);
+		}
+
+		bool hasClient = GetGame().IsMultiplayer() && ZBGetIdentity(player) != NULL; //Test characters have none
+		foreach (EntityAI item : items) {
+			if (hasClient) {
+				item.DeleteSafe();
+			} else {
+				item.Delete();
+			}
+		}
+	}
+
+	static bool IsStripped(PlayerBase player) {
+		return !player.GetHumanInventory().GetEntityInHands() && player.GetInventory().AttachmentCount() == 0;
 	}
 
 	//Puts a loadout on a stripped character. auth NULL: no spawn rules (their own saved gear)
