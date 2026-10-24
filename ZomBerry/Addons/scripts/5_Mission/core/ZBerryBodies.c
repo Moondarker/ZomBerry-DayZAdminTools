@@ -1,5 +1,6 @@
-//Server: bodies of admins in FreeCam or spectating. Their client controls only the camera then (SelectPlayer NULL),
-//so the network bubble follows the camera (UpdateSpectatorPosition) instead of staying around the frozen body.
+//Server: bodies of admins in FreeCam (spectating keeps the body, see ZBerrySpectate). Their client controls only the
+//camera then (SelectPlayer NULL), so the network bubble follows the camera (UpdateSpectatorPosition) instead of staying
+//around the frozen body.
 //A detached body may have no identity: ZBGetIdentity and ZBGetPlayerById find it here
 class ZBerryBodies {
 	protected static ref map<int, PlayerBase> s_Bodies; //Session id -> body; weak, NULL once the body is deleted

@@ -659,7 +659,8 @@ class ZomberryStockFunctions {
 		MessagePlayer(player, "You are still invisible, run Toggle invisibility to be seen again");
 	}
 
-	//The admin's body stays where it is and doesn't react to input while they're in FreeCam or spectating
+	//The admin's body doesn't react to input while they're in FreeCam or spectating. It stays where it is in FreeCam,
+	//and goes along with the target while spectating
 	static void FreezeBody(PlayerBase body, bool frozen) {
 		HumanInputController input = body.GetInputController();
 		if (!input) return;

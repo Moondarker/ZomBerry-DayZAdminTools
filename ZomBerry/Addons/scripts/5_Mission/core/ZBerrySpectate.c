@@ -1,6 +1,7 @@
 //Spectating a player (#60), both sides.
-//Server: switches the admin to a ZomBerryCamSpec camera and detaches their body (ZBerryBodies), so the network bubble
-//follows the camera. Tells their client whom to follow (zomberry_spectate feature, args: network id low/high, third
+//Server: switches the admin to a ZomBerryCamSpec camera. Their body, made invisible and frozen, goes along behind the
+//target, so the network bubble (which stays with the body) has the target in it; it's put back where it was at the
+//end. Tells their client whom to follow (zomberry_spectate feature, args: network id low/high, third
 //person), asks the target's client to report its 1st/3rd person mode (zomberry_report_camera feature, CameraMode opcode
 //back) and its camera heading and pitch (CameraView), and relays both. Ends when asked, when the target dies or leaves,
 //or when the admin loses the permission.
@@ -13,12 +14,16 @@ class ZBerrySpectate {
 	static const int REPORT_REPEAT_MS = 5000; //Reported again even unchanged, in case a message got lost
 	static const int VIEW_MS = 100; //Camera heading and pitch: often, unguaranteed, only when they changed
 	static const float VIEW_STEP = 0.5; //Degrees: smaller changes aren't sent
+	static const float FOLLOW_DISTANCE = 100; //Metres the target may get from the admin's body before it's moved again
+	static const float BEHIND = 2; //Metres behind the target the body is put
 
 	//Server: admin session id -> target session id, and the targets' last reported mode
 	protected ref map<int, int> m_Watching = new map<int, int>;
 	protected ref map<int, string> m_RequiredNodes = new map<int, string>;
 	protected ref map<int, bool> m_ThirdPerson = new map<int, bool>;
 	protected ref map<int, vector> m_Views = new map<int, vector>; //Target session id -> camera heading, pitch, 0
+	protected ref map<int, vector> m_Origins = new map<int, vector>; //Admin session id -> where their body was
+	protected ref map<int, bool> m_MadeInvisible = new map<int, bool>; //Admins this made invisible (not who already were)
 	protected bool m_Checking;
 
 	//Client, target side
@@ -70,9 +75,14 @@ class ZBerrySpectate {
 
 		int adminId = GetSessionId(admin);
 		int targetId = GetSessionId(target);
+		if (!m_Origins.Contains(adminId)) m_Origins.Set(adminId, admin.GetPosition()); //Not again when switching targets
+		if (!admin.ZBIsInvisible()) {
+			admin.ZBSetInvisible(true);
+			m_MadeInvisible.Set(adminId, true);
+		}
 		ZomberryStockFunctions.FreezeBody(admin, true);
 		GetGame().SelectSpectator(ZBGetIdentity(admin), "ZomBerryCamSpec", target.GetPosition() + "0 1.6 0");
-		ZBerryBodies.Detach(admin);
+		MoveBehind(admin, target);
 
 		m_Watching.Set(adminId, targetId);
 		m_RequiredNodes.Set(adminId, requiredNode);
@@ -92,13 +102,19 @@ class ZBerrySpectate {
 		if (!m_Watching.Find(adminId, targetId)) return;
 		m_Watching.Remove(adminId);
 		m_RequiredNodes.Remove(adminId);
+		vector origin;
+		bool hasOrigin = m_Origins.Find(adminId, origin);
+		bool madeInvisible = m_MadeInvisible.Get(adminId);
+		m_Origins.Remove(adminId);
+		m_MadeInvisible.Remove(adminId);
 
 		PlayerBase admin = ZBGetPlayerById(adminId);
 		if (admin) {
-			//Told first: while detached the message reaches their client without the body
 			if (message != "") ZomberryStockFunctions.MessagePlayer(admin, message);
 			GetZomberryCmdAPI().SetClientFeature(ZBGetIdentity(admin), FEATURE_SPECTATE, false);
 			ZomberryStockFunctions.FreezeBody(admin, false);
+			if (hasOrigin) admin.SetPosition(origin);
+			if (madeInvisible) admin.ZBSetInvisible(false);
 			ZBerryBodies.Reattach(admin);
 		}
 
@@ -108,6 +124,15 @@ class ZBerrySpectate {
 		m_Views.Remove(targetId);
 		PlayerBase target = ZBGetPlayerById(targetId);
 		if (target) GetZomberryCmdAPI().SetClientFeature(ZBGetIdentity(target), FEATURE_REPORT, false);
+	}
+
+	//The admin's body behind the target, on the target's floor or the ground, whichever is higher (they can't fall to
+	//harm while invisible)
+	protected void MoveBehind(PlayerBase admin, PlayerBase target) {
+		vector targetPos = target.GetPosition();
+		vector position = targetPos - target.GetDirection() * BEHIND;
+		position[1] = Math.Max(GetGame().SurfaceY(position[0], position[2]), targetPos[1]);
+		admin.SetPosition(position);
 	}
 
 	protected bool IsWatched(int targetId) {
@@ -144,11 +169,14 @@ class ZBerrySpectate {
 			if (!admin) {
 				m_Watching.Remove(id);
 				m_RequiredNodes.Remove(id);
+				m_Origins.Remove(id);
+				m_MadeInvisible.Remove(id);
 			} else if (!target) {
 				Stop(id, "Stopped spectating: they left");
 			} else if (!target.IsAlive()) {
 				Stop(id, "Stopped spectating: they died");
 			} else {
+				if (vector.Distance(admin.GetPosition(), target.GetPosition()) > FOLLOW_DISTANCE) MoveBehind(admin, target);
 				SendView(id, target); //Their position at least once a second, see SendView
 			}
 		}
