@@ -8,6 +8,7 @@ modded class PlayerBase
 	protected bool m_ZBInvisible;
 	protected bool m_ZBShrunkHere; //What this client last applied
 	protected int m_ZBSavedLayer; //Its collision layer before, given back when shown again
+	protected bool m_ZBMadeNonSolid; //Others walk through it while invisible, everywhere (see ZBUpdateSolid)
 	static const float ZB_HIDDEN_SCALE = 0.00001;
 	protected bool m_ZBSelfHidden; //Its own client: body and worn gear hidden, as a reminder
 	protected float m_ZBSelfTimer;
@@ -265,6 +266,7 @@ modded class PlayerBase
 		}
 
 		if (GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) GetNetworkID(s_ZBOwnLow, s_ZBOwnHigh);
+		if (m_ZBInvisible || m_ZBMadeNonSolid) ZBUpdateSolid();
 		if (m_ZBInvisible || m_ZBShrunkHere || ZomBerryCamFree.IsUsedHere()) ZBApplyInvisibility();
 
 		if (!m_ZBInvisible && !m_ZBSelfHidden) return;
@@ -272,6 +274,21 @@ modded class PlayerBase
 		if (m_ZBSelfTimer > 0) return;
 		m_ZBSelfTimer = ZB_SELF_INTERVAL;
 		ZBApplySelfInvisibility();
+	}
+
+	//Invisible characters aren't obstacles: other players walk through them. On every machine, as the server decides
+	//where they may go and each client predicts it. The character still stands on the ground. Checked every frame, as
+	//the engine switches it itself (vehicles: left to it there); given back once when invisibility ends
+	protected void ZBUpdateSolid() {
+		if (IsInVehicle()) return;
+
+		if (m_ZBInvisible && IsAlive()) {
+			if (PhysicsIsSolid()) PhysicsSetSolid(false);
+			m_ZBMadeNonSolid = true;
+		} else if (m_ZBMadeNonSolid) {
+			m_ZBMadeNonSolid = false;
+			PhysicsSetSolid(true);
+		}
 	}
 
 	//Again right before drawing, in case the frame's updates gave the character its size, simulation or collisions back
