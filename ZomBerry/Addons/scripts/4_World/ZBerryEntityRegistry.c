@@ -155,6 +155,7 @@ modded class BaseBuildingBase {
 
 //Player deaths and hits for whoever listens (the admin log), server side
 class ZBerryPlayerFeed {
+	static ref ScriptInvoker OnPlayerDying = new ScriptInvoker(); //(PlayerBase victim, Object killer): before vanilla's death handling, gear and hotbar still as they were
 	static ref ScriptInvoker OnPlayerKilled = new ScriptInvoker(); //(PlayerBase victim, Object killer)
 	static ref ScriptInvoker OnPlayerHit = new ScriptInvoker(); //(PlayerBase victim, PlayerBase attacker, EntityAI source, float damage): player hits only
 };
@@ -167,6 +168,7 @@ modded class PlayerBase {
 	}
 
 	override void EEKilled(Object killer) {
+		if (GetGame().IsServer()) ZBerryPlayerFeed.OnPlayerDying.Invoke(this, killer);
 		super.EEKilled(killer);
 		if (GetGame().IsServer()) ZBerryPlayerFeed.OnPlayerKilled.Invoke(this, killer);
 		ZBerryEntityRegistry.Unregister(ZBerryEntityCategory.PLAYERS, this);

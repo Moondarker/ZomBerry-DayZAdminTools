@@ -259,6 +259,8 @@ Set time, set date and set weather start from the game's current time, date and 
 
 **Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
+**Restore to a previous loadout slot:** the server remembers what each player wore and held, hotbar included, at their last five deaths since the last restart (in memory only). The first run puts on the target the gear from their last death, each further run goes one death further back, and after the oldest the next run gives back what they wore before the first run. A new death starts over. Your spawn rules apply to the death gear, not to the gear given back. It replaces the target's gear, so it counts as harmful.
+
 **Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
 **Spectate target:** see through the selected player's eyes.

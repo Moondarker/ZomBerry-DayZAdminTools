@@ -30,6 +30,7 @@ class ZomberryBase {
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans, m_Locations);
 			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
 			m_Loadouts = new ZBerryLoadoutServer(m_Auth);
+			g_ZBerryDeathLoadouts = new ZBerryDeathLoadouts(m_Auth);
 			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
