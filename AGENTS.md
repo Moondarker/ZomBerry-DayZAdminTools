@@ -83,6 +83,7 @@ These cost real debugging time on this project:
 - **Temporaries passed to weak references get freed.** A `new` array passed straight into a `Param` constructor or a method argument may be gone by the time it's used. Hold it in a local first (see `ZBerryServerRPC.RunFunction`).
 - **String temporaries can be overwritten by nested calls.** In `a.Substring(...) + F()`, a `Substring` inside `F` once replaced the pending left part. Put each piece in its own local before concatenating (see `ZBerryLocText.Resolve`).
 - **Recursive calls overwrite the caller's parameters.** After a function calls itself, its own parameters may hold the inner call's values (locals are fine). Copy every parameter into a local on the first lines and use only those (see `ZBerryLoadoutKit.CaptureItem`).
+- **`foreach` straight over a method's result repeats the first element.** `foreach (x : obj.GetAll())` gave the first loadout on every pass. Assign the array to a local and loop over that (see `ZBerryLoadoutServer.SendList`).
 - **Mixed arithmetic isn't plain integer maths.** Expressions mixing array elements, method results and literals can give unexpected results. Use typed `float` locals and `Math.Floor`/`Math.Ceil` (see `ZBerryFuncParam.GetValueName`). Plain `int / int` is integer division, so write `100.0` when you want a fraction.
 - **Strings:** `string.Trim()` returns a copy, but `ToLower()`, `ToUpper()` and `Replace()` change the string in place.
 - **You can't call a method on `new X()` in the same expression.** Assign it first.

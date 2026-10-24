@@ -187,7 +187,8 @@ class ZBerryLoadoutServer {
 	//Headers only, each as this admin sees it: their restricted items, whether they may change it
 	void SendList(PlayerIdentity recipient) {
 		ZBerryLoadoutHeaderArray headers = new ZBerryLoadoutHeaderArray;
-		foreach (ZBerryLoadout loadout : m_Shared.GetAll()) {
+		ZBerryLoadoutArray all = m_Shared.GetAll(); //foreach straight over a method's result gives the first element every time
+		foreach (ZBerryLoadout loadout : all) {
 			headers.Insert(new ZBerryLoadoutHeader(loadout.Name, loadout.OwnerName, loadout.CountAll(), loadout.CountRestricted(m_Auth, recipient), loadout.CountMissing(), CanEdit(recipient, loadout)));
 		}
 
