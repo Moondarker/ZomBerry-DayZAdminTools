@@ -4,6 +4,8 @@
 //(a death: its loadout overview); double-clicking a death opens the overview directly
 class ZBerryUILogsTab extends ZBerryUITab {
 	static const int ACTION_LOADOUT = 1;
+	static const int ACTION_COPY_LINE = 2;
+	static const int ACTION_COPY_ALL = 3;
 
 	static const int TYPE_DAMAGE = 20; //Filter bit of the damage queue, after the event types
 	static const int ALL_TYPES = 2097150; //Bits 1..20
@@ -262,22 +264,39 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	override bool OnMouseButtonUp(Widget w, int x, int y, int button) {
 		if (w != m_List || button != MouseState.RIGHT || !m_ActionsMenu) return false;
 
-		int row;
-		ZBerryLogEvent logEvent = GetSelectedDeath(row);
-		if (!logEvent) return false;
+		int row = m_List.GetSelectedRow();
+		if (row < 0 || row >= m_RowDetails.Count()) return false;
 
-		m_ActionsEvent = logEvent;
+		int deathRow;
+		ZBerryLogEvent death = GetSelectedDeath(deathRow);
+		m_ActionsEvent = death;
 		m_ActionsRow = row;
 		m_ActionsMenu.Clear();
-		m_ActionsMenu.Add("Loadout overview", ACTION_LOADOUT);
+		if (death) m_ActionsMenu.Add("Loadout overview", ACTION_LOADOUT);
+		m_ActionsMenu.Add("Copy this line", ACTION_COPY_LINE);
+		m_ActionsMenu.Add("Copy the shown log", ACTION_COPY_ALL);
 		m_ActionsMenu.OnAction.Clear(); //Whoever opens it listens
 		m_ActionsMenu.OnAction.Insert(OnRowAction);
-		m_ActionsMenu.Open(x, y, "Death of " + logEvent.TargetName);
+
+		string title = "Log line";
+		if (death) title = "Death of " + death.TargetName;
+		m_ActionsMenu.Open(x, y, title);
 		return true;
 	}
 
 	protected void OnRowAction(int action) {
-		if (action == ACTION_LOADOUT) OpenOverview(m_ActionsEvent, m_ActionsRow);
+		if (action == ACTION_LOADOUT) {
+			OpenOverview(m_ActionsEvent, m_ActionsRow);
+		} else if (action == ACTION_COPY_LINE) {
+			if (m_ActionsRow < 0 || m_ActionsRow >= m_RowDetails.Count()) return;
+			GetGame().CopyToClipboard(m_RowDetails[m_ActionsRow]);
+			ZBerryUIUtils.Message("Copied the line to the clipboard");
+		} else if (action == ACTION_COPY_ALL) {
+			string text = "";
+			foreach (string line : m_RowDetails) text += line + "\n";
+			GetGame().CopyToClipboard(text);
+			ZBerryUIUtils.Message("Copied " + m_RowDetails.Count() + " lines to the clipboard");
+		}
 	}
 
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
