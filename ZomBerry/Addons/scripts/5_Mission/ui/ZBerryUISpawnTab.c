@@ -641,6 +641,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		int health = Math.Round(percent);
 		if (health < 100) text += ", " + health + "% health";
 		if (item.Wet > 0.05) text += ", wet";
+		if (item.Hotbar >= 0) text += ", hotbar " + (item.Hotbar + 1);
 		return text;
 	}
 

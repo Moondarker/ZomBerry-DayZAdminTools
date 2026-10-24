@@ -32,6 +32,7 @@ class ZBerryLoadoutItem {
 	int Ammo = -1; //Magazines and ammo piles, -1: not one
 	int LiquidType; //Liquid containers, 0: none
 	int FoodState = -1; //Food with stages, -1: none
+	int Hotbar = -1; //Hotbar slot (0 is key 1), -1: none
 	ref array<ref ZBerryLoadoutRound> Rounds = new array<ref ZBerryLoadoutRound>; //Weapons
 	ref array<ref ZBerryLoadoutItem> Items = new array<ref ZBerryLoadoutItem>; //Attachments, then cargo
 
@@ -111,9 +112,11 @@ typedef array<ref ZBerryLoadoutHeader> ZBerryLoadoutHeaderArray;
 //How many more items a capture or a client's loadout may have
 class ZBerryLoadoutBudget {
 	int Left;
+	PlayerBase Player; //Capturing: whose hotbar the items are on
 
-	void ZBerryLoadoutBudget(int left) {
+	void ZBerryLoadoutBudget(int left, PlayerBase player = NULL) {
 		Left = left;
+		Player = player;
 	}
 };
 
@@ -122,6 +125,8 @@ class ZBerryLoadoutResult {
 	int Placed;
 	int Restricted; //Left out: the spawn rules don't allow them
 	int Failed; //Unknown classes, or no room
+	ref array<EntityAI> HotbarItems = new array<EntityAI>; //Put on the hotbar once everything is on
+	ref TIntArray HotbarSlots = new TIntArray;
 };
 
 //Replacing a character's gear with a loadout: strip, wait until the hands are empty (deleting what a character holds
@@ -219,7 +224,7 @@ class ZBerryLoadoutKit {
 	//Everything the character wears and holds
 	static ZBerryLoadout Capture(PlayerBase player, string name) {
 		ZBerryLoadout loadout = new ZBerryLoadout(name);
-		ZBerryLoadoutBudget budget = new ZBerryLoadoutBudget(MAX_ITEMS);
+		ZBerryLoadoutBudget budget = new ZBerryLoadoutBudget(MAX_ITEMS, player);
 
 		GameInventory inventory = player.GetInventory();
 		for (int i = 0; i < inventory.AttachmentCount(); ++i) {
@@ -265,6 +270,7 @@ class ZBerryLoadoutKit {
 		}
 
 		item.Health = entity.GetHealth01("", "");
+		if (budget.Player) item.Hotbar = budget.Player.FindQuickBarEntityIndex(entity);
 		ItemBase itemBase = ItemBase.Cast(entity);
 		Magazine magazine = Magazine.Cast(entity);
 		if (magazine) {
@@ -332,6 +338,10 @@ class ZBerryLoadoutKit {
 		}
 		for (int i = 0; i < orphans.Count(); ++i) SpawnItem(player, NULL, orphans[i], auth, identity, result, orphans); //Grows while it runs
 
+		//Last: the clothing decides how many slots there are, and the server tells the client
+		for (int slot = 0; slot < result.HotbarItems.Count(); ++slot) {
+			if (result.HotbarItems[slot]) player.SetQuickBarEntityShortcut(result.HotbarItems[slot], result.HotbarSlots[slot], true);
+		}
 		return result;
 	}
 
@@ -371,6 +381,10 @@ class ZBerryLoadoutKit {
 		}
 
 		SetState(entity, item);
+		if (item.Hotbar >= 0) {
+			result.HotbarItems.Insert(entity);
+			result.HotbarSlots.Insert(item.Hotbar);
+		}
 	}
 
 	//Where it was, or anywhere it fits in the holder, or anywhere on the character
@@ -462,6 +476,7 @@ class ZBerryLoadoutKit {
 			if (depth > 0 && item.Place == ZBerryLoadoutItem.PLACE_HANDS) item.Place = ZBerryLoadoutItem.PLACE_CARGO;
 			item.Health = Math.Clamp(item.Health, 0, 1);
 			item.Wet = Math.Clamp(item.Wet, 0, 1);
+			if (item.Hotbar < -1 || item.Hotbar >= MAX_QUICKBAR_SLOTS_COUNT) item.Hotbar = -1;
 			if (!item.Rounds) item.Rounds = new array<ref ZBerryLoadoutRound>;
 			while (item.Rounds.Count() > MAX_ROUNDS) item.Rounds.Remove(item.Rounds.Count() - 1);
 			if (!item.Items) item.Items = new ZBerryLoadoutItemArray;
