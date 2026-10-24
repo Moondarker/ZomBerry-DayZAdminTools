@@ -298,6 +298,7 @@ The **Loadouts** button (with `zomberry.loadouts.use`) swaps the spawn list for 
 - **Try on** (or a double-click) replaces your gear with the loadout. Before the first try, the server keeps your own gear; more tries don't replace it.
 - **Restore** puts that gear back as it was and forgets it. It's kept until then, also when you log out or the server restarts (`ZomBerryLoadoutOriginals.json` in the server's `ZomBerry` profile folder). Restore replaces whatever you're wearing at that moment.
 - **Spawn rules apply:** items your group's spawn rules don't allow are shown in red, the list says how many each loadout has, and trying it on leaves them out. Whatever was inside them is put wherever there's room.
+- **Items from other mods:** a loadout saved on a server with other mods can hold items this server doesn't have. They're marked "not on this server" in red, counted in the list, and left out when you try it on, like items the spawn rules don't allow. So are rounds of ammo this server doesn't have.
 - **Share** (with `zomberry.loadouts.share`) puts the selected one of your loadouts on the server, for every admin with `zomberry.loadouts.use` to try on. Sharing under the name of a shared loadout replaces it, if you may change it: your own, those of admins ranked below you (by their current rank, even when they're offline), or anyone's with `zomberry.loadouts.manage`. Shared loadouts are kept in `ZomBerryLoadouts.json`, up to 100.
 - **Delete** asks for a second click, then deletes the selected loadout: one of yours, or a shared one you may change.
 

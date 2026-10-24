@@ -182,7 +182,7 @@ class ZBerryLoadoutServer {
 	void SendList(PlayerIdentity recipient) {
 		ZBerryLoadoutHeaderArray headers = new ZBerryLoadoutHeaderArray;
 		foreach (ZBerryLoadout loadout : m_Shared.GetAll()) {
-			headers.Insert(new ZBerryLoadoutHeader(loadout.Name, loadout.OwnerName, loadout.CountAll(), loadout.CountRestricted(m_Auth, recipient), CanEdit(recipient, loadout)));
+			headers.Insert(new ZBerryLoadoutHeader(loadout.Name, loadout.OwnerName, loadout.CountAll(), loadout.CountRestricted(m_Auth, recipient), loadout.CountMissing(), CanEdit(recipient, loadout)));
 		}
 
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.Loadouts, new Param2<bool, ref ZBerryLoadoutHeaderArray>(HasOriginal(recipient), headers), true, recipient );
@@ -292,7 +292,8 @@ class ZBerryLoadoutServer {
 			text += ", without " + result.Restricted + " items their spawn rules don't allow";
 			told += ", without " + result.Restricted + " items your spawn rules don't allow";
 		}
-		if (result.Failed > 0) told += ", " + result.Failed + " items couldn't be added";
+		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		told += result.DescribeLosses();
 		ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, text );
 		Tell(sender, told);
 	}
@@ -331,7 +332,7 @@ class ZBerryLoadoutServer {
 		m_Originals.Remove(job.Loadout.Name);
 		ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, "{actor} got their own gear back" );
 		string told = "Your own gear is back";
-		if (job.Result.Failed > 0) told += ", " + job.Result.Failed + " items couldn't be added";
+		told += job.Result.DescribeLosses();
 		Tell(sender, told);
 		if (sender || !GetGame().IsMultiplayer()) SendList(sender);
 	}

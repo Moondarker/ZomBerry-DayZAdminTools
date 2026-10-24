@@ -523,20 +523,19 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		ZBerryLoadoutArray own = loadouts.GetLocal();
 		foreach (ZBerryLoadout mine : own) {
 			int ownRestricted = mine.CountRestricted();
-			string ownText = mine.Name;
-			if (ownRestricted > 0) ownText += "  (" + ownRestricted + " not allowed)";
+			int ownMissing = mine.CountMissing();
+			string ownText = mine.Name + DescribeLeftOut(ownRestricted, ownMissing);
 			int ownRow = m_LoadoutsList.AddItem(ownText, new Param2<bool, string>(false, mine.Name), 0);
-			if (ownRestricted > 0) m_LoadoutsList.SetItemColor(ownRow, 0, COLOR_PARTLY);
+			if (ownRestricted + ownMissing > 0) m_LoadoutsList.SetItemColor(ownRow, 0, COLOR_PARTLY);
 			if (!m_SelectedShared && ZBerryLoadoutKit.GetKey(mine.Name) == selectedKey) selectedRow = ownRow;
 		}
 
 		ZBerryLoadoutHeaderArray shared = loadouts.GetShared();
 		foreach (ZBerryLoadoutHeader header : shared) {
-			string sharedText = header.Name + "  (shared by " + header.OwnerName + ")";
-			if (header.Restricted > 0) sharedText += "  (" + header.Restricted + " not allowed)";
+			string sharedText = header.Name + "  (shared by " + header.OwnerName + ")" + DescribeLeftOut(header.Restricted, header.Missing);
 			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param2<bool, string>(true, header.Name), 0);
 			int color = COLOR_CATEGORY;
-			if (header.Restricted > 0) color = COLOR_PARTLY;
+			if (header.Restricted + header.Missing > 0) color = COLOR_PARTLY;
 			m_LoadoutsList.SetItemColor(sharedRow, 0, color);
 			if (m_SelectedShared && ZBerryLoadoutKit.GetKey(header.Name) == selectedKey) selectedRow = sharedRow;
 		}
@@ -553,6 +552,18 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			m_SelectedName = "";
 		}
 		RefreshItems();
+	}
+
+	//"  (2 not allowed, 3 not on this server)" or ""
+	protected static string DescribeLeftOut(int restricted, int missing) {
+		string text = "";
+		if (restricted > 0) text = restricted.ToString() + " not allowed";
+		if (missing > 0) {
+			if (text != "") text += ", ";
+			text += missing.ToString() + " not on this server";
+		}
+		if (text == "") return "";
+		return "  (" + text + ")";
 	}
 
 	override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn) {
@@ -576,7 +587,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		return true;
 	}
 
-	//What the selected loadout holds, items the spawn rules don't allow in red
+	//What the selected loadout holds, items the spawn rules don't allow and ones this server doesn't have in red
 	void RefreshItems() {
 		if (!m_LoadoutItemsList) return;
 		m_LoadoutItemsList.ClearItems();
@@ -606,6 +617,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		int restricted = loadout.CountRestricted();
 		if (restricted > 0) AddInfoRow(restricted.ToString() + " items your spawn rules don't allow are left out when you try it on", COLOR_PARTLY);
+		int missing = loadout.CountMissing();
+		if (missing > 0) AddInfoRow(missing.ToString() + " items this server's mods don't have are left out when you try it on", COLOR_PARTLY);
 		AddItemRows(loadout.Items, 0);
 	}
 
@@ -623,8 +636,13 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		foreach (ZBerryLoadoutItem item : items) {
 			string text = indent + DescribeLoadoutItem(item);
-			bool allowed = GetZBerryClientAuth().CanSpawn(item.Type);
-			if (!allowed) text += " - not allowed";
+			bool exists = ZBerrySpawner.IsSpawnableClass(item.Type);
+			bool allowed = exists && GetZBerryClientAuth().CanSpawn(item.Type);
+			if (!exists) {
+				text += " - not on this server";
+			} else if (!allowed) {
+				text += " - not allowed";
+			}
 			int row = m_LoadoutItemsList.AddItem(text, NULL, 0);
 			if (!allowed) m_LoadoutItemsList.SetItemColor(row, 0, COLOR_RESTRICTED);
 			AddItemRows(item.Items, depth + 1);

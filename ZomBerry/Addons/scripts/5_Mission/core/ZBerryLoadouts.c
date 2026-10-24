@@ -63,7 +63,24 @@ class ZBerryLoadout {
 		return count;
 	}
 
-	//Items the spawn rules don't allow, nested ones too. auth NULL: this client's rules (GetZBerryClientAuth)
+	//Items whose class this game doesn't have (made with other mods), nested ones too
+	int CountMissing() {
+		int count = 0;
+		foreach (ZBerryLoadoutItem item : Items) count += CountMissingIn(item);
+		return count;
+	}
+
+	//Recursive: parameters are copied into locals first, a nested call overwrote the caller's (see AGENTS.md)
+	protected static int CountMissingIn(ZBerryLoadoutItem itemArg) {
+		ZBerryLoadoutItem item = itemArg;
+		int count = 0;
+		if (!ZBerrySpawner.IsSpawnableClass(item.Type)) ++count;
+		foreach (ZBerryLoadoutItem child : item.Items) count += CountMissingIn(child);
+		return count;
+	}
+
+	//Items the spawn rules don't allow, nested ones too (missing ones aren't counted again). auth NULL: this client's
+	//rules (GetZBerryClientAuth)
 	int CountRestricted(ZBerryAuth auth = NULL, PlayerIdentity identity = NULL) {
 		int count = 0;
 		foreach (ZBerryLoadoutItem item : Items) count += CountRestrictedIn(item, auth, identity);
@@ -76,7 +93,7 @@ class ZBerryLoadout {
 		ZBerryAuth auth = authArg;
 		PlayerIdentity identity = identityArg;
 		int count = 0;
-		if (!ZBerryLoadoutKit.MaySpawn(item.Type, auth, identity)) ++count;
+		if (ZBerrySpawner.IsSpawnableClass(item.Type) && !ZBerryLoadoutKit.MaySpawn(item.Type, auth, identity)) ++count;
 		foreach (ZBerryLoadoutItem child : item.Items) count += CountRestrictedIn(child, auth, identity);
 		return count;
 	}
@@ -96,13 +113,15 @@ class ZBerryLoadoutHeader {
 	string OwnerName;
 	int ItemCount;
 	int Restricted; //Items this admin's spawn rules leave out
+	int Missing; //Items the server's mods don't have
 	bool Editable; //This admin may replace or delete it
 
-	void ZBerryLoadoutHeader(string name = "", string ownerName = "", int itemCount = 0, int restricted = 0, bool editable = false) {
+	void ZBerryLoadoutHeader(string name = "", string ownerName = "", int itemCount = 0, int restricted = 0, int missing = 0, bool editable = false) {
 		Name = name;
 		OwnerName = ownerName;
 		ItemCount = itemCount;
 		Restricted = restricted;
+		Missing = missing;
 		Editable = editable;
 	}
 };
@@ -124,9 +143,20 @@ class ZBerryLoadoutBudget {
 class ZBerryLoadoutResult {
 	int Placed;
 	int Restricted; //Left out: the spawn rules don't allow them
-	int Failed; //Unknown classes, or no room
+	int Missing; //Left out: no such class here (the loadout was made with other mods)
+	int Failed; //No room
+	int LostRounds; //Rounds in chambers and internal magazines with ammo this game doesn't have
 	ref array<EntityAI> HotbarItems = new array<EntityAI>; //Put on the hotbar once everything is on
 	ref TIntArray HotbarSlots = new TIntArray;
+
+	//What was left out besides restricted items, for chat: ", 3 items aren't on this server..." or ""
+	string DescribeLosses() {
+		string text = "";
+		if (Missing > 0) text += ", " + Missing + " items aren't on this server";
+		if (Failed > 0) text += ", " + Failed + " items couldn't be added";
+		if (LostRounds > 0) text += ", " + LostRounds + " rounds of unknown ammo left out";
+		return text;
+	}
 };
 
 //Replacing a character's gear with a loadout: strip, wait until the hands are empty (deleting what a character holds
@@ -355,8 +385,10 @@ class ZBerryLoadoutKit {
 		PlayerIdentity identity = identityArg;
 		ZBerryLoadoutResult result = resultArg;
 		ZBerryLoadoutItemArray orphans = orphansArg;
+		//Left out: what it held goes wherever there's room
 		if (!ZBerrySpawner.IsSpawnableClass(item.Type)) {
-			result.Failed += item.CountAll();
+			++result.Missing;
+			foreach (ZBerryLoadoutItem missingContent : item.Items) orphans.Insert(missingContent);
 			return;
 		}
 		if (auth && !auth.CanSpawn(identity, item.Type)) {
@@ -367,7 +399,8 @@ class ZBerryLoadoutKit {
 
 		EntityAI entity = Create(player, holder, item);
 		if (!entity) {
-			result.Failed += item.CountAll();
+			++result.Failed;
+			foreach (ZBerryLoadoutItem homeless : item.Items) orphans.Insert(homeless);
 			return;
 		}
 		++result.Placed;
@@ -380,7 +413,7 @@ class ZBerryLoadoutKit {
 			if (content.Place != ZBerryLoadoutItem.PLACE_ATTACHMENT) SpawnItem(player, entity, content, auth, identity, result, orphans);
 		}
 
-		SetState(entity, item);
+		SetState(entity, item, result);
 		if (item.Hotbar >= 0) {
 			result.HotbarItems.Insert(entity);
 			result.HotbarSlots.Insert(item.Hotbar);
@@ -404,7 +437,7 @@ class ZBerryLoadoutKit {
 		return entity;
 	}
 
-	protected static void SetState(EntityAI entity, ZBerryLoadoutItem item) {
+	protected static void SetState(EntityAI entity, ZBerryLoadoutItem item, ZBerryLoadoutResult result) {
 		ItemBase itemBase = ItemBase.Cast(entity);
 		Magazine magazine = Magazine.Cast(entity);
 		if (magazine && item.Ammo >= 0) {
@@ -419,13 +452,13 @@ class ZBerryLoadoutKit {
 		if (edible && item.FoodState >= 0 && edible.HasFoodStage() && edible.GetFoodStage() && edible.GetFoodStageType() != item.FoodState) edible.ChangeFoodStage(item.FoodState);
 
 		Weapon_Base weapon = Weapon_Base.Cast(entity);
-		if (weapon) SetRounds(weapon, item);
+		if (weapon) SetRounds(weapon, item, result);
 
 		entity.SetHealth01("", "", item.Health); //Last: a ruined container would refuse its contents
 	}
 
 	//The chambers and internal magazines as saved. The weapon's state machine is told what it holds now
-	protected static void SetRounds(Weapon_Base weapon, ZBerryLoadoutItem item) {
+	protected static void SetRounds(Weapon_Base weapon, ZBerryLoadoutItem item, ZBerryLoadoutResult result) {
 		float damage;
 		string ammo;
 		for (int muzzle = 0; muzzle < weapon.GetMuzzleCount(); ++muzzle) {
@@ -436,7 +469,10 @@ class ZBerryLoadoutKit {
 		}
 
 		foreach (ZBerryLoadoutRound round : item.Rounds) {
-			if (round.Muzzle < 0 || round.Muzzle >= weapon.GetMuzzleCount() || !ZBerrySpawner.IsSpawnableAmmo(round.Ammo)) continue;
+			if (round.Muzzle < 0 || round.Muzzle >= weapon.GetMuzzleCount() || !ZBerrySpawner.IsSpawnableAmmo(round.Ammo)) {
+				++result.LostRounds;
+				continue;
+			}
 			if (round.Chamber) {
 				weapon.PushCartridgeToChamber(round.Muzzle, round.Damage, round.Ammo);
 			} else {

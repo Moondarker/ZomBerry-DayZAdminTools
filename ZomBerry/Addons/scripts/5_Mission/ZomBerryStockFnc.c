@@ -402,7 +402,7 @@ class ZomberryStockFunctions {
 
 		string message = job.Note;
 		if (job.Result.Restricted > 0) message += ", without " + job.Result.Restricted + " items your spawn rules don't allow";
-		if (job.Result.Failed > 0) message += ", " + job.Result.Failed + " items couldn't be added";
+		message += job.Result.DescribeLosses();
 		MessagePlayer(admin, message);
 	}
 
