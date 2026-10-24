@@ -23,6 +23,8 @@ modded class PlayerBase
 	//Infinite ammo: a server flag on the character, plus the character it's on for its own client (told through a
 	//ZomBerry client feature rather than a synced variable: PlayerBase already has about as many as the engine allows)
 	protected bool m_ZBInfiniteAmmo;
+	protected float m_ZBAmmoTimer;
+	static const float ZB_AMMO_INTERVAL = 0.5;
 	protected static bool s_ZBLocalInfiniteAmmo;
 	protected static int s_ZBInfiniteAmmoLow, s_ZBInfiniteAmmoHigh;
 
@@ -78,6 +80,16 @@ modded class PlayerBase
 		s_ZBLocalInfiniteAmmo = enabled;
 		s_ZBInfiniteAmmoLow = networkLow;
 		s_ZBInfiniteAmmoHigh = networkHigh;
+	}
+
+	//Server, twice a second while infinite ammo is on: the magazine of the weapon in hands is topped up, so one that was
+	//empty (which can't be fired, so never refilled after a shot) fills up too. An empty chamber needs a reload
+	protected void ZBTopUpAmmo() {
+		Weapon_Base weapon = Weapon_Base.Cast(GetHumanInventory().GetEntityInHands());
+		if (!weapon) return;
+
+		Magazine magazine = weapon.GetMagazine(weapon.GetCurrentMuzzle());
+		if (magazine && magazine.GetAmmoCount() < magazine.GetAmmoMax()) magazine.ServerSetAmmoMax();
 	}
 
 	//After a shot: the magazine full again, on the server and on the shooter's client like vanilla's debug option
@@ -242,6 +254,13 @@ modded class PlayerBase
 			if (m_ZBGearTimer <= 0) {
 				m_ZBGearTimer = ZB_GEAR_INTERVAL;
 				ZBUpdateGearProtection();
+			}
+		}
+		if (m_ZBInfiniteAmmo && (!GetGame().IsMultiplayer() || GetGame().IsServer())) {
+			m_ZBAmmoTimer -= timeSlice;
+			if (m_ZBAmmoTimer <= 0) {
+				m_ZBAmmoTimer = ZB_AMMO_INTERVAL;
+				ZBTopUpAmmo();
 			}
 		}
 
