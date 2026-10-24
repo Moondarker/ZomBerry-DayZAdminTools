@@ -36,7 +36,8 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 	protected TextListboxWidget m_LoadoutsList, m_LoadoutItemsList; //Visible variants
 	protected ref ZBerryScaledList m_LoadoutsLists, m_LoadoutItemsLists;
 	protected EditBoxWidget m_LoadoutName;
-	protected ButtonWidget m_LoadoutSave, m_LoadoutShare, m_LoadoutDelete, m_LoadoutTry, m_LoadoutRestore, m_LoadoutGive, m_LoadoutUndo;
+	protected ButtonWidget m_LoadoutSave, m_LoadoutShare, m_LoadoutDelete, m_LoadoutApply, m_LoadoutUndo, m_LoadoutTarget;
+	protected bool m_ApplyToPlayers; //Apply and Undo act on the players selected on the left, not on the admin
 	protected ZBerryUIConfirmDialog m_ConfirmDialog; //The menu's
 	protected bool m_LoadoutMode;
 	protected bool m_MouseOnName;
@@ -80,10 +81,9 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_LoadoutSave = ButtonWidget.Cast( BindWidget("LoadoutSave") );
 		m_LoadoutShare = ButtonWidget.Cast( BindWidget("LoadoutShare") );
 		m_LoadoutDelete = ButtonWidget.Cast( BindWidget("LoadoutDelete") );
-		m_LoadoutTry = ButtonWidget.Cast( BindWidget("LoadoutTry") );
-		m_LoadoutRestore = ButtonWidget.Cast( BindWidget("LoadoutRestore") );
-		m_LoadoutGive = ButtonWidget.Cast( BindWidget("LoadoutGive") );
+		m_LoadoutApply = ButtonWidget.Cast( BindWidget("LoadoutApply") );
 		m_LoadoutUndo = ButtonWidget.Cast( BindWidget("LoadoutUndo") );
+		m_LoadoutTarget = ButtonWidget.Cast( BindWidget("LoadoutTarget") );
 	}
 
 	void SetConfirmDialog(ZBerryUIConfirmDialog dialog) {
@@ -298,7 +298,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
 		if (w == m_LoadoutsList) {
-			TrySelected();
+			ApplySelected();
 			return true;
 		}
 		if (w != m_ObjectsList) return false;
@@ -517,11 +517,27 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		ZBerryClientAuth auth = GetZBerryClientAuth();
 		m_LoadoutShare.Show(auth.Has(ZBerryPermissions.LOADOUTS_SHARE));
-		m_LoadoutTry.Show(auth.Has(ZBerryPermissions.SPAWN_INVENTORY));
-		m_LoadoutRestore.Show(GetZBerryClientLoadouts().IsOriginalSaved());
 		bool mayGive = auth.Has(ZBerryPermissions.LOADOUTS_GIVE);
-		m_LoadoutGive.Show(mayGive);
-		m_LoadoutUndo.Show(mayGive);
+		if (!mayGive) m_ApplyToPlayers = false;
+		m_LoadoutTarget.Show(mayGive);
+		if (m_ApplyToPlayers) {
+			ZBerryUIUtils.SetButtonText(m_LoadoutTarget, "Apply to: selected players");
+			m_LoadoutApply.Show(true);
+			m_LoadoutUndo.Show(true);
+		} else {
+			ZBerryUIUtils.SetButtonText(m_LoadoutTarget, "Apply to: myself");
+			m_LoadoutApply.Show(auth.Has(ZBerryPermissions.SPAWN_INVENTORY));
+			m_LoadoutUndo.Show(GetZBerryClientLoadouts().IsOriginalSaved());
+		}
+	}
+
+	//Apply: on the admin, or on the selected players after a confirmation
+	protected void ApplySelected() {
+		if (m_ApplyToPlayers) {
+			AskGive();
+		} else {
+			TrySelected();
+		}
 	}
 
 	//Players joined, left or were renamed: their rows follow (state updates alone don't rebuild the list)
@@ -655,9 +671,9 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_LoadoutItemsList.ClearItems();
 
 		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
-		if (loadouts.IsOriginalSaved()) AddInfoRow("Your own gear is saved: Restore puts it back", COLOR_SAVED);
+		if (loadouts.IsOriginalSaved()) AddInfoRow("Your own gear is saved: Undo puts it back", COLOR_SAVED);
 		if (m_SelectedName == "") {
-			AddInfoRow("Select a loadout to see what's in it, double-click to try it on", COLOR_CATEGORY_HIDDEN);
+			AddInfoRow("Select a loadout to see what's in it, double-click to apply it", COLOR_CATEGORY_HIDDEN);
 			return;
 		}
 
@@ -689,9 +705,9 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		}
 
 		int restricted = loadout.CountRestricted();
-		if (restricted > 0) AddInfoRow(restricted.ToString() + " items your spawn rules don't allow are left out when you try it on", COLOR_PARTLY);
+		if (restricted > 0) AddInfoRow(restricted.ToString() + " items your spawn rules don't allow are left out when it's applied", COLOR_PARTLY);
 		int missing = loadout.CountMissing();
-		if (missing > 0) AddInfoRow(missing.ToString() + " items this server's mods don't have are left out when you try it on", COLOR_PARTLY);
+		if (missing > 0) AddInfoRow(missing.ToString() + " items this server's mods don't have are left out when it's applied", COLOR_PARTLY);
 		ZBerryLoadoutRows.Add(m_LoadoutItemsList, loadout.Items, 0);
 	}
 
@@ -730,20 +746,21 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 			DeleteSelected();
 			return true;
 		}
-		if (w == m_LoadoutTry) {
-			TrySelected();
-			return true;
-		}
-		if (w == m_LoadoutRestore) {
-			loadouts.Restore();
-			return true;
-		}
-		if (w == m_LoadoutGive) {
-			AskGive();
+		if (w == m_LoadoutApply) {
+			ApplySelected();
 			return true;
 		}
 		if (w == m_LoadoutUndo) {
-			AskUndo();
+			if (m_ApplyToPlayers) {
+				AskUndo();
+			} else {
+				loadouts.Restore();
+			}
+			return true;
+		}
+		if (w == m_LoadoutTarget) {
+			m_ApplyToPlayers = !m_ApplyToPlayers;
+			UpdateLoadoutButtons();
 			return true;
 		}
 		return false;
@@ -805,7 +822,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		m_PendingUndo = false;
 		string what = m_SelectedName;
 		if (m_SelectedPlayer >= 0) what = m_SelectedName + "'s current gear";
-		string text = "Put " + what + " on " + DescribePlayers(targets) + "?\n\nWhat they wear now is replaced. It's kept, and Undo for selected players gives it back. Your spawn rules apply.";
+		string text = "Put " + what + " on " + DescribePlayers(targets) + "?\n\nWhat they wear now is replaced. It's kept, and Undo gives it back. Your spawn rules apply.";
 		m_ConfirmDialog.Open("Give loadout", text, "Give");
 		m_ConfirmDialog.OnConfirm.Insert(OnConfirmed);
 	}

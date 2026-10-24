@@ -636,7 +636,7 @@ PanelWidgetClass SpawnWrapper {
       }
      }
     }
-    ButtonWidgetClass LoadoutTry {
+    ButtonWidgetClass LoadoutApply {
      color 0.3255 0.3255 0.3255 0.7843
      position 396 10
      size 92 36
@@ -647,7 +647,7 @@ PanelWidgetClass SpawnWrapper {
      vexactsize 1
      style Colorable
      {
-      TextWidgetClass LoadoutTryLabel {
+      TextWidgetClass LoadoutApplyLabel {
        ignorepointer 1
        position 0 0
        size 1 1
@@ -655,63 +655,7 @@ PanelWidgetClass SpawnWrapper {
        vexactpos 1
        hexactsize 0
        vexactsize 0
-       text "Try on"
-       font "gui/fonts/Metron16"
-       "exact text" 1
-       "exact text size" 16
-       "text halign" center
-       "text valign" center
-      }
-     }
-    }
-    ButtonWidgetClass LoadoutRestore {
-     color 0.3255 0.3255 0.3255 0.7843
-     position 498 10
-     size 92 36
-     valign bottom_ref
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Colorable
-     {
-      TextWidgetClass LoadoutRestoreLabel {
-       ignorepointer 1
-       position 0 0
-       size 1 1
-       hexactpos 1
-       vexactpos 1
-       hexactsize 0
-       vexactsize 0
-       text "Restore"
-       font "gui/fonts/Metron16"
-       "exact text" 1
-       "exact text size" 16
-       "text halign" center
-       "text valign" center
-      }
-     }
-    }
-    ButtonWidgetClass LoadoutGive {
-     color 0.3255 0.3255 0.3255 0.7843
-     position 10 56
-     size 287 36
-     valign bottom_ref
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Colorable
-     {
-      TextWidgetClass LoadoutGiveLabel {
-       ignorepointer 1
-       position 0 0
-       size 1 1
-       hexactpos 1
-       vexactpos 1
-       hexactsize 0
-       vexactsize 0
-       text "Give to selected players"
+       text "Apply"
        font "gui/fonts/Metron16"
        "exact text" 1
        "exact text size" 16
@@ -722,8 +666,8 @@ PanelWidgetClass SpawnWrapper {
     }
     ButtonWidgetClass LoadoutUndo {
      color 0.3255 0.3255 0.3255 0.7843
-     position 303 56
-     size 287 36
+     position 498 10
+     size 92 36
      valign bottom_ref
      hexactpos 1
      vexactpos 1
@@ -739,7 +683,35 @@ PanelWidgetClass SpawnWrapper {
        vexactpos 1
        hexactsize 0
        vexactsize 0
-       text "Undo for selected players"
+       text "Undo"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutTarget {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 396 56
+     size 194 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutTargetLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Apply to: myself"
        font "gui/fonts/Metron16"
        "exact text" 1
        "exact text size" 16

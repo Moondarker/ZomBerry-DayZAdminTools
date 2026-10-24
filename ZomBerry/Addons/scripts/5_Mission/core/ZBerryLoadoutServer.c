@@ -288,7 +288,7 @@ class ZBerryLoadoutServer {
 		PlayerIdentity sender = GetJobIdentity(job);
 		if (!job.Dressed) {
 			ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, "{actor} took off their gear for " + source + ZBerryMessages.ForLog(job.Loadout.Name) + ", but couldn't put it on" );
-			Tell(sender, "Loadout not put on: your character is gone or busy, restore your gear");
+			Tell(sender, "Loadout not put on: your character is gone or busy, Undo gives your gear back");
 			return;
 		}
 
