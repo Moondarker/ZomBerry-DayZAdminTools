@@ -9,6 +9,9 @@ modded class PlayerBase
 	protected bool m_ZBShrunkHere; //What this client last applied
 	protected int m_ZBSavedLayer; //Its collision layer before, given back when shown again
 	static const float ZB_HIDDEN_SCALE = 0.00001;
+	protected bool m_ZBSelfHidden; //Its own client: body and worn gear hidden, as a reminder
+	protected float m_ZBSelfTimer;
+	static const float ZB_SELF_INTERVAL = 0.5;
 
 	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
 	//weapons included). Only items this switched off are switched back on, when they leave the player or protection ends
@@ -142,6 +145,7 @@ modded class PlayerBase
 	override void OnVariablesSynchronized() {
 		super.OnVariablesSynchronized();
 		ZBApplyInvisibility();
+		ZBApplySelfInvisibility();
 	}
 
 	//Shrunk rather than hidden piece by piece: clothing, bare body parts and the item in hands are all drawn relative
@@ -167,6 +171,56 @@ modded class PlayerBase
 		}
 	}
 
+	//The invisible player's own client hides their body, bare body parts and what they wear, as a reminder that others
+	//don't see them. Not shrunk: the camera and aiming follow the body. The item in hands stays, for aiming. Re-applied
+	//twice a second, as the engine shows hidden parts again now and then
+	protected void ZBApplySelfInvisibility() {
+		bool hide = m_ZBInvisible && GetGame().IsClient() && GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT;
+		if (!hide && !m_ZBSelfHidden) return;
+		m_ZBSelfHidden = hide;
+
+		ZBSetTreeInvisible(this, hide);
+		GameInventory inventory = GetInventory();
+		for (int i = 0; i < inventory.GetAttachmentSlotsCount(); ++i) ZBSetBodyPartInvisible(inventory.GetAttachmentSlotId(i), hide);
+	}
+
+	//Bare body parts (head, hands, torso, legs, feet and any other) are placeholders of their slots, shown while the
+	//slot is empty, not attachments
+	protected void ZBSetBodyPartInvisible(int slotId, bool invisible) {
+		EntityAI bodyPart = GetInventory().FindPlaceholderForSlot(slotId);
+		if (!bodyPart) return;
+
+		bodyPart.SetInvisible(invisible);
+		bodyPart.OnInvisibleSet(invisible);
+	}
+
+	//Recursive: parameters are copied into locals first, a nested call overwrote the caller's (see AGENTS.md)
+	protected static void ZBSetTreeInvisible(EntityAI entityArg, bool invisibleArg) {
+		EntityAI entity = entityArg;
+		bool invisible = invisibleArg;
+		entity.SetInvisible(invisible);
+		entity.OnInvisibleSet(invisible);
+
+		GameInventory inventory = entity.GetInventory();
+		if (!inventory) return;
+		for (int i = 0; i < inventory.AttachmentCount(); ++i) {
+			EntityAI attachment = inventory.GetAttachmentFromIndex(i);
+			if (attachment) ZBSetTreeInvisible(attachment, invisible);
+		}
+	}
+
+	//New clothing is hidden too; taking clothing off uncovers the body part under it (vanilla's OnWasDetached shows
+	//the clothing again)
+	override void EEItemAttached(EntityAI item, string slot_name) {
+		super.EEItemAttached(item, slot_name);
+		if (m_ZBSelfHidden) ZBSetTreeInvisible(item, true);
+	}
+
+	override void EEItemDetached(EntityAI item, string slot_name) {
+		super.EEItemDetached(item, slot_name);
+		if (m_ZBSelfHidden) ZBSetBodyPartInvisible(InventorySlots.GetSlotIdFromString(slot_name), true);
+	}
+
 	override void EOnFrame(IEntity other, float timeSlice) {
 		super.EOnFrame(other, timeSlice);
 
@@ -180,6 +234,12 @@ modded class PlayerBase
 		}
 
 		if (m_ZBInvisible || m_ZBShrunkHere) ZBApplyInvisibility();
+
+		if (!m_ZBInvisible && !m_ZBSelfHidden) return;
+		m_ZBSelfTimer -= timeSlice;
+		if (m_ZBSelfTimer > 0) return;
+		m_ZBSelfTimer = ZB_SELF_INTERVAL;
+		ZBApplySelfInvisibility();
 	}
 
 	//Again right before drawing, in case the frame's updates gave the character its size, simulation or collisions back
