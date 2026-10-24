@@ -226,6 +226,8 @@ class ZBerryServerRPC {
 
 		int flags = 0;
 		if (done[0].GetFunction().IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
+		int type = ZBerryEventType.FUNCTION_PLAYER;
+		if (IsTeleport(done[0].GetFunction())) type = ZBerryEventType.TELEPORT;
 
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
@@ -245,7 +247,12 @@ class ZBerryServerRPC {
 				extraNames.Insert(name);
 			}
 		}
-		ZomberryBase.LogEventRaw(ZBerryEventType.FUNCTION_PLAYER, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		ZomberryBase.LogEventRaw(type, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+	}
+
+	//Functions in the Teleport category (stock or from mods) are logged as teleports, like map teleports
+	protected static bool IsTeleport(ZBerryFunction cmdFunc) {
+		return cmdFunc.GetCategory() == ZomberryStockFunctions.CATEGORY_TELEPORT;
 	}
 
 	//The server is stopping: held-back repeated calls are logged now
@@ -280,6 +287,7 @@ class ZBerryServerRPC {
 			type = ZBerryEventType.FUNCTION_SERVER;
 			text = "{actor} ran " + call;
 		}
+		if (IsTeleport(cmdCall.GetFunction())) type = ZBerryEventType.TELEPORT;
 		if (cmdCall.GetDescription() != "") text = cmdCall.GetDescription();
 
 		if (groupKey != "") {

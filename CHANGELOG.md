@@ -44,7 +44,8 @@
   - **Times** show in each admin's local time. The server keeps them in UTC.
   - **Positions** are written as map coordinates in whole metres ("X 9871 Y 2144"), here and in the log file.
   - **Function calls that did nothing** (no valid target, nothing under the cursor, a player in a vehicle) are logged as refused, with the reason. A first run that only asks for confirmation isn't logged; the confirmed run is. Commands from other mods can do the same with `RefuseCall()` and `AwaitConfirmation()`.
-  - **Repeated teleports are one entry:** "Teleport - Me 10 meters Forward" or "Target to Cursor" run again and again (gaps under 3 s) are logged once the run ends, with how often and from where to where.
+  - **Teleport functions are teleport events** (#71), and each one says where the moved player went, also when it's run only once.
+  - **Repeated teleports are one entry:** "Teleport - Me 10 meters Forward" or "Target to Cursor" run again and again (gaps under 3 s) are logged once the run ends, with where the last one went, how often, and where the run started.
   - **Functions say what they did** (#66): one line each, in the log file and the in-game log, instead of "ran …" plus a separate detail line. Toggles say which way they switched: "switched ESP on", "entered FreeCam", "froze PlayerName", "switched god mode off for themselves". Flip, clean up, delete and teleport all name the vehicle, the count or the object, and the place. Commands from other mods can do the same with `DescribeCall()`.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation. The confirming run deletes what the prompt counted: things that arrived since stay, and so do items someone picked up.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.

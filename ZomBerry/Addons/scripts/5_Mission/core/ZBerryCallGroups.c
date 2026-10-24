@@ -3,7 +3,7 @@ class ZBerryCallGroup {
 	int Type;
 	int Flags;
 	string ActorId, ActorName, TargetId, TargetName; //Kept as text: the players may have left when it's logged
-	string Text;
+	string Text; //The last call's: it says where that one went
 	int Count;
 	bool HasPositions;
 	vector From, To; //Where the moved player was before the first call and after the last
@@ -58,6 +58,7 @@ class ZBerryCallGroups {
 		}
 
 		++group.Count;
+		group.Text = text;
 		group.To = to;
 		group.LastMs = now;
 	}
@@ -83,11 +84,10 @@ class ZBerryCallGroups {
 
 		string text = group.Text;
 		if (group.Count > 1) {
-			text += " " + group.Count + " times in a row";
+			text += ", " + group.Count + " times in a row";
 			if (group.HasPositions) {
 				string from = ZBDescribePosition(group.From);
-				string to = ZBDescribePosition(group.To);
-				text += ", from " + from + " to " + to;
+				text += " from " + from;
 			}
 		}
 		ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, group.Flags);

@@ -224,17 +224,24 @@ class ZomberryStockFunctions {
 
 		if (!SetPosSafe(admin, targetPos)) {
 			Refuse(admin, "Unable to teleport: admin in vehicle");
+			return;
 		}
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported " + tpDist + " m forward to " + ZBDescribePosition(targetPos));
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(target, cursor)) {
-			MessagePlayer(admin, "Target teleported");
-		} else {
+		if (!SetPosSafe(target, cursor)) {
 			Refuse(admin, "Unable to teleport: target in vehicle");
+			return;
+		}
+		MessagePlayer(admin, "Target teleported");
+		if (adminId == targetId) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported to the cursor at " + ZBDescribePosition(cursor));
+		} else {
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to the cursor at " + ZBDescribePosition(cursor));
 		}
 	}
 
@@ -242,22 +249,26 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(admin, GetPosSafe(target))) {
-			MessagePlayer(admin, "Teleported to target");
-		} else {
+		vector destination = GetPosSafe(target);
+		if (!SetPosSafe(admin, destination)) {
 			Refuse(admin, "Unable to teleport: get out of vehicle!");
+			return;
 		}
+		MessagePlayer(admin, "Teleported to target");
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported to {target} at " + ZBDescribePosition(destination));
 	}
 
 	void TPToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(target, GetPosSafe(admin))) {
-			MessagePlayer(admin, "Target teleported");
-		} else {
+		vector destination = GetPosSafe(admin);
+		if (!SetPosSafe(target, destination)) {
 			Refuse(admin, "Unable to teleport: target in vehicle");
+			return;
 		}
+		MessagePlayer(admin, "Target teleported");
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to themselves at " + ZBDescribePosition(destination));
 	}
 
 	void HealTarget( string funcName, int adminId, int targetId, vector cursor ) {
@@ -1027,7 +1038,7 @@ class ZomberryStockFunctions {
 		if (offline > 0) skipped += ", " + offline + " offline";
 		if (m_TPAllReturns.Count() > 0) skipped += ". Run it again later for the " + m_TPAllReturns.Count() + " still saved";
 		MessagePlayer(admin, "Teleported " + moved + " players back" + skipped);
-		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players back: " + moved + " moved" + skipped);
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players back to where they were before: " + moved + " moved" + skipped);
 	}
 
 	//Same for a character across relogs, new after a death
