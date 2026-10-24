@@ -42,7 +42,7 @@ class ZBerryUIActionsMenu extends ZBerryUIComponent {
 		return m_Actions.Count();
 	}
 
-	//x, y: the mouse, in screen pixels. Kept on the screen
+	//x, y: the mouse, in screen pixels. Kept inside the menu (the frame covers the admin menu, not the whole screen)
 	void Open(int x, int y, string title) {
 		if (!m_Root || m_Actions.Count() == 0) return;
 
@@ -54,12 +54,13 @@ class ZBerryUIActionsMenu extends ZBerryUIComponent {
 		float height = (TITLE_HEIGHT + m_Actions.Count() * ROW_HEIGHT + PADDING) * scale;
 		m_Box.SetSize(width, height);
 
-		int screenWidth, screenHeight;
-		GetScreenSize(screenWidth, screenHeight);
-		float left = Math.Min(x, screenWidth - width);
-		float top = Math.Min(y, screenHeight - height);
+		Show(true); //Measured while shown
+		float frameX, frameY, frameWidth, frameHeight; //SetPos is relative to the frame
+		m_Root.GetScreenPos(frameX, frameY);
+		m_Root.GetScreenSize(frameWidth, frameHeight);
+		float left = Math.Min(x - frameX, frameWidth - width);
+		float top = Math.Min(y - frameY, frameHeight - height);
 		m_Box.SetPos(Math.Max(left, 0), Math.Max(top, 0));
-		Show(true);
 	}
 
 	void Close() {
