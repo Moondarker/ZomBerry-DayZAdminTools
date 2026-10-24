@@ -125,13 +125,20 @@ class ZBerryESPOverlay {
 			int color = COLOR_PLAYER;
 			if (streams.IsAdmin(id)) color = COLOR_ADMIN;
 
-			float distance = vector.Distance(cameraPos, player.GetPosition());
+			vector drawnPos = GetDrawnPosition(player, id);
+			float distance = vector.Distance(cameraPos, drawnPos);
 			if (distance > settings.MaxDistance) continue;
+			//Invisible players are shrunk and frozen on this client: a standing-sized box, no skeleton
+			bool invisible = player.ZBIsInvisible() && !ZomBerryCamSpec.IsTarget(player);
 			float left, top, right, bottom;
-			if (!ZBerryESPDraw.GetScreenBox(player, left, top, right, bottom)) continue;
+			if (invisible) {
+				if (!ZBerryESPDraw.GetStandingScreenBox(drawnPos, left, top, right, bottom)) continue;
+			} else if (!ZBerryESPDraw.GetScreenBox(player, left, top, right, bottom)) {
+				continue;
+			}
 
 			if (settings.PlayerBox) ZBerryESPDraw.DrawBox(m_Canvas, left, top, right, bottom, color, lineWidth);
-			if (settings.PlayerSkeleton && distance <= SKELETON_DISTANCE) ZBerryESPDraw.DrawSkeleton(m_Canvas, player, color, lineWidth);
+			if (!invisible && settings.PlayerSkeleton && distance <= SKELETON_DISTANCE) ZBerryESPDraw.DrawSkeleton(m_Canvas, player, color, lineWidth);
 
 			string text = DescribePlayer(settings, id, name, distance);
 			if (text != "") AddLabel((left + right) / 2, bottom, text, color);
@@ -151,6 +158,22 @@ class ZBerryESPOverlay {
 			float farDistance = vector.Distance(cameraPos, position);
 			AddLabel(x, y, streams.GetName(streamedId) + " " + Math.Round(farDistance) + "m", COLOR_FAR_PLAYER);
 		}
+	}
+
+	static const float STALE_DISTANCE = 5; //Metres between this client's copy and where the server says they are
+
+	//Where to draw a nearby player: this client's copy, unless it's an invisible one this client doesn't simulate and
+	//the server's streamed position is far from it
+	protected vector GetDrawnPosition(PlayerBase player, int id) {
+		vector position = player.GetPosition();
+		if (!player.ZBIsInvisible()) return position;
+
+		ZBerryStreamClient streams = GetZBerryStreams();
+		if (!streams.HasPosition(id)) return position;
+		vector streamed = streams.GetPosition(id); //On the surface: used only when this client's copy is far off
+		vector flatOffset = Vector(streamed[0] - position[0], 0, streamed[2] - position[2]);
+		if (flatOffset.Length() > STALE_DISTANCE) return streamed;
+		return position;
 	}
 
 	//The parts of a near player's label the settings ask for, "" for none

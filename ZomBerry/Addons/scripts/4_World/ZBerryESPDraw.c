@@ -81,6 +81,17 @@ class ZBerryESPDraw {
 		maxs = minMax[1];
 	}
 
+	static const float STANDING_HALF_WIDTH = 0.3; //Metres: a standing character, for boxes not taken from the model
+	static const float STANDING_HEIGHT = 1.8;
+
+	//Screen rectangle of a standing character's size at a position, whatever the model looks like (invisible players
+	//are shrunk on other clients, their bones are all in one spot). False when any corner is behind the camera
+	static bool GetStandingScreenBox(vector position, out float left, out float top, out float right, out float bottom) {
+		vector boxMin = position - Vector(STANDING_HALF_WIDTH, 0, STANDING_HALF_WIDTH);
+		vector boxMax = position + Vector(STANDING_HALF_WIDTH, STANDING_HEIGHT, STANDING_HALF_WIDTH);
+		return ProjectBox(NULL, boxMin, boxMax, true, left, top, right, bottom);
+	}
+
 	//Screen rectangle around the object (characters: around their joints), false when any corner is behind the camera
 	static bool GetScreenBox(Object obj, out float left, out float top, out float right, out float bottom) {
 		vector boxMin, boxMax;
@@ -88,7 +99,11 @@ class ZBerryESPDraw {
 		Human human = Human.Cast(obj);
 		if (human) worldSpace = GetBoneBounds(human, boxMin, boxMax);
 		if (!worldSpace) GetModelBounds(obj, boxMin, boxMax);
+		return ProjectBox(obj, boxMin, boxMax, worldSpace, left, top, right, bottom);
+	}
 
+	//The screen rectangle around a box's 8 corners: world space, or obj's model space
+	protected static bool ProjectBox(Object obj, vector boxMin, vector boxMax, bool worldSpace, out float left, out float top, out float right, out float bottom) {
 		left = 100000;
 		top = 100000;
 		right = -100000;

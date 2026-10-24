@@ -3,10 +3,11 @@ modded class PlayerBase
 	private bool ZBGodMode;
 
 	//Invisibility (the "Toggle invisibility" function): synced to every client, which then shrinks this character to
-	//nothing and plays none of its sounds. The server keeps it out of the AI's noise and targets, and it can't be hurt.
-	//Independent of god mode. Voice chat isn't affected
+	//nothing, stops simulating it, takes it out of collisions and plays none of its sounds. The server keeps it out of
+	//the AI's noise and targets, and it can't be hurt. Independent of god mode. Voice chat isn't affected
 	protected bool m_ZBInvisible;
 	protected bool m_ZBShrunkHere; //What this client last applied
+	protected int m_ZBSavedLayer; //Its collision layer before, given back when shown again
 	static const float ZB_HIDDEN_SCALE = 0.00001;
 
 	//Server: gear of a player in god mode or invisible can't be damaged either (worn, attached, in cargo, in hands,
@@ -126,9 +127,11 @@ modded class PlayerBase
 		}
 	}
 
-	//Other players' clients hide the character; its own client keeps seeing itself
+	//Other players' clients hide the character; its own client keeps seeing itself. So does a client spectating it:
+	//the camera follows its bones, which a shrunk or frozen character would take along
 	protected bool ZBHidesHere() {
-		return GetGame().IsClient() && GetInstanceType() != DayZPlayerInstanceType.INSTANCETYPE_CLIENT;
+		if (!GetGame().IsClient() || GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
+		return !ZomBerryCamSpec.IsTarget(this);
 	}
 
 	//Sounds and noise are dropped everywhere but on the character's own client
@@ -143,16 +146,24 @@ modded class PlayerBase
 
 	//Shrunk rather than hidden piece by piece: clothing, bare body parts and the item in hands are all drawn relative
 	//to the character and shrink with it, while the engine kept showing hidden ones again (the item in hands flickered,
-	//a body part showed as a stray texture). Not 0: a degenerate transform could break the maths that inverts it
+	//a body part showed as a stray texture). Not 0: a degenerate transform could break the maths that inverts it.
+	//Not simulated and not colliding on this client either. Only on other players' clients: on the server and its own
+	//client the same physics body keeps the character on the ground
 	protected void ZBApplyInvisibility() {
-		if (!ZBHidesHere()) return;
-
-		if (m_ZBInvisible) {
+		if (m_ZBInvisible && ZBHidesHere()) {
+			if (!m_ZBShrunkHere) {
+				m_ZBSavedLayer = -1;
+				if (dBodyIsSet(this)) m_ZBSavedLayer = dBodyGetInteractionLayer(this);
+				m_ZBShrunkHere = true;
+			}
 			if (GetScale() > ZB_HIDDEN_SCALE * 2) SetScale(ZB_HIDDEN_SCALE);
-			m_ZBShrunkHere = true;
+			if (!GetIsSimulationDisabled()) DisableSimulation(true);
+			if (dBodyIsSet(this) && dBodyGetInteractionLayer(this) != PhxInteractionLayers.NOCOLLISION) dBodySetInteractionLayer(this, PhxInteractionLayers.NOCOLLISION);
 		} else if (m_ZBShrunkHere) {
-			SetScale(1);
 			m_ZBShrunkHere = false;
+			SetScale(1);
+			DisableSimulation(false);
+			if (m_ZBSavedLayer >= 0 && dBodyIsSet(this)) dBodySetInteractionLayer(this, m_ZBSavedLayer);
 		}
 	}
 
@@ -168,13 +179,13 @@ modded class PlayerBase
 			}
 		}
 
-		if (m_ZBInvisible) ZBApplyInvisibility();
+		if (m_ZBInvisible || m_ZBShrunkHere) ZBApplyInvisibility();
 	}
 
-	//Again right before drawing, in case the frame's movement updates set the character's transform back to full size
+	//Again right before drawing, in case the frame's updates gave the character its size, simulation or collisions back
 	override void EOnPostFrame(IEntity other, int extra) {
 		super.EOnPostFrame(other, extra);
-		if (m_ZBInvisible) ZBApplyInvisibility();
+		if (m_ZBInvisible || m_ZBShrunkHere) ZBApplyInvisibility();
 	}
 
 	//Steps, movement, clothing, handling and voice sounds (not voice chat), and the noise infected hear
