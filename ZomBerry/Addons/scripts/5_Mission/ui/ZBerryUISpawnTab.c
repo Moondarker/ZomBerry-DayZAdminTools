@@ -3,7 +3,6 @@
 class ZBerryUISpawnTab extends ZBerryUITab {
 	static const int COLOR_CATEGORY = 0xFFBCCDE8;
 	static const int COLOR_CATEGORY_HIDDEN = 0xFF6767E0;
-	static const int COLOR_RESTRICTED = 0xFFFF6060;
 	static const int COLOR_PARTLY = 0xFFE8A060; //A loadout with items this admin's spawn rules leave out
 	static const int COLOR_SAVED = 0xFF47EB00;
 	static const float DROPUP_LINGER = 0.25; //Seconds the target drop-up stays open after the mouse left it and the button
@@ -619,48 +618,12 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		if (restricted > 0) AddInfoRow(restricted.ToString() + " items your spawn rules don't allow are left out when you try it on", COLOR_PARTLY);
 		int missing = loadout.CountMissing();
 		if (missing > 0) AddInfoRow(missing.ToString() + " items this server's mods don't have are left out when you try it on", COLOR_PARTLY);
-		AddItemRows(loadout.Items, 0);
+		ZBerryLoadoutRows.Add(m_LoadoutItemsList, loadout.Items, 0);
 	}
 
 	protected void AddInfoRow(string text, int color) {
 		int row = m_LoadoutItemsList.AddItem(text, NULL, 0);
 		m_LoadoutItemsList.SetItemColor(row, 0, color);
-	}
-
-	//Recursive: parameters are copied into locals first, a nested call overwrote the caller's (see AGENTS.md)
-	protected void AddItemRows(ZBerryLoadoutItemArray itemsArg, int depthArg) {
-		ZBerryLoadoutItemArray items = itemsArg;
-		int depth = depthArg;
-		string indent = "";
-		for (int level = 0; level < depth; ++level) indent += "    ";
-
-		foreach (ZBerryLoadoutItem item : items) {
-			string text = indent + DescribeLoadoutItem(item);
-			bool exists = ZBerrySpawner.IsSpawnableClass(item.Type);
-			bool allowed = exists && GetZBerryClientAuth().CanSpawn(item.Type);
-			if (!exists) {
-				text += " - not on this server";
-			} else if (!allowed) {
-				text += " - not allowed";
-			}
-			int row = m_LoadoutItemsList.AddItem(text, NULL, 0);
-			if (!allowed) m_LoadoutItemsList.SetItemColor(row, 0, COLOR_RESTRICTED);
-			AddItemRows(item.Items, depth + 1);
-		}
-	}
-
-	protected static string DescribeLoadoutItem(ZBerryLoadoutItem item) {
-		string text = ZBerrySpawner.GetDisplayName(item.Type);
-		if (item.Place == ZBerryLoadoutItem.PLACE_HANDS) text = "In hands: " + text;
-		if (item.Ammo >= 0) text += ", " + item.Ammo + " rounds";
-
-		float percent = item.Health;
-		percent = percent * 100;
-		int health = Math.Round(percent);
-		if (health < 100) text += ", " + health + "% health";
-		if (item.Wet > 0.05) text += ", wet";
-		if (item.Hotbar >= 0) text += ", hotbar " + (item.Hotbar + 1);
-		return text;
 	}
 
 	protected bool OnLoadoutClick(Widget w) {

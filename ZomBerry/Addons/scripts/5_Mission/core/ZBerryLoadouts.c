@@ -484,6 +484,15 @@ class ZBerryLoadoutKit {
 		weapon.Synchronize();
 	}
 
+	//A separate copy, items and all. NULL if it can't be made
+	static ZBerryLoadout Copy(ZBerryLoadout source) {
+		JsonSerializer json = new JsonSerializer;
+		string text, error;
+		ZBerryLoadout copy;
+		if (!json.WriteToString(source, false, text) || !json.ReadFromString(copy, text, error)) return NULL;
+		return copy;
+	}
+
 	//A loadout sent by a client: trimmed to the limits, the name cleaned. False when nothing is left of it
 	static bool Sanitize(ZBerryLoadout loadout) {
 		if (!loadout) return false;

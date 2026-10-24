@@ -1,7 +1,10 @@
 //In-game log view: events and player damage from the synced log (GetZBerryEventLog), newest first. Search by text,
 //name or Steam64 id, filter by type (dropdown) and by player (its own left pane, ZBerryUILogsPlayers, shown instead of
-//the players panel). The header action button pauses and resumes live updates
+//the players panel). The header action button pauses and resumes live updates. Right-clicking a row opens its actions
+//(a death: its loadout overview); double-clicking a death opens the overview directly
 class ZBerryUILogsTab extends ZBerryUITab {
+	static const int ACTION_LOADOUT = 1;
+
 	static const int TYPE_DAMAGE = 20; //Filter bit of the damage queue, after the event types
 	static const int ALL_TYPES = 2097150; //Bits 1..20
 	static const int MAX_ROWS = 300; //Newest matches shown, a listbox gets slow with thousands
@@ -44,10 +47,22 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	protected float m_SearchTimer = -1; //Counting down to applying the typed search, -1 when nothing is pending
 	protected bool m_MouseOnSearch = false;
 	protected ref TStringArray m_RowDetails = new TStringArray;
+	protected ref array<ref ZBerryLogEvent> m_RowEvents = new array<ref ZBerryLogEvent>; //NULL for damage rows. Held: the log may drop them meanwhile
+
+	protected ZBerryUIActionsMenu m_ActionsMenu;
+	protected ZBerryUIDeathLoadoutDialog m_DeathDialog;
+	protected ref ZBerryLogEvent m_ActionsEvent; //The row the actions menu was opened for
+	protected int m_ActionsRow = -1;
 
 	//Before InitTab: where the left pane goes (the menu's content area)
 	void SetSideParent(Widget parent) {
 		m_SideParent = parent;
+	}
+
+	//Both belong to the menu (drawn above every tab)
+	void SetDialogs(ZBerryUIActionsMenu actionsMenu, ZBerryUIDeathLoadoutDialog deathDialog) {
+		m_ActionsMenu = actionsMenu;
+		m_DeathDialog = deathDialog;
 	}
 
 	void ~ZBerryUILogsTab() {
@@ -230,6 +245,60 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		return false;
 	}
 
+	//---------------------------------------------------------------- Row actions
+
+	//The selected row's event if it's a death whose gear may be looked at, NULL otherwise
+	protected ZBerryLogEvent GetSelectedDeath(out int row) {
+		row = m_List.GetSelectedRow();
+		if (row < 0 || row >= m_RowEvents.Count()) return NULL;
+
+		ZBerryLogEvent logEvent = m_RowEvents[row];
+		if (!logEvent || logEvent.Type != ZBerryEventType.KILL) return NULL;
+		if (!GetZBerryClientAuth().Has(ZBerryPermissions.LOADOUTS_USE)) return NULL;
+		return logEvent;
+	}
+
+	//On release: the list has handled the press by then (and selected the row under the mouse, if it does that)
+	override bool OnMouseButtonUp(Widget w, int x, int y, int button) {
+		if (w != m_List || button != MouseState.RIGHT || !m_ActionsMenu) return false;
+
+		int row;
+		ZBerryLogEvent logEvent = GetSelectedDeath(row);
+		if (!logEvent) return false;
+
+		m_ActionsEvent = logEvent;
+		m_ActionsRow = row;
+		m_ActionsMenu.Clear();
+		m_ActionsMenu.Add("Loadout overview", ACTION_LOADOUT);
+		m_ActionsMenu.OnAction.Clear(); //Whoever opens it listens
+		m_ActionsMenu.OnAction.Insert(OnRowAction);
+		m_ActionsMenu.Open(x, y, "Death of " + logEvent.TargetName);
+		return true;
+	}
+
+	protected void OnRowAction(int action) {
+		if (action == ACTION_LOADOUT) OpenOverview(m_ActionsEvent, m_ActionsRow);
+	}
+
+	override bool OnDoubleClick(Widget w, int x, int y, int button) {
+		if (w != m_List || button != MouseState.LEFT) return false;
+
+		int row;
+		ZBerryLogEvent logEvent = GetSelectedDeath(row);
+		if (!logEvent) return false;
+
+		OpenOverview(logEvent, row);
+		return true;
+	}
+
+	protected void OpenOverview(ZBerryLogEvent logEvent, int row) {
+		if (!m_DeathDialog || !logEvent) return;
+
+		string description = "";
+		if (row >= 0 && row < m_RowDetails.Count()) description = m_RowDetails[row];
+		m_DeathDialog.Open(logEvent, description, ZBerryTime.FormatLocalClock(logEvent.Time, m_LocalOffset));
+	}
+
 	override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn) {
 		if (w != m_List) return false;
 
@@ -328,6 +397,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 		m_List.ClearItems();
 		m_RowDetails.Clear();
+		m_RowEvents.Clear();
 		m_Details.SetText("");
 
 		int eventAt = NextEvent(events, 0);
@@ -384,6 +454,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(logEvent.Time, m_LocalOffset) + "  " + logEvent.FormatNames(), NULL, 0);
 		m_List.SetItemColor(row, 0, GetEventColor(logEvent));
 		m_RowDetails.Insert(ZBerryTime.FormatLocal(logEvent.Time, m_LocalOffset) + " | " + GetTypeName(logEvent.Type) + " | " + logEvent.Format());
+		m_RowEvents.Insert(logEvent);
 	}
 
 	protected void AddDamageRow(ZBerryEventLog log, int index) {
@@ -391,6 +462,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(time, m_LocalOffset) + "  " + DescribeDamage(log, index, false), NULL, 0);
 		m_List.SetItemColor(row, 0, COLOR_DAMAGE);
 		m_RowDetails.Insert(ZBerryTime.FormatLocal(time, m_LocalOffset) + " | Damage | " + DescribeDamage(log, index, true));
+		m_RowEvents.Insert(NULL);
 	}
 
 	//"A hit B 3x with KA-M, 37.5 damage, 30 m", with the Steam64 ids when withIds

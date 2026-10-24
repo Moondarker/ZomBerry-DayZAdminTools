@@ -6,6 +6,7 @@ class ZBerryClientLoadouts {
 
 	ref ScriptInvoker OnChanged = new ScriptInvoker; //The lists or the saved original
 	ref ScriptInvoker OnDetailsChanged = new ScriptInvoker; //A shared loadout's items arrived
+	ref ScriptInvoker OnDeathLoadout = new ScriptInvoker; //(int eventId): the server answered RequestDeath
 
 	protected ref ZBerryLoadoutsConfig m_Local = new ZBerryLoadoutsConfig;
 	protected bool m_LocalLoaded;
@@ -14,10 +15,18 @@ class ZBerryClientLoadouts {
 	protected ref map<string, ref ZBerryLoadout> m_Details = new map<string, ref ZBerryLoadout>; //Shared loadouts' items, by key
 	protected bool m_OriginalSaved; //The server keeps the gear from before the first try
 
+	//The last death asked about (RequestDeath)
+	protected int m_DeathEventId = -1;
+	protected bool m_DeathAnswered;
+	protected string m_DeathReason; //Why it isn't kept, "" if it is
+	protected ref ZBerryLoadout m_DeathLoadout;
+	protected int m_DeathVictimState; //ZBerryVictimState
+
 	void ZBerryClientLoadouts() {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.Loadouts, "Loadouts", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutDetails, "LoadoutDetails", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LoadoutCaptured, "LoadoutCaptured", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.DeathLoadout, "DeathLoadout", this, ZBerrySPExec.Client );
 	}
 
 	protected string GetPath() {
@@ -49,7 +58,7 @@ class ZBerryClientLoadouts {
 		}
 	}
 
-	protected bool SaveLocal() {
+	protected bool WriteLocal() {
 		if (!m_LocalWritable) {
 			ZBerryUIUtils.Message(LOCAL_FILE + " is broken, see your ZomBerry log");
 			return false;
@@ -131,13 +140,55 @@ class ZBerryClientLoadouts {
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.LoadoutDelete, new Param1<string>(name), true );
 	}
 
+	//---------------------------------------------------------------- Deaths (Logs tab)
+
+	void RequestDeath(int eventId) {
+		m_DeathEventId = eventId;
+		m_DeathAnswered = false;
+		m_DeathLoadout = NULL;
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.DeathLoadoutRequest, new Param1<int>(eventId), true );
+	}
+
+	//False while the server hasn't answered for this event
+	bool GetDeath(int eventId, out string reason, out ZBerryLoadout loadout, out int victimState) {
+		if (eventId != m_DeathEventId || !m_DeathAnswered) return false;
+
+		reason = m_DeathReason;
+		loadout = m_DeathLoadout;
+		victimState = m_DeathVictimState;
+		return true;
+	}
+
+	void TryDeath(int eventId) {
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.DeathLoadoutTry, new Param1<int>(eventId), true );
+	}
+
+	void RestoreDeath(int eventId) {
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.DeathLoadoutRestore, new Param1<int>(eventId), true );
+	}
+
+	void DeathLoadout( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param4<int, string, ref ZBerryLoadout, int> data; //Event id, why it isn't kept, the gear, ZBerryVictimState
+		if (type != ZBerryCallType.Client || !ctx.Read(data) || data.param1 != m_DeathEventId) return;
+
+		m_DeathAnswered = true;
+		m_DeathReason = data.param2;
+		m_DeathLoadout = data.param3;
+		if (m_DeathLoadout) {
+			if (!m_DeathLoadout.Items) m_DeathLoadout.Items = new ZBerryLoadoutItemArray;
+			ZBerryLoadoutKit.Sanitize(m_DeathLoadout);
+		}
+		m_DeathVictimState = data.param4;
+		OnDeathLoadout.Invoke(m_DeathEventId);
+	}
+
 	bool DeleteLocal(string name) {
 		ZBerryLoadout loadout = FindLocal(name);
 		if (!loadout) return false;
 
 		int index = m_Local.Loadouts.Find(loadout);
 		m_Local.Loadouts.RemoveOrdered(index);
-		if (!SaveLocal()) {
+		if (!WriteLocal()) {
 			m_Local.Loadouts.InsertAt(loadout, index);
 			return false;
 		}
@@ -169,7 +220,21 @@ class ZBerryClientLoadouts {
 		Param1<ref ZBerryLoadout> data;
 		if (type != ZBerryCallType.Client || !ctx.Read(data) || !ZBerryLoadoutKit.Sanitize(data.param1)) return;
 
-		ZBerryLoadout loadout = data.param1;
+		SaveLocal(data.param1);
+	}
+
+	//A copy among the admin's own loadouts, e.g. the gear of a death. Replaces the one of the same name
+	void SaveCopy(ZBerryLoadout source, string name) {
+		ZBerryLoadout loadout = ZBerryLoadoutKit.Copy(source); //The overview keeps showing the original
+		if (!loadout || !ZBerryLoadoutKit.Sanitize(loadout)) {
+			ZBerryUIUtils.Message("Loadout not saved: there's nothing in it");
+			return;
+		}
+		loadout.Name = ZBerryLoadoutKit.CleanName(name);
+		SaveLocal(loadout);
+	}
+
+	protected void SaveLocal(ZBerryLoadout loadout) {
 		loadout.OwnerId = "";
 		loadout.OwnerName = "";
 		ZBerryLoadoutArray mine = GetLocal();
@@ -186,7 +251,7 @@ class ZBerryClientLoadouts {
 			loadout.Name = previous.Name;
 			mine.Set(index, loadout);
 		}
-		if (!SaveLocal()) {
+		if (!WriteLocal()) {
 			if (index == -1) {
 				mine.Remove(mine.Count() - 1);
 			} else {

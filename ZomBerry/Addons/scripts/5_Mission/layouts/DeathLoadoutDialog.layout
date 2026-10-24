@@ -1,0 +1,257 @@
+FrameWidgetClass DeathLoadoutDialog {
+ visible 0
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ priority 10
+ {
+  PanelWidgetClass DeathShade {
+   color 0 0 0 0.5
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass DeathBox {
+   color 0 0 0 0.9
+   size 640 460
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass DeathTitle {
+     ignorepointer 1
+     position 15 12
+     size 610 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Loadout overview"
+     "text valign" center
+     font "gui/fonts/Metron22"
+     "exact text" 1
+     "exact text size" 22
+    }
+    MultilineTextWidgetClass DeathInfo {
+     ignorepointer 1
+     position 15 46
+     size 610 44
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     wrap 1
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    TextWidgetClass DeathStatus {
+     ignorepointer 1
+     position 15 94
+     size 610 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    TextListboxWidgetClass DeathItems {
+     visible 1
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron14"
+    }
+    TextListboxWidgetClass DeathItems_F12 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron12"
+    }
+    TextListboxWidgetClass DeathItems_F16 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron16"
+    }
+    TextListboxWidgetClass DeathItems_F22 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron22"
+    }
+    TextListboxWidgetClass DeathItems_F28 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron28"
+    }
+    ButtonWidgetClass DeathClose {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass DeathCloseLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Close"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass DeathRestore {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 165 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass DeathRestoreLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Restore on victim"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass DeathTry {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 315 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass DeathTryLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Try on"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass DeathSave {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 465 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass DeathSaveLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Save as my loadout"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

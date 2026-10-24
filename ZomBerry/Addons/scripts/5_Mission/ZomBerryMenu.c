@@ -22,6 +22,8 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref array<ZBerryUITab> m_DropdownTabs = new array<ZBerryUITab>; //Pages under the gear
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 	protected ref ZBerryUIMessageDialog m_MessageDialog;
+	protected ref ZBerryUIDeathLoadoutDialog m_DeathDialog;
+	protected ref ZBerryUIActionsMenu m_ActionsMenu;
 
 	protected ref array<ZBerryUITab> m_Tabs = new array<ZBerryUITab>;
 	protected ZBerryUITab m_ActiveTab;
@@ -82,6 +84,11 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_MessageDialog = new ZBerryUIMessageDialog();
 		m_MessageDialog.Init(layoutRoot);
 		m_PlayersPanel.SetMessageDialog(m_MessageDialog);
+		m_DeathDialog = new ZBerryUIDeathLoadoutDialog();
+		m_DeathDialog.Init(layoutRoot);
+		m_ActionsMenu = new ZBerryUIActionsMenu();
+		m_ActionsMenu.Init(layoutRoot); //Above the dialogs
+		m_LogsTab.SetDialogs(m_ActionsMenu, m_DeathDialog);
 
 		SelectTab(m_FunctionsTab);
 		ApplyPermissions();
@@ -168,6 +175,14 @@ class ZomberryMenu extends UIScriptedMenu {
 
 	//Esc: closes an open dialog first, returns false if there was none
 	bool CloseDialogs() {
+		if (m_ActionsMenu && m_ActionsMenu.IsVisible()) {
+			m_ActionsMenu.Close();
+			return true;
+		}
+		if (m_DeathDialog && m_DeathDialog.IsVisible()) {
+			m_DeathDialog.Close();
+			return true;
+		}
 		if (m_MessageDialog && m_MessageDialog.IsVisible()) {
 			m_MessageDialog.Close();
 			return true;
@@ -252,6 +267,8 @@ class ZomberryMenu extends UIScriptedMenu {
 		ShowQuickbar(true);
 		m_KickBanDialog.Close();
 		m_MessageDialog.Close();
+		m_DeathDialog.Close();
+		m_ActionsMenu.Close();
 		ShowDropdown(false);
 		m_MouseOnDropdown = false;
 		UpdateGearIcon();
