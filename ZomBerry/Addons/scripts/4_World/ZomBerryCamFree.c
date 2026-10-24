@@ -1,6 +1,19 @@
 class ZomBerryCamFree extends ZomBerryCamBase {
 
 	private float speedMultiplier = 1.0;
+	protected static int s_Count; //FreeCam cameras on this machine: the admin's own body is hidden while there's one
+
+	void ZomBerryCamFree() {
+		++s_Count;
+	}
+
+	void ~ZomBerryCamFree() {
+		--s_Count;
+	}
+
+	static bool IsUsedHere() {
+		return s_Count > 0;
+	}
 
 	override void OnUpdate(float timeSlice) {
 
