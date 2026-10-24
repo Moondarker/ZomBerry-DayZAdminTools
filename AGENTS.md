@@ -82,6 +82,7 @@ These cost real debugging time on this project:
 - **Reserved words:** `func`, `local` and `protected` can't be used as names. Neither can engine class names like `Weapon`, as variables. The compiler's error doesn't always say so.
 - **Temporaries passed to weak references get freed.** A `new` array passed straight into a `Param` constructor or a method argument may be gone by the time it's used. Hold it in a local first (see `ZBerryServerRPC.RunFunction`).
 - **String temporaries can be overwritten by nested calls.** In `a.Substring(...) + F()`, a `Substring` inside `F` once replaced the pending left part. Put each piece in its own local before concatenating (see `ZBerryLocText.Resolve`).
+- **Recursive calls overwrite the caller's parameters.** After a function calls itself, its own parameters may hold the inner call's values (locals are fine). Copy every parameter into a local on the first lines and use only those (see `ZBerryLoadoutKit.CaptureItem`).
 - **Mixed arithmetic isn't plain integer maths.** Expressions mixing array elements, method results and literals can give unexpected results. Use typed `float` locals and `Math.Floor`/`Math.Ceil` (see `ZBerryFuncParam.GetValueName`). Plain `int / int` is integer division, so write `100.0` when you want a fraction.
 - **Strings:** `string.Trim()` returns a copy, but `ToLower()`, `ToUpper()` and `Replace()` change the string in place.
 - **You can't call a method on `new X()` in the same expression.** Assign it first.
@@ -101,6 +102,7 @@ These are engine behaviours that were confirmed while building ZomBerry:
   - `ClippingInfo` is far too large for characters.
   - Use bone positions for `Human` (`ZBerryESPDraw.GetBoneBounds`).
   - For other objects, use `GetCollisionBox`.
+- **Deleting what a character holds takes a moment.** `PlayerBase.RemoveAllItems` leaves the item in hands, and destroying that one isn't done within the same frame, so `CreateInHands` still fails. Wait until the hands are empty (see `ZBerryLoadoutJob`).
 - **Screenshots:** `MakeScreenshot` writes no files in the retail client. Use a screen recording to check visuals in automated runs.
 
 ## DayZ UI rules

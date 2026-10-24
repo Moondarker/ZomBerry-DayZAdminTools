@@ -57,6 +57,11 @@ class ZBerrySpawner {
 		return GetGame().ConfigIsExisting(CFG_VEHICLESPATH + " " + className) || GetGame().ConfigIsExisting(CFG_WEAPONSPATH + " " + className) || GetGame().ConfigIsExisting(CFG_MAGAZINESPATH + " " + className);
 	}
 
+	//A bullet type a weapon can hold (Bullet_*)
+	static bool IsSpawnableAmmo(string ammo) {
+		return ammo != "" && GetGame().ConfigIsExisting("CfgAmmo " + ammo);
+	}
+
 	//Checked in config: many items (SaltyMix, helmets...) have no script class of their own to check instead
 	static bool IsCarryableClass(string className) {
 		if (GetGame().ConfigIsExisting(CFG_WEAPONSPATH + " " + className) || GetGame().ConfigIsExisting(CFG_MAGAZINESPATH + " " + className)) return true;

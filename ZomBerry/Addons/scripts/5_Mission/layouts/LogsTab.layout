@@ -167,7 +167,7 @@ PanelWidgetClass LogsWrapper {
    visible 0
    color 0 0 0 0.95
    position 0 40
-   size 170 512
+   size 170 536
    halign right_ref
    hexactpos 1
    vexactpos 1
@@ -727,6 +727,33 @@ PanelWidgetClass LogsWrapper {
      style Colorable
      {
       TextWidgetClass LogType19Label {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Loadout"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LogType20 {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 508
+     size 162 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LogType20Label {
        ignorepointer 1
        position 0 0
        size 1 1

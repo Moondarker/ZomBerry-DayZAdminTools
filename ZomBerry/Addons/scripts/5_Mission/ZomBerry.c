@@ -9,6 +9,7 @@ class ZomberryBase {
 	protected ref ZBerryBans m_Bans;
 	protected ref ZBerryStreamServer m_Streams;
 	protected ref ZBerryLocations m_Locations;
+	protected ref ZBerryLoadoutServer m_Loadouts;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -28,6 +29,7 @@ class ZomberryBase {
 			m_Locations = new ZBerryLocations;
 			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans, m_Locations);
 			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
+			m_Loadouts = new ZBerryLoadoutServer(m_Auth);
 			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
@@ -119,6 +121,7 @@ class ZomberryBase {
 		m_Auth.LoadAdmins();
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
 		m_Locations.Load(GetConfig().GetConfigDir() + ZBerryLocations.CONFIG_FILE);
+		m_Loadouts.Load(GetConfig().GetConfigDir());
 		if (GetGame().IsMultiplayer()) GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
 	}
 
@@ -275,6 +278,7 @@ modded class MissionGameplay {
 		GetZBerryClientAuth();
 		GetZBerryStreams();
 		GetZBerryClientFeatures();
+		GetZBerryClientLoadouts();
 		GetZBerryEventLog();
 		m_ZBerryESP = new ZBerryESPOverlay;
 		GetZBerrySpectate(); //Registers its client features: spectating, and reporting the camera mode while watched
@@ -289,6 +293,7 @@ modded class MissionGameplay {
 		g_ZBerryClientAuth = NULL;
 		g_ZBerryClientFeatures = NULL;
 		g_ZBerryStreamClient = NULL;
+		g_ZBerryClientLoadouts = NULL;
 		g_ZBerrySpectate = NULL;
 		if (GetGame().IsClient()) g_ZBerryEventLog = NULL; //Singleplayer: it's the server's log too, written while the mission ends
 		super.OnMissionFinish();

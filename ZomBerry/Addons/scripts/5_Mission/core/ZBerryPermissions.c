@@ -23,6 +23,9 @@ class ZBerryPermissions {
 	static const string PLAYERS_UNBAN = "zomberry.players.unban"; //Also shows the ban list
 	static const string MESSAGES_ANNOUNCE = "zomberry.messages.announce"; //To everyone online
 	static const string MESSAGES_PRIVATE = "zomberry.messages.private"; //To the selected player
+	static const string LOADOUTS_USE = "zomberry.loadouts.use"; //Try on and save loadouts of their own, use shared ones
+	static const string LOADOUTS_SHARE = "zomberry.loadouts.share"; //Share loadouts, change their own and lower ranks' shared ones
+	static const string LOADOUTS_MANAGE = "zomberry.loadouts.manage"; //Change or delete anyone's shared loadouts
 	static const string FUNCTIONS_PREFIX = "zomberry.functions.";
 
 	static string FunctionNode(string funcName) {
@@ -40,7 +43,7 @@ class ZBerryPermissions {
 		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
 			nodes.Insert(MapMarkerNode(category));
 		}
-		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, SPAWN_PLAYER, PERMISSIONS_MANAGE, LOGS_VIEW, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
+		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, SPAWN_PLAYER, LOADOUTS_USE, LOADOUTS_SHARE, LOADOUTS_MANAGE, PERMISSIONS_MANAGE, LOGS_VIEW, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
 		return nodes;
 	}
 

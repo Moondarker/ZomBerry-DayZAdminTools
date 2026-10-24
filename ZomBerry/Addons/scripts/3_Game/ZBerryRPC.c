@@ -40,7 +40,17 @@ enum ZBerryRPCOp {
 	CameraView = 37, //Client -> server: a watched player's camera heading and pitch (ZBerrySpectate)
 	SpectateView = 38, //Server -> client: the watched player's camera heading and pitch, relayed to whoever spectates them
 	KickNotice = 39, //Server -> client, just before a kick or ban: banned, reason, ban end, seconds left (ZBerryKickNotice)
-	ExecuteCommandTargets = 40 //Client -> server: function id, session ids of the selected players (last: the one single-target functions act on), cursor, values
+	ExecuteCommandTargets = 40, //Client -> server: function id, session ids of the selected players (last: the one single-target functions act on), cursor, values
+	LoadoutsRequest = 41, //Client -> server: the shared loadouts and whether original gear is saved
+	Loadouts = 42, //Server -> client: original gear saved, shared loadout headers (ZBerryLoadoutHeader)
+	LoadoutDetailsRequest = 43, //Client -> server: name of a shared loadout
+	LoadoutDetails = 44, //Server -> client: a shared loadout with its items
+	LoadoutCapture = 45, //Client -> server: name; the admin's current gear comes back as LoadoutCaptured
+	LoadoutCaptured = 46, //Server -> client: the admin's current gear as a loadout, to save on the client
+	LoadoutTry = 47, //Client -> server: shared, name, the loadout (the admin's own; empty for a shared one)
+	LoadoutRestore = 48, //Client -> server: put the gear from before the first try back on
+	LoadoutShare = 49, //Client -> server: a loadout to share (replaces the shared one of that name)
+	LoadoutDelete = 50 //Client -> server: name of a shared loadout
 }
 
 //Which side received the call

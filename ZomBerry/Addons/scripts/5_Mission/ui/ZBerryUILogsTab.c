@@ -2,8 +2,8 @@
 //name or Steam64 id, filter by type (dropdown) and by player (its own left pane, ZBerryUILogsPlayers, shown instead of
 //the players panel). The header action button pauses and resumes live updates
 class ZBerryUILogsTab extends ZBerryUITab {
-	static const int TYPE_DAMAGE = 19; //Filter bit of the damage queue, after the event types
-	static const int ALL_TYPES = 1048574; //Bits 1..19
+	static const int TYPE_DAMAGE = 20; //Filter bit of the damage queue, after the event types
+	static const int ALL_TYPES = 2097150; //Bits 1..20
 	static const int MAX_ROWS = 300; //Newest matches shown, a listbox gets slow with thousands
 	static const float SEARCH_DELAY = 0.3; //After the last keystroke
 	static const float REFRESH_INTERVAL = 1; //While the log keeps arriving, at most one rebuild per second

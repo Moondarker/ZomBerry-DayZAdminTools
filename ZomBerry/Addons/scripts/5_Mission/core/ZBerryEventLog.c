@@ -18,9 +18,10 @@ class ZBerryEventType {
 	static const int SERVER = 16; //Server started or stopping
 	static const int MESSAGE = 17; //Announcements and private messages from admins
 	static const int LOCATION = 18; //Saved locations added or deleted
+	static const int LOADOUT = 19; //Loadouts tried on, restored, shared or deleted
 
 	static string GetName(int type) {
-		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused", "Server", "Message", "Location"};
+		TStringArray names = {"", "Function (self)", "Function (player)", "Function (server)", "Spawn", "Teleport", "Permissions", "Kick", "Ban", "Unban", "Join refused", "Login", "Logout", "Kill", "Auth", "Refused", "Server", "Message", "Location", "Loadout"};
 		if (type < 0 || type >= names.Count()) return "";
 		return names[type];
 	}
