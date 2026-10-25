@@ -101,7 +101,8 @@ class ZBerryCallGroups {
 		}
 		int flags = group.Flags;
 		if (group.Moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
-		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, flags);
+		//Where the run ended, for "Teleport here"
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, flags, NULL, NULL, group.To, group.HasPositions);
 		ZBerryServerRPC.AttachMoves(logged, group.Moves);
 		m_Groups.Remove(key);
 	}
