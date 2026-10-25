@@ -80,7 +80,7 @@
 
 ### Changed
 
-- **Functions are sorted into new categories:** Teleport, Player, Punish, Camera, World and Objects, instead of OnTarget, `==` and OnServer. Commands from other mods that still name the old categories land in Player, Punish and World.
+- **Functions are sorted into new categories:** Teleport, Player, Punish, Camera, World and Objects, instead of OnTarget, `==` and OnServer. Commands from other mods that still name the old categories land in Player, Punish and World, and OnServer ones are logged as server-wide.
 - **Set time, Set date and Set weather start from the game's current time, date and weather** when you select them, instead of fixed values.
 - **Keybind code reworked** (#51): binding, unbinding and clearing are separate operations instead of magic values. Existing keybinds keep working.
 - **Spawn target picker:** hovering over the Spawn tab's target button opens a list of places above it to pick from. Clicking the button still steps through them. The list closes when the mouse leaves.

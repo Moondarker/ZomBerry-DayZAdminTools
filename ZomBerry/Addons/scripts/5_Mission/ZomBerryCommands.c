@@ -121,6 +121,8 @@ class ZomberryCmdAPI {
 	//multiTarget: the function can run on several selected players at once. ZomBerry then calls it once per player (the
 	//usual signature) and logs one event with all of them. Without it, it only gets the last selected player
 	void AddCommand(string dispName, string funcName, Class instance, string catName, bool onTarget = true, ZBerryFuncParamArray funcParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false) {
+		//Commands from before 0.8.0 had no serverWide: OnServer meant it, so their log entries get no player's position
+		if (catName == "OnServer" && !m_oCategoryList.Contains(catName)) serverWide = true;
 		if (!m_oCategoryList.Contains(catName)) catName = MapLegacyCategory(catName);
 		if (m_oCategoryList.Contains(catName)) {
 			if (m_oCategoryList.GetByName(catName).GetByName(funcName) != NULL) {
