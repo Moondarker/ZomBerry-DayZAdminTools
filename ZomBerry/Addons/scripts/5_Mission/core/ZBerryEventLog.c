@@ -453,18 +453,22 @@ class ZBerryEventLog {
 	//Also runs for each new character of a player who stayed connected (after dying): that's a respawn, and the
 	//session goes on from the first join. Told apart by the session id, which a respawn keeps and every new
 	//connection changes: kicks and dropped connections never reach OnPlayerDisconnected, so the join time can't tell
-	void OnPlayerConnected(PlayerIdentity identity) {
+	//player: the character, for where they are
+	void OnPlayerConnected(PlayerIdentity identity, PlayerBase player) {
 		if (!identity) return;
+
+		vector position = "0 0 0";
+		if (player) position = player.GetPosition();
 
 		string steamId = identity.GetPlainId();
 		int session;
 		if (m_LoginSessions.Find(steamId, session) && session == identity.GetPlayerId()) {
-			ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} respawned");
+			ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} respawned", 0, position, player != NULL);
 			return;
 		}
 		m_LoginTimes.Set(steamId, ZBerryTime.Now());
 		m_LoginSessions.Set(steamId, identity.GetPlayerId());
-		ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} joined");
+		ZomberryBase.LogEvent(ZBerryEventType.LOGIN, NULL, identity, "{target} joined", 0, position, player != NULL);
 	}
 
 	//ZBerryTime of the player's join (respawns don't count), 0 when unknown
@@ -474,7 +478,8 @@ class ZBerryEventLog {
 		return loginTime;
 	}
 
-	void OnPlayerDisconnected(PlayerIdentity identity) {
+	//player: the character they leave, for where they logged out
+	void OnPlayerDisconnected(PlayerIdentity identity, PlayerBase player) {
 		if (!identity) return;
 
 		string text = "{target} left";
@@ -484,7 +489,9 @@ class ZBerryEventLog {
 			m_LoginTimes.Remove(identity.GetPlainId());
 		}
 		m_LoginSessions.Remove(identity.GetPlainId());
-		ZomberryBase.LogEvent(ZBerryEventType.LOGOUT, NULL, identity, text);
+		vector position = "0 0 0";
+		if (player) position = player.GetPosition();
+		ZomberryBase.LogEvent(ZBerryEventType.LOGOUT, NULL, identity, text, 0, position, player != NULL);
 	}
 
 	//---------------------------------------------------------------- Server: syncing

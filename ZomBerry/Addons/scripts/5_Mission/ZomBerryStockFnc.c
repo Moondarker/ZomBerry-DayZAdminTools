@@ -1015,6 +1015,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
+		m_ZomberryCmdAPI.SetCallPosition(entity.GetPosition());
 		m_ZomberryCmdAPI.DescribeCall("{actor} deleted " + ZBerryLocText.Name(entity) + " (" + entity.GetType() + ") at " + ZBDescribePosition(entity.GetPosition()));
 		GetGame().ObjectDelete(entity);
 		MessagePlayer(admin, "Deleted " + description);
@@ -1052,6 +1053,7 @@ class ZomberryStockFunctions {
 
 			string gone = "";
 			if (deleted < counted) gone = " (" + (counted - deleted) + " were already gone or picked up)";
+			m_ZomberryCmdAPI.SetCallPosition(cursor);
 			m_ZomberryCmdAPI.DescribeCall("{actor} cleaned up " + deleted + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor) + gone);
 			MessagePlayer(admin, "Deleted " + deleted + " " + kindName + gone);
 			return;
@@ -1083,6 +1085,7 @@ class ZomberryStockFunctions {
 			return;
 		}
 
+		m_ZomberryCmdAPI.SetCallPosition(vehicle.GetPosition());
 		m_ZomberryCmdAPI.DescribeCall("{actor} flipped " + ZBerryLocText.Name(vehicle) + " at " + ZBDescribePosition(vehicle.GetPosition()));
 		MessagePlayer(admin, vehicle.GetDisplayName() + " is back on its wheels");
 	}

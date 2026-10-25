@@ -348,7 +348,17 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - **Save as my loadout** keeps a copy among your own loadouts.
   - Your spawn rules apply when it's put on anyone.
   - The server keeps each player's last 5 deaths, up to 500 in all. They're written to `ZomBerryDeathLoadouts.json` only when the server stops cleanly, and read back (and the file deleted) at the next start. After a crash or a killed server, the deaths before it are gone.
-- **Teleport here:** with `zomberry.map.teleport`, right-click a death, a teleport or a spawn and choose **Teleport here** to go where it happened: where the player died, where the teleport took them (the middle, for several players), or where the item was spawned. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Entries logged before 0.8.0 pre-release 11 have no position.
+- **Teleport here:** with `zomberry.map.teleport`, right-click an entry and choose **Teleport here** to go where it happened:
+  - **deaths:** where the player died;
+  - **teleports:** where the players went (the middle, for several);
+  - **spawns:** where the item was spawned;
+  - **functions run on players:** where the player was, or the middle of several players if they were within 100 m of it;
+  - **functions that act at a spot:** delete object, clean up and flip vehicle;
+  - **joins, respawns and logouts:** where the character was;
+  - **kicks and bans:** where the player was, if they were online;
+  - **saved and deleted locations.**
+
+  Time and weather entries, messages and loadout entries have no position. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Older entries may have no position: deaths, teleports and spawns have one since 0.8.0 pre-release 11, the rest since pre-release 12.
 - **Teleport back:** with `zomberry.teleport.revert`, right-click a teleport and choose **Teleport back**. Every teleport is kept this way: the Teleport functions, Map tab teleports and saved locations. Each player goes back to where they were before that teleport, even if they've moved since.
   - **One player:** they're moved back at once, and chat says how it went.
   - **Several players:** a window lists them, with where they were and whether they can be moved back now. Click players to tick them, then choose **Teleport selected back**, or **Teleport all back**.
@@ -444,6 +454,7 @@ Helpers:
 - **`GetZomberryCmdAPI().AwaitConfirmation()`**: call it when this run only asked the admin to run the command again to confirm. That run isn't logged; the confirmed one is.
 - **`GetZomberryCmdAPI().DescribeCall(string text)`**: what this run did, logged instead of "AdminName ran My command". Write `{actor}` for the admin and `{target}` for the selected player, e.g. `"{actor} gave {target} a medkit"` or `"{actor} switched night vision on"`. The log view highlights both names.
 - **`GetZomberryCmdAPI().RecordMove(PlayerBase player, vector from)`**: for a command that teleports players. Call it after each successful move, with where the player was before it. The log event is then marked revertable, and admins can teleport the player back from the Logs tab. Players without a Steam64 id (singleplayer) aren't recorded.
+- **`GetZomberryCmdAPI().SetCallPosition(vector position)`**: for a command that acts at a spot rather than on a player, like around the cursor or on an object. Admins can then use **Teleport here** on its log entry. Commands run on a player don't need it, because their entry already gets where the player is.
 - **`GetZomberryCmdAPI().GetCurrentCall()`**: the running call (`ZBerryCall`): `GetFunction()`, `GetAdmin()` and `GetTarget()` (identities, the target is `NULL` when the admin selected themselves). For a command run on several selected players, `GetTargetIndex()` and `GetTargetCount()` say which of them this run is for.
 
 The helpers above only work while your command runs. Called later, from a `CallLater` callback, they write a warning to the log and change nothing.

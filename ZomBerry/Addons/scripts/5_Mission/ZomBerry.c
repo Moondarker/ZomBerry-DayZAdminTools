@@ -217,7 +217,7 @@ modded class MissionServer {
 	//In case the engine still let the character in
 	override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity) {
 		super.InvokeOnConnect(player, identity);
-		GetZBerryEventLog().OnPlayerConnected(identity);
+		GetZBerryEventLog().OnPlayerConnected(identity, player);
 
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (ban) {
@@ -259,7 +259,10 @@ modded class MissionServer {
 		PlayerBase body;
 		if (identity) body = ZBerryBodies.GetBody(identity.GetPlayerId());
 
-		GetZBerryEventLog().OnPlayerDisconnected(identity); //Before super: the identity may be gone after it
+		//Before super: the identity may be gone after it. The body left behind in FreeCam or spectating is where they are
+		PlayerBase leftAt = body;
+		if (!leftAt) leftAt = player;
+		GetZBerryEventLog().OnPlayerDisconnected(identity, leftAt);
 		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnPlayerDisconnected(identity);
 
 		if (body) {

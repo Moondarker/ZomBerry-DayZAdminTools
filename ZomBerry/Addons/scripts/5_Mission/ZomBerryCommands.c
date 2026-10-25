@@ -16,6 +16,8 @@ class ZBerryCall {
 	protected ref ZBerryTeleportRecordArray m_Moves = new ZBerryTeleportRecordArray; //RecordMove: who this call moved, from where
 	protected int m_TargetIndex = 0; //This call's target among the selected players (RunOnTargets), 0 of 1 otherwise
 	protected int m_TargetCount = 1;
+	protected vector m_Position; //SetCallPosition: where the command acted, for "Teleport here" in the Logs tab
+	protected bool m_HasPosition;
 
 	void ZBerryCall(ZBerryFunction function, PlayerIdentity admin, PlayerIdentity target) {
 		m_Function = function;
@@ -81,6 +83,17 @@ class ZBerryCall {
 	void SetTargetPosition(int index, int count) {
 		m_TargetIndex = index;
 		m_TargetCount = count;
+	}
+
+	void SetPosition(vector position) {
+		m_Position = position;
+		m_HasPosition = true;
+	}
+
+	//False when the command set none
+	bool GetPosition(out vector position) {
+		position = m_Position;
+		return m_HasPosition;
 	}
 };
 
@@ -206,6 +219,21 @@ class ZomberryCmdAPI {
 		}
 		ZBerryTeleportRecord record = ZBerryTeleportReturns.MakeRecord(player, from);
 		if (record.SteamId != "") call.AddMove(record);
+	}
+
+	/**
+	\brief Server, from inside a command that acts at a spot (around the cursor, on an object): where, so admins can
+		teleport there from the Logs tab. Commands run on a player don't need it, their log entry gets where the
+		player is. Teleports recorded with RecordMove get where the players went
+		\param position \p vector
+	*/
+	void SetCallPosition(vector position) {
+		ZBerryCall call = GetCurrentCall();
+		if (!call) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: SetCallPosition outside a command call, ignored" );
+			return;
+		}
+		call.SetPosition(position);
 	}
 
 	//The command call running right now, NULL outside one (a CallLater callback runs after its call has ended)

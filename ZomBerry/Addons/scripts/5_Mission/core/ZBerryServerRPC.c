@@ -4,6 +4,7 @@ class ZBerryServerRPC {
 	protected ZBerryAuth m_Auth;
 	protected ZBerryBans m_Bans;
 	protected ZBerryLocations m_Locations;
+	static const float COMMON_POSITION_RANGE = 100; //Metres: players a function ran on, all within it, get a position
 	protected ref ZBerryCallGroups m_CallGroups = new ZBerryCallGroups; //Repeated teleports, logged as one event
 
 	void ZBerryServerRPC(ZBerryAuth auth, ZBerryBans bans, ZBerryLocations locations) {
@@ -248,6 +249,14 @@ class ZBerryServerRPC {
 		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
 		vector destination;
 		bool hasDestination = ZBerryTeleportReturns.GetDestination(moves, destination);
+		if (!hasDestination) {
+			array<vector> spots = new array<vector>;
+			foreach (ZBerryCall placedCall : done) {
+				vector spot;
+				if (GetCallPosition(placedCall, spot)) spots.Insert(spot);
+			}
+			if (spots.Count() == done.Count()) hasDestination = GetCommonPosition(spots, destination);
+		}
 
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
@@ -275,6 +284,39 @@ class ZBerryServerRPC {
 	static void AttachMoves(ZBerryLogEvent logged, ZBerryTeleportRecordArray moves) {
 		if (!logged || !moves || moves.Count() == 0 || !g_ZBerryTeleportReturns) return;
 		g_ZBerryTeleportReturns.Attach(logged.Id, moves);
+	}
+
+	//Where a call acted, for "Teleport here" in the Logs tab: the spot the command set, where it moved players to, or
+	//for functions that aren't server-wide, where its player is now (the admin when they ran it on themselves)
+	protected static bool GetCallPosition(ZBerryCall cmdCall, out vector position) {
+		if (cmdCall.GetPosition(position)) return true;
+		if (ZBerryTeleportReturns.GetDestination(cmdCall.GetMoves(), position)) return true;
+
+		position = "0 0 0";
+		if (cmdCall.GetFunction().IsServerWide()) return false;
+		PlayerIdentity identity = cmdCall.GetTarget();
+		if (!identity) identity = cmdCall.GetAdmin();
+		if (!identity) return false;
+		PlayerBase player = ZBGetPlayerById(identity.GetPlayerId());
+		if (!player) return false;
+		position = player.GetPosition();
+		return true;
+	}
+
+	//The middle of several players' positions, if they're all near it: the middle of players spread over the map
+	//would mean nothing
+	static bool GetCommonPosition(array<vector> spots, out vector centre) {
+		centre = "0 0 0";
+		if (!spots || spots.Count() == 0) return false;
+
+		vector sum = "0 0 0";
+		foreach (vector spot : spots) sum = sum + spot;
+		float count = spots.Count();
+		centre = sum * (1.0 / count);
+		foreach (vector near : spots) {
+			if (vector.Distance(near, centre) > COMMON_POSITION_RANGE) return false;
+		}
+		return true;
 	}
 
 	//Functions in the Teleport category (stock or from mods) are logged as teleports, like map teleports
@@ -323,9 +365,9 @@ class ZBerryServerRPC {
 			return;
 		}
 		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
-		vector destination;
-		bool hasDestination = ZBerryTeleportReturns.GetDestination(moves, destination);
-		ZBerryLogEvent logged = ZomberryBase.LogEvent( type, admin, target, text, flags, destination, hasDestination );
+		vector position;
+		bool hasPosition = GetCallPosition(cmdCall, position);
+		ZBerryLogEvent logged = ZomberryBase.LogEvent( type, admin, target, text, flags, position, hasPosition );
 		AttachMoves(logged, moves);
 	}
 
@@ -615,9 +657,10 @@ class ZBerryServerRPC {
 		}
 
 		string reason = ZBerryBans.CleanReason(kickParam.param2);
+		vector kickedAt = targetPly.GetPosition();
 		ZBerryBans.SendKickNotice(targetIdentity, reason, false, 0);
 		m_Bans.KickPlayer(targetPly, "Kicked by an admin: " + reason);
-		ZomberryBase.LogEvent( ZBerryEventType.KICK, sender, targetIdentity, "{actor} kicked {target}: " + reason );
+		ZomberryBase.LogEvent( ZBerryEventType.KICK, sender, targetIdentity, "{actor} kicked {target}: " + reason, 0, kickedAt, true );
 		Tell(sender, "Kicked " + targetIdentity.GetName());
 	}
 
@@ -681,12 +724,14 @@ class ZBerryServerRPC {
 
 		string length = "permanently";
 		if (duration > 0) length = "for " + ZBerryTime.FormatDuration(duration);
+		vector bannedAt = "0 0 0"; //Only known for a player online
 		if (targetPly) {
+			bannedAt = targetPly.GetPosition();
 			ZBerryBans.SendKickNotice(ZBGetIdentity(targetPly), reason, true, until);
 			m_Bans.KickPlayer(targetPly, "Banned by an admin " + length + ": " + reason);
 		}
 
-		ZomberryBase.LogEventRaw( ZBerryEventType.BAN, sender.GetPlainId(), sender.GetName(), bannedId, name, "{actor} banned {target} " + length + ": " + reason );
+		ZomberryBase.LogEventRaw( ZBerryEventType.BAN, sender.GetPlainId(), sender.GetName(), bannedId, name, "{actor} banned {target} " + length + ": " + reason, 0, NULL, NULL, bannedAt, targetPly != NULL );
 		Tell(sender, "Banned " + display + " " + length);
 		if (m_Auth.HasPermission(sender, ZBerryPermissions.PLAYERS_UNBAN)) SendBans(sender);
 	}
@@ -734,7 +779,7 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} saved location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position) );
+		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} saved location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position), 0, position, true );
 		Tell(sender, "Saved location " + name);
 	}
 
@@ -757,7 +802,7 @@ class ZBerryServerRPC {
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} deleted location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position) );
+		ZomberryBase.LogEvent( ZBerryEventType.LOCATION, sender, NULL, "{actor} deleted location " + ZBerryMessages.ForLog(name) + " at " + ZBDescribePosition(position), 0, position, location != NULL );
 		Tell(sender, "Deleted location " + name);
 	}
 
