@@ -1,19 +1,30 @@
 # Changelog
 
-## 0.8.0 (in development)
+## 0.8.0
 
-0.7.x and 0.8.x clients and servers can't talk to each other: update both sides.
+An admin and kill log you can act on, map markers and saved locations, loadouts, messages, rank protection, a dozen new functions, and much less network traffic.
+
+### Upgrading from 0.7.0
+
+- **Update both sides.** 0.7.x and 0.8.x clients and servers can't talk to each other.
+- **Your files keep working:** `ZomBerryPermissions.json`, `ZomBerryBans.json`, `ZomBerryConfig.json` and function keybinds. Function names are unchanged, so `zomberry.functions.<Name>` permissions still apply.
+- **New permissions** are granted only by `*` or a matching wildcard:
+  - **hand-picked lists** need the new nodes added on the Permissions tab (see the [permission table](README.md#permissions));
+  - **wildcards grant new nodes too:** the default `moderator` group's `zomberry.map.*` now also covers object markers, teleporting other players from the map and managing saved locations. Add denies such as `-zomberry.map.teleport_players` if that's too much;
+  - **groups with `*`** are protected from lower-ranked admins automatically.
+- **New files on the server**, in `<profiles>/ZomBerry/`: `ZomBerryEventLog.bin` (with a `.journal`), `ZomBerryLocations.json`, `ZomBerryLoadouts.json`, `ZomBerryLoadoutOriginals.json`, `ZomBerryDeathLoadouts.json` and `ZomBerryTeleportReturns.json`.
+- **New files on admins' computers:** `ZomBerryMyLoadouts.json` and `ZomBerryESP.json`.
 
 ### Added
 
 - **Teleport here from the Logs tab:** right-click a death, a teleport, a spawn, a function run on a player or at a spot, a join or logout, a kick, a ban or a saved location to go where it happened, height included (with `zomberry.map.teleport`). Mods' commands that act at a spot can give their entry a position with `SetCallPosition`.
 - **Teleport back from the Logs tab:** right-click a teleport to move its players back to where they were before it (new permission `zomberry.teleport.revert`). One player goes back at once; for several, a window lists them, and you send back everyone or only the ones you tick. Every teleport is kept: the Teleport functions, the Map tab and saved locations. Players offline, in a vehicle or protected from your rank stay pending, and players who died since are skipped. Mods can make their own teleports revertable with `RecordMove`.
-- **Loadouts in the Spawn tab:** save what you wear as a loadout and try loadouts on yourself. The gear you wore before the first try is kept on the server until you restore it, also across logouts and restarts. Loadouts keep everything, wear and wetness included. Your own are kept on your side; with `zomberry.loadouts.share` you can share them with the other admins. Shared loadouts can be changed by their owner, by higher-ranked admins, and by anyone with `zomberry.loadouts.manage`. Items your spawn rules don't allow, and items from mods this server doesn't have, are marked and left out; whatever was inside them is put wherever there's room. Online players are listed too: their current gear can be saved as a loadout or tried on. With `zomberry.loadouts.give`, loadouts can be put on the selected players after a confirmation; what they wore is kept, and Undo gives it back. New permissions: `zomberry.loadouts.use`, `.share`, `.manage` and `.give`; new log event type "Loadout".
+- **Loadouts in the Spawn tab:** save what you wear as a loadout and try loadouts on yourself. The gear you wore before the first try is kept on the server until you restore it, also across logouts and restarts. Loadouts keep everything, wear, wetness and hotbar slots included. Your own are kept on your side; with `zomberry.loadouts.share` you can share them with the other admins. Shared loadouts can be changed by their owner, by higher-ranked admins, and by anyone with `zomberry.loadouts.manage`. Items your spawn rules don't allow, and items from mods this server doesn't have, are marked and left out; whatever was inside them is put wherever there's room. Online players are listed too: their current gear can be saved as a loadout or tried on. With `zomberry.loadouts.give`, loadouts can be put on the selected players after a confirmation; what they wore is kept, and Undo gives it back. New permissions: `zomberry.loadouts.use`, `.share`, `.manage` and `.give`; new log event type "Loadout".
 - **Loot on the ESP:** items lying on the ground, with their name and distance, within their own range (10–300 m, 50 m by default).
 - **Kicked and banned players see why:** back in the main menu, their game shows the reason, and for bans how long it still lasts and when it ends. This also covers banned players who try to rejoin.
-- **Gear at death in the Logs tab:** right-click a death (or double-click it) for its loadout overview: what the player wore and held when they died. Try it on yourself, give it back to the player (new permission `zomberry.loadouts.restore`), or save a copy among your own loadouts. The last 5 deaths of each player are kept, across clean restarts too. This replaces pre-release 4's "Restore to a previous loadout slot" function.
-- **Toggle infinite ammo:** a new stock function that keeps the target's magazine full while they shoot. Weapons without a detachable magazine aren't covered.
-- **Several players at once:** `Ctrl` + double-click and `Shift` + double-click select more than one player. Functions made for it run on all of them and are logged as one event naming every player; others act on the player selected last. Commands from mods opt in with the new `multiTarget` parameter of `AddCommand`.
+- **Gear at death in the Logs tab:** right-click a death (or double-click it) for its loadout overview: what the player wore and held when they died. Try it on yourself, give it back to the player (new permission `zomberry.loadouts.restore`), or save a copy among your own loadouts. The last 5 deaths of each player are kept, across clean restarts too.
+- **Toggle infinite ammo:** a new stock function that keeps the magazine of the target's weapon full, an empty one too. Weapons without a detachable magazine aren't covered, and an empty chamber still needs a reload.
+- **Several players at once:** `Ctrl` + double-click and `Shift` + double-click select more than one player, and `Ctrl` + `A` over the list selects everyone but you. Functions made for it run on all of them and are logged as one event naming every player; others act on the player selected last. Commands from mods opt in with the new `multiTarget` parameter of `AddCommand`.
 - **Keys in the function list:** each function's key is shown after its name, and the Bind button has no caption for functions that can't be bound.
 - **Object markers on the Map tab** (#58, #61): vehicles, tents, storage, bases and dead bodies.
   - Each type has its own toggle button, icon and colour, and needs its own permission (`zomberry.map.markers.<category>`).
@@ -29,6 +40,7 @@
 - **Developer APIs:** `AddCommand` has new optional `harmful` and `keybindable` parameters, the Permissions API has `CanTarget()`, and commands can report that they did nothing (`RefuseCall()`), only asked for confirmation (`AwaitConfirmation()`), or describe what they did in the log (`DescribeCall()`, `GetCurrentCall()`).
 - **Admin event log, with a Logs tab in the menu** (needs `zomberry.logs.view`). The tab takes the Permissions tab's old place, which moved under the gear icon.
   - **View:** everyone the log mentions on the left (double-click one to see only their events), a search by text, name or Steam64 id, a type filter, and live updates you can pause.
+  - **Copying:** right-click any line for **Copy this line** or **Copy the shown log**, with date, type and Steam64 ids.
   - **Events with types:** functions run on yourself, on a player or on the world (each marked harmful or not), spawns, teleports, permission changes, kicks, bans, unbans, refused joins, logins, respawns, logouts, kills, auth problems and refused attempts.
   - **Players** are kept as separate fields (name and Steam64), so the view can highlight them.
   - **Player-against-player damage** goes into a separate compact queue, with hits merged per attacker and victim. A burst ends after 3 s without hits, or as soon as the attacker is hit by another player, so a firefight is logged volley by volley.
@@ -51,12 +63,13 @@
   - **Functions say what they did** (#66): one line each, in the log file and the in-game log, instead of "ran …" plus a separate detail line. Toggles say which way they switched: "switched ESP on", "entered FreeCam", "froze PlayerName", "switched god mode off for themselves". Flip, clean up, delete and teleport all name the vehicle, the count or the object, and the place. Commands from other mods can do the same with `DescribeCall()`.
 - **Clean up around cursor:** removes infected, dead bodies, loose items or ruined items within 5–200 m. Built and placed things are never touched, and it asks for confirmation. The confirming run deletes what the prompt counted: things that arrived since stay, and so do items someone picked up.
 - **Flip vehicle near cursor:** puts a car or boat back on its wheels.
+- **Repair all gear:** like Repair item in hands, for everything the player wears and carries. Works on several selected players at once.
 - **Teleport the selected player from the map:** `Ctrl` + click, with the new permission `zomberry.map.teleport_players` (rank protections apply).
-- **God mode and invisibility protect gear:** nothing the player wears or carries is damaged (weapons don't wear from firing either), and their body temperature stays comfortable.
-- **Toggle invisibility:** a new stock function. Other players don't see or hear the target (voice chat still works), infected and animals ignore them, and nothing can hurt them while it lasts. It survives logging out and respawning. Mods can check it with `PlayerBase.ZBIsInvisible()`, on the server and on clients.
+- **God mode and invisibility protect gear:** nothing the player wears or carries is damaged (weapons don't wear from firing either), their body temperature stays comfortable, and walking barefoot or in ruined shoes no longer cuts them. God mode also keeps stamina full.
+- **Toggle invisibility:** a new stock function. Other players don't see, hear or bump into the target (voice chat still works) and get no actions on them, infected and animals ignore them, and nothing can hurt them while it lasts. It survives logging out and respawning. Mods can check it with `PlayerBase.ZBIsInvisible()`, on the server and on clients.
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
-- **Teleporting several players at once** (#57): with several players selected, Teleport - Target to Me and Teleport - Target to Cursor place them on a ring around the spot, so they don't end up inside each other. This replaces pre-release 2's "Teleport - All players to Me" and "Teleport - All players back".
+- **Teleporting several players at once** (#57): with several players selected, Teleport - Target to Me and Teleport - Target to Cursor place them on a ring around the spot, so they don't end up inside each other.
 - **Spectate target** (#60): a new stock function that shows the selected player's view.
   - **What it follows:** where their own camera looks, up and down and free look included. In third person the camera sits over their shoulder. While they're watched, their game reports which mode they use and where they look.
   - **Anywhere on the map:** the area your game loads moves with the camera, and the camera follows a target who teleports or drives away. FreeCam works the same way.
@@ -82,6 +95,7 @@
 
 - **Functions are sorted into new categories:** Teleport, Player, Punish, Camera, World and Objects, instead of OnTarget, `==` and OnServer. Commands from other mods that still name the old categories land in Player, Punish and World, and OnServer ones are logged as server-wide.
 - **Set time, Set date and Set weather start from the game's current time, date and weather** when you select them, instead of fixed values.
+- **FreeCam:** your own body is hidden and silent on your screen while you're away from it, and the camera works in underground areas, going through the ground where something is built below.
 - **Keybind code reworked** (#51): binding, unbinding and clearing are separate operations instead of magic values. Existing keybinds keep working.
 - **Spawn target picker:** hovering over the Spawn tab's target button opens a list of places above it to pick from. Clicking the button still steps through them. The list closes when the mouse leaves.
 - **Much less network traffic for the player list and the map.** Clients now tell the server what they show, and the server only sends that, only when it changed.
@@ -105,6 +119,10 @@
 - **Set weather made almost no storm** (#48): the storm density was calculated with whole numbers, so it was 0 unless overcast and rain were both 100.
 - **Set weather barely worked on servers.** The server's own weather took over again right away: a storm often brought no rain at all, and clear weather kept raining for about a minute. The chosen weather now applies at once and holds for 6 minutes.
 - **FreeCam started inside the admin's head.** It now starts just behind it.
+- **Aiming was off after FreeCam:** back in the body, the weapon pointed somewhere other than the view, and aiming down sights snapped to it.
+- **The server crashed when a banned player tried to rejoin.**
+- **The game could crash when joining a server again** after leaving one.
+- **Permissions tab:** toggling a permission scrolled the list back to the top, and a custom pattern switched to unset disappeared, so it couldn't be switched back on without typing it again.
 - **The Functions tab looked ready to run after reopening the menu, but wasn't** (#67). Reopening cleared the selection, but the function's name and parameters stayed, and named values turned into numbers. The selected function and its values are now kept.
 - **Long value names were cut off** on the Functions tab ("Ruined items" showed as "Ruinec"): the value box is wider, with smaller text.
 
