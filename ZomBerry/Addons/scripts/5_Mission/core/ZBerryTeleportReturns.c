@@ -18,6 +18,7 @@ typedef array<ref ZBerryTeleportRecord> ZBerryTeleportRecordArray;
 
 class ZBerryTeleportEvent {
 	int EventId;
+	int Time; //ZBerryTime (UTC) of the teleport, for the revert's log line
 	ref ZBerryTeleportRecordArray Records;
 
 	void ZBerryTeleportEvent(int eventId = 0, ZBerryTeleportRecordArray records = NULL) {
@@ -25,6 +26,23 @@ class ZBerryTeleportEvent {
 		Records = records;
 	}
 };
+
+//One player of a teleport as the Logs tab shows it. Travels to clients
+class ZBerryTeleportRow {
+	string SteamId;
+	string Name;
+	vector From;
+	int Status; //ZBerryTeleportStatus
+
+	void ZBerryTeleportRow(string steamId = "", string name = "", vector from = "0 0 0", int status = 0) {
+		SteamId = steamId;
+		Name = name;
+		From = from;
+		Status = status;
+	}
+};
+
+typedef array<ref ZBerryTeleportRow> ZBerryTeleportRowArray;
 
 //Whether a recorded player can be moved back now. Values travel to clients
 class ZBerryTeleportStatus {
@@ -60,7 +78,9 @@ class ZBerryTeleportReturns {
 
 		ZBerryTeleportRecordArray kept = new ZBerryTeleportRecordArray;
 		for (int i = 0; i < records.Count() && i < MAX_PLAYERS; ++i) kept.Insert(records[i]);
-		m_Events.Insert(new ZBerryTeleportEvent(eventId, kept));
+		ZBerryTeleportEvent teleport = new ZBerryTeleportEvent(eventId, kept);
+		teleport.Time = ZBerryTime.Now();
+		m_Events.Insert(teleport);
 		while (m_Events.Count() > MAX_EVENTS) m_Events.RemoveOrdered(0);
 	}
 
@@ -74,6 +94,21 @@ class ZBerryTeleportReturns {
 
 	int Count() {
 		return m_Events.Count();
+	}
+
+	//What the Logs tab shows of an event's players
+	ZBerryTeleportRowArray GetRows(ZBerryTeleportEvent teleport) {
+		ZBerryTeleportRowArray rows = new ZBerryTeleportRowArray;
+		foreach (ZBerryTeleportRecord record : teleport.Records) rows.Insert(new ZBerryTeleportRow(record.SteamId, record.Name, record.From, GetStatus(record)));
+		return rows;
+	}
+
+	//"21:25 UTC": when a teleport was, in the revert's log line (the same text for every admin)
+	static string DescribeTime(int time) {
+		int ofDay = time % 86400;
+		int hour = ofDay / 3600;
+		int minute = (ofDay % 3600) / 60;
+		return hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + " UTC";
 	}
 
 	//The player's character if they're online (detached bodies included), NULL otherwise
@@ -203,6 +238,8 @@ class ZBerryTeleportReturns {
 				records.Insert(record);
 			}
 			Attach(teleport.EventId, records);
+			ZBerryTeleportEvent added = Find(teleport.EventId);
+			if (added && teleport.Time > 0) added.Time = teleport.Time;
 		}
 		DeleteFile(path);
 		ZomberryBase.Log( "ZomBerryTeleports", "INFO: Loaded " + m_Events.Count() + " revertable teleports from " + FILE_NAME );

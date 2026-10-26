@@ -24,6 +24,8 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationAdd, "LocationAdd", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationDelete, "LocationDelete", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationTeleport, "LocationTeleport", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.TeleportReturnsRequest, "TeleportReturnsRequest", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.TeleportRevert, "TeleportRevert", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -432,6 +434,80 @@ class ZBerryServerRPC {
 		}
 		ZBerryLogEvent logged = ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, target, text, flags );
 		AttachMoves(logged, moves);
+	}
+
+	//"Teleport back" in the Logs tab: needs the log and the revert node
+	protected bool CanRevert(ZBerryCallType type, PlayerIdentity sender, string action) {
+		if (!CanRun(type, sender, {ZBerryPermissions.LOGS_VIEW}, action)) return false;
+		return CanRun(type, sender, {ZBerryPermissions.TELEPORT_REVERT}, action);
+	}
+
+	void TeleportReturnsRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< int > data; //Event id
+		if ( !ctx.Read( data ) ) return;
+		if (!CanRevert(type, sender, "see the players of a teleport")) return;
+
+		SendTeleportReturns(sender, data.param1);
+	}
+
+	protected void SendTeleportReturns(PlayerIdentity recipient, int eventId) {
+		string reason = "";
+		ZBerryTeleportRowArray rows = new ZBerryTeleportRowArray;
+		ZBerryTeleportEvent teleport;
+		if (g_ZBerryTeleportReturns) teleport = g_ZBerryTeleportReturns.Find(eventId);
+		if (teleport) {
+			rows = g_ZBerryTeleportReturns.GetRows(teleport);
+		} else {
+			reason = ZBerryTeleportReturns.NOT_KEPT;
+		}
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.TeleportReturns, new Param3< int, string, ref ZBerryTeleportRowArray >( eventId, reason, rows ), true, recipient );
+	}
+
+	//Moves an event's players back; the revert is a teleport of its own, logged and revertable in turn
+	void TeleportRevert( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param2< int, ref TStringArray > data; //Event id, Steam64 ids (empty: everyone)
+		if ( !ctx.Read( data ) ) return;
+		if (!CanRevert(type, sender, "teleport players back")) return;
+		if (!g_ZBerryTeleportReturns) return;
+
+		int eventId = data.param1;
+		ZBerryTeleportEvent teleport = g_ZBerryTeleportReturns.Find(eventId);
+		string summary;
+		ZBerryTeleportRecordArray moved = g_ZBerryTeleportReturns.Revert(sender, eventId, data.param2, summary);
+		if (teleport && moved.Count() > 0) LogRevert(sender, teleport, moved);
+		Tell(sender, summary);
+		SendTeleportReturns(sender, eventId);
+	}
+
+	protected void LogRevert(PlayerIdentity sender, ZBerryTeleportEvent teleport, ZBerryTeleportRecordArray moved) {
+		string when = ZBerryTeleportReturns.DescribeTime(teleport.Time);
+		string actorId, actorName;
+		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
+		int flags = ZBerryEventFlags.REVERTABLE;
+		string text = "{actor} teleported back to where they were before the teleport at " + when;
+		bool onlyThemselves = moved.Count() == 1 && moved[0].SteamId == actorId;
+		if (!onlyThemselves) {
+			flags = flags | ZBerryEventFlags.HARMFUL;
+			text = "{actor} teleported {target} back to where they were before the teleport at " + when;
+		}
+
+		string firstId = "";
+		string firstName = "";
+		TStringArray extraIds = new TStringArray;
+		TStringArray extraNames = new TStringArray;
+		if (!onlyThemselves) {
+			for (int i = 0; i < moved.Count(); ++i) {
+				if (i == 0) {
+					firstId = moved[i].SteamId;
+					firstName = moved[i].Name;
+				} else {
+					extraIds.Insert(moved[i].SteamId);
+					extraNames.Insert(moved[i].Name);
+				}
+			}
+		}
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(ZBerryEventType.TELEPORT, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		AttachMoves(logged, moved);
 	}
 
 	//Another player: harmful, so the rank protections apply

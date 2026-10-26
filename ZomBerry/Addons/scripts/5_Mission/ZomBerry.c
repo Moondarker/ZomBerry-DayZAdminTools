@@ -305,6 +305,7 @@ modded class MissionGameplay {
 		g_ZBerryClientFeatures = NULL;
 		g_ZBerryStreamClient = NULL;
 		g_ZBerryClientLoadouts = NULL;
+		g_ZBerryClientTeleports = NULL;
 		g_ZBerrySpectate = NULL;
 		if (GetGame().IsClient()) g_ZBerryEventLog = NULL; //Singleplayer: it's the server's log too, written while the mission ends
 		super.OnMissionFinish();

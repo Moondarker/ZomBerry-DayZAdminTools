@@ -118,6 +118,7 @@ Commands added by mods decide for themselves (see [Adding commands](#adding-comm
 | `zomberry.loadouts.give` | Putting loadouts on other players, and giving them their own gear back |
 | `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
 | `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
+| `zomberry.teleport.revert` | Teleport players back from the Logs tab (with `zomberry.logs.view`). Rank protections apply to each player moved back |
 | `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
 

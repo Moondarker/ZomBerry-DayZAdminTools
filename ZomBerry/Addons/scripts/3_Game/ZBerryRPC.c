@@ -58,7 +58,10 @@ enum ZBerryRPCOp {
 	LoadoutPlayerRequest = 55, //Client -> server: session id of a player whose current gear to copy
 	LoadoutPlayer = 56, //Server -> client: session id, why it can't be copied ("" if it can), the gear
 	LoadoutGive = 57, //Client -> server: shared, name, the loadout (empty for a shared one), session ids of the players to put it on
-	LoadoutUndo = 58 //Client -> server: session ids of players whose replaced gear goes back on
+	LoadoutUndo = 58, //Client -> server: session ids of players whose replaced gear goes back on
+	TeleportReturnsRequest = 59, //Client -> server: id of a teleport event; its players come back as TeleportReturns
+	TeleportReturns = 60, //Server -> client: event id, why it's not kept ("" if it is), the players (ZBerryTeleportRow)
+	TeleportRevert = 61 //Client -> server: id of a teleport event, Steam64 ids of the players to move back (empty: all)
 }
 
 //Which side received the call
