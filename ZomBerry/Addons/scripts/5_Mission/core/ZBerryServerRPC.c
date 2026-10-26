@@ -26,6 +26,7 @@ class ZBerryServerRPC {
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.LocationTeleport, "LocationTeleport", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.TeleportReturnsRequest, "TeleportReturnsRequest", this, ZBerrySPExec.Client );
 		GetZBerryRPC().AddRPC( ZBerryRPCOp.TeleportRevert, "TeleportRevert", this, ZBerrySPExec.Client );
+		GetZBerryRPC().AddRPC( ZBerryRPCOp.TeleportToEvent, "TeleportToEvent", this, ZBerrySPExec.Client );
 	}
 
 	//Singleplayer: always (the local player is the admin). Multiplayer: only on the server, only with one of the permission nodes
@@ -245,6 +246,8 @@ class ZBerryServerRPC {
 			foreach (ZBerryTeleportRecord move : callMoves) moves.Insert(move);
 		}
 		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
+		vector destination;
+		bool hasDestination = ZBerryTeleportReturns.GetDestination(moves, destination);
 
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
@@ -264,7 +267,7 @@ class ZBerryServerRPC {
 				extraNames.Insert(name);
 			}
 		}
-		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(type, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(type, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames, destination, hasDestination);
 		AttachMoves(logged, moves);
 	}
 
@@ -320,7 +323,9 @@ class ZBerryServerRPC {
 			return;
 		}
 		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
-		ZBerryLogEvent logged = ZomberryBase.LogEvent( type, admin, target, text, flags );
+		vector destination;
+		bool hasDestination = ZBerryTeleportReturns.GetDestination(moves, destination);
+		ZBerryLogEvent logged = ZomberryBase.LogEvent( type, admin, target, text, flags, destination, hasDestination );
 		AttachMoves(logged, moves);
 	}
 
@@ -381,7 +386,7 @@ class ZBerryServerRPC {
 		string result = ZBerrySpawner.Spawn(className, recipient, position, intoInventory, admin);
 		PlayerIdentity spawnTarget;
 		if (forPlayer) spawnTarget = ZBGetIdentity(recipient);
-		ZomberryBase.LogEvent( ZBerryEventType.SPAWN, sender, spawnTarget, "{actor} " + result );
+		ZomberryBase.LogEvent( ZBerryEventType.SPAWN, sender, spawnTarget, "{actor} " + result, 0, position, true );
 		if (forPlayer && intoInventory && result.IndexOf("couldn't") != 0) ZomberryStockFunctions.MessagePlayer(recipient, "An admin gave you " + ZBerrySpawner.GetDisplayName(className));
 	}
 
@@ -432,8 +437,34 @@ class ZBerryServerRPC {
 			moves.Insert(record);
 			flags = flags | ZBerryEventFlags.REVERTABLE;
 		}
-		ZBerryLogEvent logged = ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, target, text, flags );
+		ZBerryLogEvent logged = ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, target, text, flags, record.To, true );
 		AttachMoves(logged, moves);
+	}
+
+	//"Teleport here" in the Logs tab: the admin goes to where an event happened, height included (a death on an upper
+	//floor stays on that floor). A teleport like any other: logged and revertable
+	void TeleportToEvent( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
+		Param1< int > data; //Event id
+		if ( !ctx.Read( data ) ) return;
+		if (!CanRun(type, sender, {ZBerryPermissions.LOGS_VIEW}, "teleport to a log entry")) return;
+		if (!CanRun(type, sender, {ZBerryPermissions.MAP_TELEPORT}, "teleport to a log entry")) return;
+
+		ZBerryLogEvent logEvent = GetZBerryEventLog().FindEvent(data.param1);
+		if (!logEvent || !logEvent.HasPosition) {
+			Tell(sender, "Teleport failed: this log entry has no position");
+			return;
+		}
+		PlayerBase adminPly = ZBGetPlayerById(GetSenderId(sender));
+		if (!adminPly) {
+			Tell(sender, "Teleport failed: you have no character");
+			return;
+		}
+		vector startPos = ZomberryStockFunctions.GetPosSafe(adminPly);
+		if (!ZomberryStockFunctions.SetPosSafe(adminPly, logEvent.Position)) {
+			Tell(sender, "Teleport failed: get out of the vehicle first");
+			return;
+		}
+		LogMove(sender, NULL, adminPly, startPos, "{actor} teleported from " + ZBDescribePosition(startPos) + " to " + ZBDescribePosition(logEvent.Position) + " (from the log)", 0);
 	}
 
 	//"Teleport back" in the Logs tab: needs the log and the revert node
@@ -513,7 +544,9 @@ class ZBerryServerRPC {
 				}
 			}
 		}
-		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(ZBerryEventType.TELEPORT, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		vector destination;
+		bool hasDestination = ZBerryTeleportReturns.GetDestination(moved, destination);
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(ZBerryEventType.TELEPORT, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames, destination, hasDestination);
 		AttachMoves(logged, moved);
 	}
 

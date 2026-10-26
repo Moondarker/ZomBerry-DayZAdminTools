@@ -60,6 +60,8 @@ class ZBerryLogEvent {
 	string Text;
 	ref TStringArray ExtraTargetIds = new TStringArray; //Since FILE_VERSION 2
 	ref TStringArray ExtraTargetNames = new TStringArray;
+	vector Position; //Since FILE_VERSION 3: where it happened (a death, a teleport's destination, a spawn), see HasPosition
+	bool HasPosition;
 
 	//As the log file writes it: players as "Name (Steam64 id)". Game names (ZBerryLocText tags) in this game's language,
 	//or with translate false in the server's, as the event was logged
@@ -167,7 +169,7 @@ class ZBerryEventLog {
 
 	static const string FILE_NAME = "ZomBerryEventLog.bin";
 	static const string FILE_MAGIC = "ZBLOG";
-	static const int FILE_VERSION = 2; //Fields are only ever appended, under a new version that still reads the old ones. 2: extra targets
+	static const int FILE_VERSION = 3; //Fields are only ever appended, under a new version that still reads the old ones. 2: extra targets, 3: position
 	static const string JOURNAL_SUFFIX = ".journal";
 	static const string JOURNAL_MAGIC = "ZBJRN";
 	static const int JOURNAL_MAX = 4096; //Entries before the snapshot is rewritten and the journal starts over
@@ -233,7 +235,7 @@ class ZBerryEventLog {
 
 	//Through ZomberryBase.LogEvent/LogEventRaw
 	//extraIds/extraNames: further targets of a function run on several players at once
-	ZBerryLogEvent Add(int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL) {
+	ZBerryLogEvent Add(int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL, vector position = "0 0 0", bool hasPosition = false) {
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
 		logEvent.Id = m_NextEventId;
 		++m_NextEventId;
@@ -250,6 +252,8 @@ class ZBerryEventLog {
 			logEvent.ExtraTargetIds.InsertAll(extraIds);
 			logEvent.ExtraTargetNames.InsertAll(extraNames);
 		}
+		logEvent.Position = position;
+		logEvent.HasPosition = hasPosition;
 
 		InsertEvent(logEvent);
 		if (m_SavePath != "") JournalEvent(logEvent);
@@ -270,6 +274,14 @@ class ZBerryEventLog {
 
 	int GetEventCount() {
 		return m_Events.Count();
+	}
+
+	//Server: an event still in the log, NULL if it dropped out
+	ZBerryLogEvent FindEvent(int eventId) {
+		for (int i = m_Events.Count() - 1; i >= 0; --i) {
+			if (m_Events[i].Id == eventId) return m_Events[i];
+		}
+		return NULL;
 	}
 
 	//Newest first, for tests and server tools. typeMask: bit per ZBerryEventType
@@ -398,7 +410,8 @@ class ZBerryEventLog {
 	static void OnPlayerKilled(PlayerBase victim, Object killer) {
 		if (!GetGame().IsServer() || !victim) return;
 
-		string where = " at " + ZBDescribePosition(victim.GetPosition());
+		vector deathPos = victim.GetPosition();
+		string where = " at " + ZBDescribePosition(deathPos);
 		EntityAI killerEntity = EntityAI.Cast(killer);
 		PlayerBase killerPlayer;
 		if (killerEntity) killerPlayer = PlayerBase.Cast(killerEntity.GetHierarchyRootPlayer());
@@ -407,7 +420,7 @@ class ZBerryEventLog {
 		if (vehicle) {
 			PlayerBase driver = PlayerBase.Cast(vehicle.CrewDriver());
 			if (driver && driver != victim) {
-				AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + ZBerryLocText.Name(vehicle) + where));
+				AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(driver), GetName(driver), GetSteamId(victim), GetName(victim), "{target} was run over by {actor} in " + ZBerryLocText.Name(vehicle) + where, 0, NULL, NULL, deathPos, true));
 				return;
 			}
 		}
@@ -416,11 +429,11 @@ class ZBerryEventLog {
 			string text = "{target} was killed by {actor}";
 			if (killerEntity != killerPlayer) text += " with " + ZBerryLocText.Name(killerEntity);
 			float distance = vector.Distance(victim.GetPosition(), killerPlayer.GetPosition());
-			AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(killerPlayer), GetName(killerPlayer), GetSteamId(victim), GetName(victim), text + " from " + Math.Round(distance) + " m" + where));
+			AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, GetSteamId(killerPlayer), GetName(killerPlayer), GetSteamId(victim), GetName(victim), text + " from " + Math.Round(distance) + " m" + where, 0, NULL, NULL, deathPos, true));
 			return;
 		}
 
-		AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + ZBerryDeathCause.Describe(victim, killer) + where));
+		AttachDeath(victim, ZomberryBase.LogEventRaw(ZBerryEventType.KILL, "", "", GetSteamId(victim), GetName(victim), "{target}" + ZBerryDeathCause.Describe(victim, killer) + where, 0, NULL, NULL, deathPos, true));
 	}
 
 	//The gear captured just before the death is kept under the kill event, for the Logs tab's loadout overview
@@ -873,6 +886,8 @@ class ZBerryEventLog {
 		file.Write(logEvent.Text);
 		file.Write(logEvent.ExtraTargetIds);
 		file.Write(logEvent.ExtraTargetNames);
+		file.Write(logEvent.Position);
+		file.Write(logEvent.HasPosition);
 	}
 
 	//version: the file's, older files lack the later fields
@@ -891,6 +906,9 @@ class ZBerryEventLog {
 		TStringArray extraIds = new TStringArray;
 		TStringArray extraNames = new TStringArray;
 		if (version >= 2 && (!file.Read(extraIds) || !file.Read(extraNames) || extraIds.Count() != extraNames.Count())) return NULL;
+		vector position = "0 0 0";
+		bool hasPosition = false;
+		if (version >= 3 && (!file.Read(position) || !file.Read(hasPosition))) return NULL;
 
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
 		logEvent.Id = id;
@@ -903,6 +921,8 @@ class ZBerryEventLog {
 		logEvent.TargetName = targetName;
 		logEvent.Text = text;
 		logEvent.ExtraTargetIds.InsertAll(extraIds);
+		logEvent.Position = position;
+		logEvent.HasPosition = hasPosition;
 		logEvent.ExtraTargetNames.InsertAll(extraNames);
 		return logEvent;
 	}

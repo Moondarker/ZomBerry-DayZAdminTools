@@ -79,20 +79,20 @@ class ZomberryBase {
 		\param text \p string with {actor} and {target} where the players go, e.g. "{actor} kicked {target}: spam"
 		\param flags \p int ZBerryEventFlags
 	*/
-	static ZBerryLogEvent LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0 ) {
+	static ZBerryLogEvent LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0, vector position = "0 0 0", bool hasPosition = false ) {
 		string actorId, actorName, targetId, targetName;
 		DescribeIdentity(actor, actorId, actorName);
 		DescribeIdentity(target, targetId, targetName);
-		return LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags);
+		return LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags, NULL, NULL, position, hasPosition);
 	}
 
 	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name
 	//extraIds/extraNames: further targets of a function run on several players at once ({target} names them all)
-	//Returns the event, NULL on clients
-	static ZBerryLogEvent LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL ) {
+	//position: where it happened, for "Teleport here" in the Logs tab (only with hasPosition). Returns the event, NULL on clients
+	static ZBerryLogEvent LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL, vector position = "0 0 0", bool hasPosition = false ) {
 		if (!GetGame() || !GetGame().IsServer()) return NULL;
 
-		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags, extraIds, extraNames);
+		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags, extraIds, extraNames, position, hasPosition);
 		if (ZBerryEventType.IsInGameOnly(type)) return logEvent;
 
 		string line = logEvent.Format(false); //The server's language

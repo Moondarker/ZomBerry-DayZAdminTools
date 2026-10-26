@@ -348,6 +348,7 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - **Save as my loadout** keeps a copy among your own loadouts.
   - Your spawn rules apply when it's put on anyone.
   - The server keeps each player's last 5 deaths, up to 500 in all. They're written to `ZomBerryDeathLoadouts.json` only when the server stops cleanly, and read back (and the file deleted) at the next start. After a crash or a killed server, the deaths before it are gone.
+- **Teleport here:** with `zomberry.map.teleport`, right-click a death, a teleport or a spawn and choose **Teleport here** to go where it happened: where the player died, where the teleport took them (the middle, for several players), or where the item was spawned. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Entries logged before 0.8.0 pre-release 11 have no position.
 - **Teleport back:** with `zomberry.teleport.revert`, right-click a teleport and choose **Teleport back**. Every teleport is kept this way: the Teleport functions, Map tab teleports and saved locations. Each player goes back to where they were before that teleport, even if they've moved since.
   - **One player:** they're moved back at once, and chat says how it went.
   - **Several players:** a window lists them, with where they were and whether they can be moved back now. Click players to tick them, then choose **Teleport selected back**, or **Teleport all back**.

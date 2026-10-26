@@ -4,6 +4,7 @@ class ZBerryTeleportRecord {
 	string Name;
 	ref TIntArray CharacterId; //GetPersistentID: a new character after a death doesn't go back to the old one's spot
 	vector From;
+	vector To; //Where the move put them
 	bool Reverted;
 
 	void ZBerryTeleportRecord(string steamId = "", string name = "", TIntArray characterId = NULL, vector from = "0 0 0") {
@@ -67,9 +68,23 @@ class ZBerryTeleportReturns {
 
 	protected ref array<ref ZBerryTeleportEvent> m_Events = new array<ref ZBerryTeleportEvent>; //Oldest first
 
+	//After the move: the player's position now is where it put them
 	static ZBerryTeleportRecord MakeRecord(PlayerBase player, vector from) {
 		TIntArray characterId = ZomberryStockFunctions.GetCharacterId(player); //Local: a temporary argument may be freed early
-		return new ZBerryTeleportRecord(ZomberryStockFunctions.GetSteamId(player), ZomberryStockFunctions.GetPlayerName(player), characterId, from);
+		ZBerryTeleportRecord record = new ZBerryTeleportRecord(ZomberryStockFunctions.GetSteamId(player), ZomberryStockFunctions.GetPlayerName(player), characterId, from);
+		record.To = ZomberryStockFunctions.GetPosSafe(player);
+		return record;
+	}
+
+	//Where a teleport went, for its log event: the one player's destination, or the middle of several (a ring's centre)
+	static bool GetDestination(ZBerryTeleportRecordArray records, out vector destination) {
+		destination = "0 0 0";
+		if (!records || records.Count() == 0) return false;
+		vector sum = "0 0 0";
+		foreach (ZBerryTeleportRecord record : records) sum = sum + record.To;
+		float count = records.Count();
+		destination = sum * (1.0 / count);
+		return true;
 	}
 
 	void Attach(int eventId, ZBerryTeleportRecordArray records) {

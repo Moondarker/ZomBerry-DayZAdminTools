@@ -61,7 +61,8 @@ enum ZBerryRPCOp {
 	LoadoutUndo = 58, //Client -> server: session ids of players whose replaced gear goes back on
 	TeleportReturnsRequest = 59, //Client -> server: id of a teleport event; its players come back as TeleportReturns
 	TeleportReturns = 60, //Server -> client: event id, why it's not kept ("" if it is), the players (ZBerryTeleportRow)
-	TeleportRevert = 61 //Client -> server: id of a teleport event, Steam64 ids of the players to move back (empty: all)
+	TeleportRevert = 61, //Client -> server: id of a teleport event, Steam64 ids of the players to move back (empty: all)
+	TeleportToEvent = 62 //Client -> server: id of an event with a position; the admin goes there
 }
 
 //Which side received the call

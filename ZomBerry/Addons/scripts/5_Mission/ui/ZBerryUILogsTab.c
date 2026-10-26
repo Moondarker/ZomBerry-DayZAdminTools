@@ -7,6 +7,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	static const int ACTION_COPY_LINE = 2;
 	static const int ACTION_COPY_ALL = 3;
 	static const int ACTION_TELEPORT_BACK = 4;
+	static const int ACTION_TELEPORT_HERE = 5;
 
 	static const int TYPE_DAMAGE = 20; //Filter bit of the damage queue, after the event types
 	static const int ALL_TYPES = 2097150; //Bits 1..20
@@ -56,6 +57,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	protected ZBerryUIDeathLoadoutDialog m_DeathDialog;
 	protected ZBerryUITeleportBackDialog m_TeleportDialog;
 	protected int m_ActionsTeleportId = -1; //The revertable teleport the actions menu was opened for, -1 for none
+	protected int m_ActionsHereId = -1; //The event with a position the actions menu was opened for, -1 for none
 	protected int m_PendingTeleportId = -1; //Teleport back asked for, waiting for its players
 	protected ref ZBerryLogEvent m_ActionsEvent; //The row the actions menu was opened for
 	protected int m_ActionsRow = -1;
@@ -286,6 +288,11 @@ class ZBerryUILogsTab extends ZBerryUITab {
 			m_ActionsTeleportId = rowEvent.Id;
 			m_ActionsMenu.Add("Teleport back", ACTION_TELEPORT_BACK);
 		}
+		m_ActionsHereId = -1;
+		if (rowEvent && rowEvent.HasPosition && GetZBerryClientAuth().Has(ZBerryPermissions.MAP_TELEPORT)) {
+			m_ActionsHereId = rowEvent.Id;
+			m_ActionsMenu.Add("Teleport here", ACTION_TELEPORT_HERE);
+		}
 		m_ActionsMenu.Add("Copy this line", ACTION_COPY_LINE);
 		m_ActionsMenu.Add("Copy the shown log", ACTION_COPY_ALL);
 		m_ActionsMenu.OnAction.Clear(); //Whoever opens it listens
@@ -298,7 +305,9 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	}
 
 	protected void OnRowAction(int action) {
-		if (action == ACTION_TELEPORT_BACK) {
+		if (action == ACTION_TELEPORT_HERE) {
+			TeleportHere(m_ActionsHereId);
+		} else if (action == ACTION_TELEPORT_BACK) {
 			StartTeleportBack(m_ActionsTeleportId);
 		} else if (action == ACTION_LOADOUT) {
 			OpenOverview(m_ActionsEvent, m_ActionsRow);
@@ -323,6 +332,11 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 		OpenOverview(logEvent, row);
 		return true;
+	}
+
+	protected void TeleportHere(int eventId) {
+		if (eventId < 0) return;
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.TeleportToEvent, new Param1< int >( eventId ), true );
 	}
 
 	//Asks for the teleport's players: one is sent back at once, several open the dialog
