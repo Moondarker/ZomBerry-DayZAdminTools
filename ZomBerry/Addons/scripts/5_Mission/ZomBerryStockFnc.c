@@ -366,6 +366,15 @@ class ZomberryStockFunctions {
 		}
 	}
 
+	//Full health, also for gear that god mode or invisibility keep from being damaged: SetAllowDamage(false) blocks
+	//SetHealth too, so it's let through for the repair and switched back
+	static void RepairItem(EntityAI item) {
+		bool wasProtected = !item.GetAllowDamage();
+		if (wasProtected) item.SetAllowDamage(true);
+		item.SetHealthMax("", "");
+		if (wasProtected) item.SetAllowDamage(false);
+	}
+
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
@@ -383,11 +392,11 @@ class ZomberryStockFunctions {
 		if (target_item_inv)
 			target_item_inv.EnumerateInventory(InventoryTraversalType.INORDER, sub_items);
 
-		target_item.SetHealthMax("","");
+		RepairItem(target_item);
 		for (int i = 0; i < sub_items.Count(); i++)
 		{
 			EntityAI item = sub_items.Get(i);
-			item.SetHealthMax("","");
+			RepairItem(item);
 		}
 
 		MessagePlayer(admin, "Repaired item to the best condition it can achieve");
@@ -412,7 +421,7 @@ class ZomberryStockFunctions {
 		int repaired = 0;
 		foreach (EntityAI item : items) {
 			if (!item || item == target) continue; //The character itself is in the list
-			item.SetHealthMax("", "");
+			RepairItem(item);
 			++repaired;
 		}
 		if (repaired == 0) {
