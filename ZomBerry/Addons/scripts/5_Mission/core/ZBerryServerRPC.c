@@ -283,7 +283,7 @@ class ZBerryServerRPC {
 	//The positions a teleport event's players had, kept for "Teleport back" in the Logs tab
 	static void AttachMoves(ZBerryLogEvent logged, ZBerryTeleportRecordArray moves) {
 		if (!logged || !moves || moves.Count() == 0 || !g_ZBerryTeleportReturns) return;
-		g_ZBerryTeleportReturns.Attach(logged.Id, moves);
+		g_ZBerryTeleportReturns.Attach(logged.EventId, moves);
 	}
 
 	//Where a call acted, for "Teleport here" in the Logs tab: the spot the command set, where it moved players to, or
@@ -502,11 +502,11 @@ class ZBerryServerRPC {
 			return;
 		}
 		vector startPos = ZomberryStockFunctions.GetPosSafe(adminPly);
-		if (!ZomberryStockFunctions.SetPosSafe(adminPly, logEvent.Position)) {
+		if (!ZomberryStockFunctions.SetPosSafe(adminPly, logEvent.EventPos)) {
 			Tell(sender, "Teleport failed: get out of the vehicle first");
 			return;
 		}
-		LogMove(sender, NULL, adminPly, startPos, "{actor} teleported from " + ZBDescribePosition(startPos) + " to " + ZBDescribePosition(logEvent.Position) + " (from the log)", 0);
+		LogMove(sender, NULL, adminPly, startPos, "{actor} teleported from " + ZBDescribePosition(startPos) + " to " + ZBDescribePosition(logEvent.EventPos) + " (from the log)", 0);
 	}
 
 	//"Teleport back" in the Logs tab: needs the log and the revert node

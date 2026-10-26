@@ -263,7 +263,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		if (row < 0 || row >= m_RowEvents.Count()) return NULL;
 
 		ZBerryLogEvent logEvent = m_RowEvents[row];
-		if (!logEvent || logEvent.Type != ZBerryEventType.KILL) return NULL;
+		if (!logEvent || logEvent.EventKind != ZBerryEventType.KILL) return NULL;
 		if (!GetZBerryClientAuth().Has(ZBerryPermissions.LOADOUTS_USE)) return NULL;
 		return logEvent;
 	}
@@ -284,13 +284,13 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		m_ActionsTeleportId = -1;
 		ZBerryLogEvent rowEvent = NULL;
 		if (row < m_RowEvents.Count()) rowEvent = m_RowEvents[row];
-		if (rowEvent && (rowEvent.Flags & ZBerryEventFlags.REVERTABLE) != 0 && GetZBerryClientAuth().Has(ZBerryPermissions.TELEPORT_REVERT)) {
-			m_ActionsTeleportId = rowEvent.Id;
+		if (rowEvent && (rowEvent.EventFlags & ZBerryEventFlags.REVERTABLE) != 0 && GetZBerryClientAuth().Has(ZBerryPermissions.TELEPORT_REVERT)) {
+			m_ActionsTeleportId = rowEvent.EventId;
 			m_ActionsMenu.Add("Teleport back", ACTION_TELEPORT_BACK);
 		}
 		m_ActionsHereId = -1;
 		if (rowEvent && rowEvent.HasPosition && GetZBerryClientAuth().Has(ZBerryPermissions.MAP_TELEPORT)) {
-			m_ActionsHereId = rowEvent.Id;
+			m_ActionsHereId = rowEvent.EventId;
 			m_ActionsMenu.Add("Teleport here", ACTION_TELEPORT_HERE);
 		}
 		m_ActionsMenu.Add("Copy this line", ACTION_COPY_LINE);
@@ -371,7 +371,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	//The details line of the event's row, "" if it isn't shown
 	protected string DescribeEventRow(int eventId) {
 		for (int i = 0; i < m_RowEvents.Count() && i < m_RowDetails.Count(); ++i) {
-			if (m_RowEvents[i] && m_RowEvents[i].Id == eventId) return m_RowDetails[i];
+			if (m_RowEvents[i] && m_RowEvents[i].EventId == eventId) return m_RowDetails[i];
 		}
 		return "";
 	}
@@ -381,7 +381,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 		string description = "";
 		if (row >= 0 && row < m_RowDetails.Count()) description = m_RowDetails[row];
-		m_DeathDialog.Open(logEvent, description, ZBerryTime.FormatLocalClock(logEvent.Time, m_LocalOffset));
+		m_DeathDialog.Open(logEvent, description, ZBerryTime.FormatLocalClock(logEvent.EventTime, m_LocalOffset));
 	}
 
 	override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn) {
@@ -497,7 +497,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 			}
 
 			bool takeEvent = damageAt == -1;
-			if (eventAt != -1 && damageAt != -1) takeEvent = events[eventAt].Time >= log.GetClientDamageTime(damageAt);
+			if (eventAt != -1 && damageAt != -1) takeEvent = events[eventAt].EventTime >= log.GetClientDamageTime(damageAt);
 
 			if (takeEvent) {
 				AddEventRow(events[eventAt]);
@@ -536,9 +536,9 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	}
 
 	protected void AddEventRow(ZBerryLogEvent logEvent) {
-		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(logEvent.Time, m_LocalOffset) + "  " + logEvent.FormatNames(), NULL, 0);
+		int row = m_List.AddItem(" " + ZBerryTime.FormatLocalClock(logEvent.EventTime, m_LocalOffset) + "  " + logEvent.FormatNames(), NULL, 0);
 		m_List.SetItemColor(row, 0, GetEventColor(logEvent));
-		m_RowDetails.Insert(ZBerryTime.FormatLocal(logEvent.Time, m_LocalOffset) + " | " + GetTypeName(logEvent.Type) + " | " + logEvent.Format());
+		m_RowDetails.Insert(ZBerryTime.FormatLocal(logEvent.EventTime, m_LocalOffset) + " | " + GetTypeName(logEvent.EventKind) + " | " + logEvent.Format());
 		m_RowEvents.Insert(logEvent);
 	}
 
@@ -571,7 +571,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	}
 
 	protected static int GetEventColor(ZBerryLogEvent logEvent) {
-		switch (logEvent.Type) {
+		switch (logEvent.EventKind) {
 			case ZBerryEventType.KILL: return COLOR_KILL;
 			case ZBerryEventType.REFUSED: return COLOR_REFUSED;
 			case ZBerryEventType.KICK:
@@ -585,7 +585,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 			case ZBerryEventType.SERVER: return COLOR_SERVER;
 			case ZBerryEventType.MESSAGE: return COLOR_MESSAGE;
 		}
-		if ((logEvent.Flags & ZBerryEventFlags.HARMFUL) != 0) return COLOR_HARMFUL;
+		if ((logEvent.EventFlags & ZBerryEventFlags.HARMFUL) != 0) return COLOR_HARMFUL;
 		return ZBerryUIUtils.TEXT_DEFAULT;
 	}
 

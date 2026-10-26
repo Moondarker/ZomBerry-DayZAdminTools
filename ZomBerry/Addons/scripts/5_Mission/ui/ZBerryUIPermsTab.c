@@ -187,7 +187,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 		if (!m_Snapshot.FindGroup(m_EditGroup)) {
 			m_EditGroup = "";
-			if (m_Snapshot.Groups.Count() > 0) m_EditGroup = m_Snapshot.Groups[0].Name;
+			if (m_Snapshot.SnapGroups.Count() > 0) m_EditGroup = m_Snapshot.SnapGroups[0].Name;
 		}
 
 		if (IsVisible()) m_PlayersPanel.SetPermsEntries(m_Snapshot);
@@ -264,8 +264,8 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		m_GroupsList.ClearItems();
 		if (!m_Snapshot) return;
 
-		for (int i = 0; i < m_Snapshot.Groups.Count(); ++i) {
-			ZBerryPermGroup group = m_Snapshot.Groups[i];
+		for (int i = 0; i < m_Snapshot.SnapGroups.Count(); ++i) {
+			ZBerryPermGroup group = m_Snapshot.SnapGroups[i];
 			m_GroupsList.AddItem(" " + group.Name + " [" + group.Level + "] (" + CountAdmins(group.Name) + ")", new Param1<string>(group.Name), 0);
 			if (group.Name == m_EditGroup) {
 				m_GroupsList.SetItemColor(i, 0, COLOR_SELECTED);
@@ -277,7 +277,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 
 	protected int CountAdmins(string groupName) {
 		int count = 0;
-		foreach (ZBerryAdminEntry admin : m_Snapshot.Admins) {
+		foreach (ZBerryAdminEntry admin : m_Snapshot.SnapAdmins) {
 			if (admin.Group == groupName) ++count;
 		}
 		return count;
@@ -463,7 +463,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		//One below the editor, so they can keep editing it
 		int level = 50;
 		if (m_Snapshot.EditorLevel < ZBerryPermGroup.SUPERADMIN_LEVEL) level = Math.Max(0, m_Snapshot.EditorLevel - 1);
-		m_Snapshot.Groups.Insert(new ZBerryPermGroup(name, level));
+		m_Snapshot.SnapGroups.Insert(new ZBerryPermGroup(name, level));
 		m_EditGroup = name;
 		m_GroupNameInput.SetText("");
 		MarkDirty();
@@ -481,13 +481,13 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 			return;
 		}
 
-		for (int i = m_Snapshot.Admins.Count() - 1; i >= 0; --i) {
-			if (m_Snapshot.Admins[i].Group == group.Name) m_Snapshot.Admins.Remove(i);
+		for (int i = m_Snapshot.SnapAdmins.Count() - 1; i >= 0; --i) {
+			if (m_Snapshot.SnapAdmins[i].Group == group.Name) m_Snapshot.SnapAdmins.Remove(i);
 		}
-		m_Snapshot.Groups.RemoveItem(group);
+		m_Snapshot.SnapGroups.RemoveItem(group);
 
 		m_EditGroup = "";
-		if (m_Snapshot.Groups.Count() > 0) m_EditGroup = m_Snapshot.Groups[0].Name;
+		if (m_Snapshot.SnapGroups.Count() > 0) m_EditGroup = m_Snapshot.SnapGroups[0].Name;
 		ResetDeleteConfirm();
 		MarkDirty();
 		m_PlayersPanel.SetPermsEntries(m_Snapshot);
@@ -510,7 +510,7 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		}
 
 		TStringArray options = {""};
-		foreach (ZBerryPermGroup group : m_Snapshot.Groups) {
+		foreach (ZBerryPermGroup group : m_Snapshot.SnapGroups) {
 			if (CanEdit(group)) options.Insert(group.Name);
 		}
 		string current = "";
@@ -520,11 +520,11 @@ class ZBerryUIPermsTab extends ZBerryUITab {
 		string nextGroup = options[next];
 
 		if (nextGroup == "") {
-			m_Snapshot.Admins.RemoveItem(admin);
+			m_Snapshot.SnapAdmins.RemoveItem(admin);
 		} else if (admin) {
 			admin.Group = nextGroup;
 		} else {
-			m_Snapshot.Admins.Insert(new ZBerryAdminEntry(m_SelectedId, m_SelectedName, nextGroup));
+			m_Snapshot.SnapAdmins.Insert(new ZBerryAdminEntry(m_SelectedId, m_SelectedName, nextGroup));
 		}
 
 		MarkDirty();

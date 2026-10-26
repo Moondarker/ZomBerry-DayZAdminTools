@@ -109,20 +109,20 @@ class ZBerryLoadoutsConfig {
 
 //What an admin's list shows of a shared loadout; its items come with ZBerryRPCOp.LoadoutDetails when selected
 class ZBerryLoadoutHeader {
-	string Name;
+	string LoadoutName;
 	string OwnerName;
 	int ItemCount;
-	int Restricted; //Items this admin's spawn rules leave out
-	int Missing; //Items the server's mods don't have
-	bool Editable; //This admin may replace or delete it
+	int RestrictedCount; //Items this admin's spawn rules leave out
+	int MissingCount; //Items the server's mods don't have
+	bool IsEditable; //This admin may replace or delete it
 
 	void ZBerryLoadoutHeader(string name = "", string ownerName = "", int itemCount = 0, int restricted = 0, int missing = 0, bool editable = false) {
-		Name = name;
+		LoadoutName = name;
 		OwnerName = ownerName;
 		ItemCount = itemCount;
-		Restricted = restricted;
-		Missing = missing;
-		Editable = editable;
+		RestrictedCount = restricted;
+		MissingCount = missing;
+		IsEditable = editable;
 	}
 };
 
@@ -130,21 +130,21 @@ typedef array<ref ZBerryLoadoutHeader> ZBerryLoadoutHeaderArray;
 
 //How many more items a capture or a client's loadout may have
 class ZBerryLoadoutBudget {
-	int Left;
-	PlayerBase Player; //Capturing: whose hotbar the items are on
+	int ItemsLeft;
+	PlayerBase HotbarOwner; //Capturing: whose hotbar the items are on
 
 	void ZBerryLoadoutBudget(int left, PlayerBase player = NULL) {
-		Left = left;
-		Player = player;
+		ItemsLeft = left;
+		HotbarOwner = player;
 	}
 };
 
 //What putting a loadout on did
 class ZBerryLoadoutResult {
-	int Placed;
-	int Restricted; //Left out: the spawn rules don't allow them
-	int Missing; //Left out: no such class here (the loadout was made with other mods)
-	int Failed; //No room
+	int PlacedCount;
+	int RestrictedCount; //Left out: the spawn rules don't allow them
+	int MissingCount; //Left out: no such class here (the loadout was made with other mods)
+	int FailedCount; //No room
 	int LostRounds; //Rounds in chambers and internal magazines with ammo this game doesn't have
 	ref array<EntityAI> HotbarItems = new array<EntityAI>; //Put on the hotbar once everything is on
 	ref TIntArray HotbarSlots = new TIntArray;
@@ -152,8 +152,8 @@ class ZBerryLoadoutResult {
 	//What was left out besides restricted items, for chat: ", 3 items aren't on this server..." or ""
 	string DescribeLosses() {
 		string text = "";
-		if (Missing > 0) text += ", " + Missing + " items aren't on this server";
-		if (Failed > 0) text += ", " + Failed + " items couldn't be added";
+		if (MissingCount > 0) text += ", " + MissingCount + " items aren't on this server";
+		if (FailedCount > 0) text += ", " + FailedCount + " items couldn't be added";
 		if (LostRounds > 0) text += ", " + LostRounds + " rounds of unknown ammo left out";
 		return text;
 	}
@@ -167,11 +167,11 @@ class ZBerryLoadoutJob {
 	protected static ref array<ref ZBerryLoadoutJob> s_Running = new array<ref ZBerryLoadoutJob>; //Kept alive until done
 
 	ref ScriptInvoker OnDone = new ScriptInvoker;
-	ref ZBerryLoadoutResult Result = new ZBerryLoadoutResult;
-	bool Dressed; //False: the character died or left, or the hands didn't empty
+	ref ZBerryLoadoutResult JobResult = new ZBerryLoadoutResult;
+	bool IsDressed; //False: the character died or left, or the hands didn't empty
 	int SessionId; //Of the admin, for whoever handles OnDone
-	ref ZBerryLoadout Loadout;
-	string Note; //For whoever handles OnDone
+	ref ZBerryLoadout JobLoadout;
+	string LogNote; //For whoever handles OnDone
 	string TargetId; //Whose gear it replaces when that's not the admin's own: Steam64 id and name, for the log
 	string TargetName;
 
@@ -183,7 +183,7 @@ class ZBerryLoadoutJob {
 	static ZBerryLoadoutJob Start(PlayerBase player, ZBerryLoadout loadout, ZBerryAuth auth = NULL, PlayerIdentity identity = NULL) {
 		ZBerryLoadoutJob job = new ZBerryLoadoutJob;
 		job.m_Player = player;
-		job.Loadout = loadout;
+		job.JobLoadout = loadout;
 		job.m_Auth = auth;
 		if (identity) job.SessionId = identity.GetPlayerId();
 		s_Running.Insert(job);
@@ -206,8 +206,8 @@ class ZBerryLoadoutJob {
 
 		PlayerIdentity identity = NULL;
 		if (GetGame().IsMultiplayer()) identity = ZBGetIdentityById(SessionId);
-		Result = ZBerryLoadoutKit.Dress(m_Player, Loadout, m_Auth, identity);
-		Dressed = true;
+		JobResult = ZBerryLoadoutKit.Dress(m_Player, JobLoadout, m_Auth, identity);
+		IsDressed = true;
 		Finish();
 	}
 
@@ -276,8 +276,8 @@ class ZBerryLoadoutKit {
 		EntityAI entity = entityArg;
 		int depth = depthArg;
 		ZBerryLoadoutBudget budget = budgetArg;
-		if (!entity || depth >= MAX_DEPTH || budget.Left <= 0) return NULL;
-		--budget.Left;
+		if (!entity || depth >= MAX_DEPTH || budget.ItemsLeft <= 0) return NULL;
+		--budget.ItemsLeft;
 
 		ZBerryLoadoutItem item = new ZBerryLoadoutItem;
 		item.Type = entity.GetType();
@@ -302,7 +302,7 @@ class ZBerryLoadoutKit {
 		}
 
 		item.Health = entity.GetHealth01("", "");
-		if (budget.Player) item.Hotbar = budget.Player.FindQuickBarEntityIndex(entity);
+		if (budget.HotbarOwner) item.Hotbar = budget.HotbarOwner.FindQuickBarEntityIndex(entity);
 		ItemBase itemBase = ItemBase.Cast(entity);
 		Magazine magazine = Magazine.Cast(entity);
 		if (magazine) {
@@ -410,23 +410,23 @@ class ZBerryLoadoutKit {
 		ZBerryLoadoutItemArray orphans = orphansArg;
 		//Left out: what it held goes wherever there's room
 		if (!ZBerrySpawner.IsSpawnableClass(item.Type)) {
-			++result.Missing;
+			++result.MissingCount;
 			foreach (ZBerryLoadoutItem missingContent : item.Items) orphans.Insert(missingContent);
 			return;
 		}
 		if (auth && !auth.CanSpawn(identity, item.Type)) {
-			++result.Restricted;
+			++result.RestrictedCount;
 			foreach (ZBerryLoadoutItem orphan : item.Items) orphans.Insert(orphan);
 			return;
 		}
 
 		EntityAI entity = Create(player, holder, item);
 		if (!entity) {
-			++result.Failed;
+			++result.FailedCount;
 			foreach (ZBerryLoadoutItem homeless : item.Items) orphans.Insert(homeless);
 			return;
 		}
-		++result.Placed;
+		++result.PlacedCount;
 
 		//Attachments first: a backpack's or vest's pouches before what goes in them
 		foreach (ZBerryLoadoutItem attachment : item.Items) {
@@ -534,11 +534,11 @@ class ZBerryLoadoutKit {
 		ZBerryLoadoutBudget budget = budgetArg;
 		for (int i = 0; i < items.Count(); ) {
 			ZBerryLoadoutItem item = items[i];
-			if (!item || depth >= MAX_DEPTH || budget.Left <= 0 || item.Type == "" || item.Type.Length() > MAX_TYPE_LENGTH) {
+			if (!item || depth >= MAX_DEPTH || budget.ItemsLeft <= 0 || item.Type == "" || item.Type.Length() > MAX_TYPE_LENGTH) {
 				items.RemoveOrdered(i);
 				continue;
 			}
-			--budget.Left;
+			--budget.ItemsLeft;
 
 			item.Place = Math.Clamp(item.Place, ZBerryLoadoutItem.PLACE_ATTACHMENT, ZBerryLoadoutItem.PLACE_HANDS);
 			if (depth > 0 && item.Place == ZBerryLoadoutItem.PLACE_HANDS) item.Place = ZBerryLoadoutItem.PLACE_CARGO;

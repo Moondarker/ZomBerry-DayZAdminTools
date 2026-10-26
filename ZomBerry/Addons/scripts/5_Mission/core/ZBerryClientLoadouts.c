@@ -93,7 +93,7 @@ class ZBerryClientLoadouts {
 	ZBerryLoadoutHeader FindShared(string name) {
 		string key = ZBerryLoadoutKit.GetKey(name);
 		foreach (ZBerryLoadoutHeader header : m_Shared) {
-			if (ZBerryLoadoutKit.GetKey(header.Name) == key) return header;
+			if (ZBerryLoadoutKit.GetKey(header.LoadoutName) == key) return header;
 		}
 		return NULL;
 	}

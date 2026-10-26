@@ -261,7 +261,7 @@ class ZBerryUIMapTab extends ZBerryUITab {
 			ZBerryMapMarkerArray markers = streams.GetMarkers(category);
 			if (!markers) continue;
 			foreach (ZBerryMapMarker marker : markers) {
-				m_MapWidget.AddUserMark(marker.Position, marker.Label, colors[category], icons[category]);
+				m_MapWidget.AddUserMark(marker.MarkerPos, marker.MarkerLabel, colors[category], icons[category]);
 			}
 			dropped += streams.GetDroppedMarkers(category);
 		}

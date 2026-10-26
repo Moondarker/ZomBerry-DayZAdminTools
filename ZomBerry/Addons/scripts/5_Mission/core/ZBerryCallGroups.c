@@ -1,14 +1,14 @@
 //One run of repeated calls: the same function, by the same admin, on the same target
 class ZBerryCallGroup {
-	int Type;
-	int Flags;
+	int EventKind;
+	int EventFlags;
 	string ActorId, ActorName, TargetId, TargetName; //Kept as text: the players may have left when it's logged
-	string Text; //The last call's: it says where that one went
-	int Count;
+	string LastText; //The last call's: it says where that one went
+	int CallCount;
 	bool HasPositions;
-	vector From, To; //Where the moved player was before the first call and after the last
+	vector StartPos, EndPos; //Where the moved player was before the first call and after the last
 	int LastMs; //GetGame().GetTime() of the last call
-	ref ZBerryTeleportRecordArray Moves = new ZBerryTeleportRecordArray; //RecordMove's, the first per player: reverting goes back to the run's start
+	ref ZBerryTeleportRecordArray MoveRecords = new ZBerryTeleportRecordArray; //RecordMove's, the first per player: reverting goes back to the run's start
 };
 
 //Some functions are run again and again in quick succession: stepping forward 10 m at a time, putting a player at the
@@ -48,27 +48,27 @@ class ZBerryCallGroups {
 
 		if (!group) {
 			group = new ZBerryCallGroup;
-			group.Type = type;
-			group.Flags = flags;
-			group.Text = text;
+			group.EventKind = type;
+			group.EventFlags = flags;
+			group.LastText = text;
 			group.HasPositions = hasPositions;
-			group.From = from;
+			group.StartPos = from;
 			ZomberryBase.DescribeIdentity(actor, group.ActorId, group.ActorName);
 			ZomberryBase.DescribeIdentity(target, group.TargetId, group.TargetName);
 			m_Groups.Set(key, group);
 		}
 
-		++group.Count;
-		group.Text = text;
-		group.To = to;
+		++group.CallCount;
+		group.LastText = text;
+		group.EndPos = to;
 		group.LastMs = now;
 		if (!moves) return;
 		foreach (ZBerryTeleportRecord move : moves) {
 			bool known = false;
-			foreach (ZBerryTeleportRecord kept : group.Moves) {
+			foreach (ZBerryTeleportRecord kept : group.MoveRecords) {
 				if (kept.SteamId == move.SteamId) known = true;
 			}
-			if (!known) group.Moves.Insert(move);
+			if (!known) group.MoveRecords.Insert(move);
 		}
 	}
 
@@ -91,19 +91,19 @@ class ZBerryCallGroups {
 		ZBerryCallGroup group = m_Groups.Get(key);
 		if (!group) return;
 
-		string text = group.Text;
-		string from = ZBDescribePosition(group.From);
-		if (group.Count > 1) {
-			text += ", " + group.Count + " times in a row";
+		string text = group.LastText;
+		string from = ZBDescribePosition(group.StartPos);
+		if (group.CallCount > 1) {
+			text += ", " + group.CallCount + " times in a row";
 			if (group.HasPositions) text += " from " + from;
 		} else if (group.HasPositions) {
 			text += ", from " + from;
 		}
-		int flags = group.Flags;
-		if (group.Moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
+		int flags = group.EventFlags;
+		if (group.MoveRecords.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
 		//Where the run ended, for "Teleport here"
-		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, flags, NULL, NULL, group.To, group.HasPositions);
-		ZBerryServerRPC.AttachMoves(logged, group.Moves);
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(group.EventKind, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, flags, NULL, NULL, group.EndPos, group.HasPositions);
+		ZBerryServerRPC.AttachMoves(logged, group.MoveRecords);
 		m_Groups.Remove(key);
 	}
 };

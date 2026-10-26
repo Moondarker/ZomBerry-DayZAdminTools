@@ -1,15 +1,15 @@
 //One marker on the Map tab: a single object, or several of one category grouped by area
 class ZBerryMapMarker {
-	int Category; //ZBerryEntityCategory, below MARKER_COUNT
-	vector Position;
-	string Label;
-	int Count; //Objects this marker stands for
+	int MarkerCategory; //ZBerryEntityCategory, below MARKER_COUNT
+	vector MarkerPos;
+	string MarkerLabel;
+	int ObjectCount; //Objects this marker stands for
 
 	void ZBerryMapMarker(int category = 0, vector position = "0 0 0", string label = "", int count = 1) {
-		Category = category;
-		Position = position;
-		Label = label;
-		Count = count;
+		MarkerCategory = category;
+		MarkerPos = position;
+		MarkerLabel = label;
+		ObjectCount = count;
 	}
 };
 
@@ -17,10 +17,10 @@ typedef array<ref ZBerryMapMarker> ZBerryMapMarkerArray;
 
 //The markers of one category at one moment, with a signature to tell whether they changed since the last send
 class ZBerryMarkerBatch {
-	int Category;
-	ref ZBerryMapMarkerArray Markers = new ZBerryMapMarkerArray;
-	int Dropped; //Left out because of ZBerryMapMarkers.MAX_MARKERS
-	int Signature;
+	int BatchCategory;
+	ref ZBerryMapMarkerArray BatchMarkers = new ZBerryMapMarkerArray;
+	int DroppedCount; //Left out because of ZBerryMapMarkers.MAX_MARKERS
+	int BatchSignature;
 };
 
 //Server side: turns the registry into markers
@@ -41,7 +41,7 @@ class ZBerryMapMarkers {
 
 	static ZBerryMarkerBatch Build(int category) {
 		ZBerryMarkerBatch batch = new ZBerryMarkerBatch;
-		batch.Category = category;
+		batch.BatchCategory = category;
 
 		map<string, ref ZBerryMapMarker> cells = new map<string, ref ZBerryMapMarker>;
 		TStringArray cellOrder = new TStringArray;
@@ -63,35 +63,35 @@ class ZBerryMapMarkers {
 				cells.Set(cell, grouped);
 				cellOrder.Insert(cell);
 			}
-			grouped.Count = grouped.Count + 1;
+			grouped.ObjectCount = grouped.ObjectCount + 1;
 		}
 
 		foreach (string key : cellOrder) {
 			ZBerryMapMarker marker = cells.Get(key);
-			marker.Label = GetCategoryName(category);
-			if (marker.Count > 1) marker.Label += " (" + marker.Count + ")";
+			marker.MarkerLabel = GetCategoryName(category);
+			if (marker.ObjectCount > 1) marker.MarkerLabel += " (" + marker.ObjectCount + ")";
 			Add(batch, marker);
 		}
 
-		batch.Signature = GetSignature(batch);
+		batch.BatchSignature = GetSignature(batch);
 		return batch;
 	}
 
 	protected static void Add(ZBerryMarkerBatch batch, ZBerryMapMarker marker) {
-		if (batch.Markers.Count() >= MAX_MARKERS) {
-			batch.Dropped = batch.Dropped + 1;
+		if (batch.BatchMarkers.Count() >= MAX_MARKERS) {
+			batch.DroppedCount = batch.DroppedCount + 1;
 			return;
 		}
-		batch.Markers.Insert(marker);
+		batch.BatchMarkers.Insert(marker);
 	}
 
 	//Changes when a marker appears, disappears, moves a metre or changes its count
 	static int GetSignature(ZBerryMarkerBatch batch) {
-		int signature = batch.Markers.Count() * 7919 + batch.Dropped;
-		foreach (ZBerryMapMarker marker : batch.Markers) {
-			int packed = ZBerryStatePacker.PackPosition(marker.Position);
+		int signature = batch.BatchMarkers.Count() * 7919 + batch.DroppedCount;
+		foreach (ZBerryMapMarker marker : batch.BatchMarkers) {
+			int packed = ZBerryStatePacker.PackPosition(marker.MarkerPos);
 			signature = signature * 31 + packed;
-			signature = signature * 31 + marker.Count;
+			signature = signature * 31 + marker.ObjectCount;
 		}
 		return signature;
 	}

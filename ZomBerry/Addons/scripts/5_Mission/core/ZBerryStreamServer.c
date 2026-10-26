@@ -2,8 +2,8 @@
 class ZBerrySubscriber {
 	static const int NOT_SENT = -1;
 
-	PlayerIdentity Identity; //Weak: gone when they disconnect. NULL in singleplayer
-	int Streams; //ZBerryStreamFlags
+	PlayerIdentity Recipient; //Weak: gone when they disconnect. NULL in singleplayer
+	int StreamMask; //ZBerryStreamFlags
 	int MarkerMask; //Bit per ZBerryEntityCategory below MARKER_COUNT
 	int SelectedId = -1; //Gets health and blood, and details (ZBerryPlayerDetails)
 	int ViewFlags; //ZBerryStreamFlags.VIEW_*
@@ -24,12 +24,12 @@ class ZBerrySubscriber {
 	}
 
 	bool IsEmpty() {
-		return Streams == 0 && MarkerMask == 0 && !EspActive;
+		return StreamMask == 0 && MarkerMask == 0 && !EspActive;
 	}
 
 	//ESP data needs both: the server switched ESP on, and the client's ESP settings use far players or health
 	bool WantsEsp() {
-		return EspActive && (Streams & ZBerryStreamFlags.ESP_PLAYERS) != 0;
+		return EspActive && (StreamMask & ZBerryStreamFlags.ESP_PLAYERS) != 0;
 	}
 };
 
@@ -85,7 +85,7 @@ class ZBerryStreamServer {
 		ZBerrySubscriber subscriber = m_Subscribers.Get(id);
 		if (!subscriber && create) {
 			subscriber = new ZBerrySubscriber;
-			subscriber.Identity = identity;
+			subscriber.Recipient = identity;
 			m_Subscribers.Set(id, subscriber);
 		}
 		return subscriber;
@@ -105,11 +105,11 @@ class ZBerryStreamServer {
 		ZBerrySubscriber subscriber = GetSubscriber(sender, true);
 		int addedMarkers = request.param2 & ~subscriber.MarkerMask;
 		bool selectionChanged = subscriber.SelectedId != request.param3;
-		bool espAdded = (request.param1 & ZBerryStreamFlags.ESP_PLAYERS) != 0 && (subscriber.Streams & ZBerryStreamFlags.ESP_PLAYERS) == 0;
+		bool espAdded = (request.param1 & ZBerryStreamFlags.ESP_PLAYERS) != 0 && (subscriber.StreamMask & ZBerryStreamFlags.ESP_PLAYERS) == 0;
 		bool viewChanged = subscriber.ViewFlags != request.param4;
-		bool listOpened = (request.param1 & ZBerryStreamFlags.ROSTER) != 0 && (subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0;
+		bool listOpened = (request.param1 & ZBerryStreamFlags.ROSTER) != 0 && (subscriber.StreamMask & ZBerryStreamFlags.ROSTER) == 0;
 
-		subscriber.Streams = request.param1;
+		subscriber.StreamMask = request.param1;
 		subscriber.MarkerMask = request.param2;
 		subscriber.SelectedId = request.param3;
 		subscriber.ViewFlags = request.param4;
@@ -145,7 +145,7 @@ class ZBerryStreamServer {
 
 		TIntArray gone = new TIntArray;
 		foreach (int id, ZBerrySubscriber subscriber : m_Subscribers) {
-			if (GetGame().IsMultiplayer() && !subscriber.Identity) {
+			if (GetGame().IsMultiplayer() && !subscriber.Recipient) {
 				gone.Insert(id);
 				continue;
 			}
@@ -239,22 +239,22 @@ class ZBerryStreamServer {
 	}
 
 	protected bool CanSeePlayers(ZBerrySubscriber subscriber) {
-		return m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST) || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS) || subscriber.WantsEsp();
+		return m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.PLAYERS_LIST) || m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.MAP_PLAYER_MARKERS) || subscriber.WantsEsp();
 	}
 
 	protected void SendRoster(ZBerrySubscriber subscriber) {
-		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 && !subscriber.WantsEsp()) return;
+		if ((subscriber.StreamMask & ZBerryStreamFlags.ROSTER) == 0 && !subscriber.WantsEsp()) return;
 		if (subscriber.RosterVersionSent == m_RosterVersion || !CanSeePlayers(subscriber)) return;
 
 		subscriber.RosterVersionSent = m_RosterVersion;
 		ZBerryRosterArray roster = m_Roster; //Locals keep data alive while it's sent
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.Roster, new Param3<int, int, ref ZBerryRosterArray>(GetGame().GetTime(), m_RosterVersion, roster), true, subscriber.Identity );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.Roster, new Param3<int, int, ref ZBerryRosterArray>(GetGame().GetTime(), m_RosterVersion, roster), true, subscriber.Recipient );
 	}
 
 	//The saved locations, while the menu is open, when they changed since the last send
 	protected void SendLocations(ZBerrySubscriber subscriber) {
-		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 || !m_Locations) return;
-		if (!m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_VIEW)) {
+		if ((subscriber.StreamMask & ZBerryStreamFlags.ROSTER) == 0 || !m_Locations) return;
+		if (!m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.MAP_VIEW)) {
 			subscriber.LocationsVersionSent = -1; //Sent again once allowed again
 			return;
 		}
@@ -262,17 +262,17 @@ class ZBerryStreamServer {
 
 		subscriber.LocationsVersionSent = m_Locations.GetVersion();
 		ZBerryLocationArray locations = m_Locations.GetAll(); //Locals keep data alive while it's sent
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.Locations, new Param2<int, ref ZBerryLocationArray>(m_Locations.GetVersion(), locations), true, subscriber.Identity );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.Locations, new Param2<int, ref ZBerryLocationArray>(m_Locations.GetVersion(), locations), true, subscriber.Recipient );
 	}
 
 	//Positions only for admins who see map markers (or use ESP), health and blood only for the selected player
 	//(with the player list right) and for everyone while ESP is on. Deltas, plus a full state every FULL_INTERVAL
 	protected void SendState(ZBerrySubscriber subscriber, map<int, PlayerBase> players) {
-		if ((subscriber.Streams & ZBerryStreamFlags.STATE) == 0 && !subscriber.WantsEsp()) return;
+		if ((subscriber.StreamMask & ZBerryStreamFlags.STATE) == 0 && !subscriber.WantsEsp()) return;
 		if (!CanSeePlayers(subscriber)) return;
 
-		bool showPositions = subscriber.WantsEsp() || m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS);
-		bool showSelectedHealth = m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST);
+		bool showPositions = subscriber.WantsEsp() || m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.MAP_PLAYER_MARKERS);
+		bool showSelectedHealth = m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.PLAYERS_LIST);
 		bool full = subscriber.FullTimer >= FULL_INTERVAL;
 		if (full) {
 			subscriber.FullTimer = 0;
@@ -313,29 +313,29 @@ class ZBerryStreamServer {
 		}
 
 		if (!full && packed.Count() == 0) return; //Nothing moved
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerState, new Param3<int, bool, ref TIntArray>(GetGame().GetTime(), full, packed), true, subscriber.Identity );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerState, new Param3<int, bool, ref TIntArray>(GetGame().GetTime(), full, packed), true, subscriber.Recipient );
 	}
 
 	//The selected player's details, while the players panel is shown and the admin may see the list
 	protected void SendDetails(ZBerrySubscriber subscriber, map<int, PlayerBase> players) {
-		if ((subscriber.Streams & ZBerryStreamFlags.ROSTER) == 0 || subscriber.SelectedId < 0) return;
-		if (!m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.PLAYERS_LIST)) return;
+		if ((subscriber.StreamMask & ZBerryStreamFlags.ROSTER) == 0 || subscriber.SelectedId < 0) return;
+		if (!m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.PLAYERS_LIST)) return;
 
 		PlayerBase player = players.Get(subscriber.SelectedId);
 		if (!player) return;
 
-		ZBerryPlayerDetails details = BuildDetails(subscriber.SelectedId, player, m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MAP_PLAYER_MARKERS));
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerDetails, new Param1<ref ZBerryPlayerDetails>(details), true, subscriber.Identity );
+		ZBerryPlayerDetails details = BuildDetails(subscriber.SelectedId, player, m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.MAP_PLAYER_MARKERS));
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.PlayerDetails, new Param1<ref ZBerryPlayerDetails>(details), true, subscriber.Recipient );
 	}
 
 	static ZBerryPlayerDetails BuildDetails(int id, PlayerBase player, bool withPosition) {
 		ZBerryPlayerDetails details = new ZBerryPlayerDetails;
-		details.Id = id;
+		details.SessionId = id;
 
 		PlayerIdentity identity = ZBGetIdentity(player);
 		if (identity) {
 			details.SteamId = identity.GetPlainId();
-			details.Ping = identity.GetPingAct();
+			details.PingMs = identity.GetPingAct();
 			int loginTime = GetZBerryEventLog().GetLoginTime(details.SteamId);
 			if (loginTime > 0) {
 				//Whole numbers: Math.Max works in floats, which only hold times this large in 128 s steps
@@ -348,19 +348,19 @@ class ZBerryStreamServer {
 
 		if (withPosition) {
 			details.HasPosition = true;
-			details.Position = player.GetPosition();
+			details.PlayerPos = player.GetPosition();
 		}
 
-		details.Status = ZBerryPlayerDetails.ALIVE;
+		details.PlayerStatus = ZBerryPlayerDetails.ALIVE;
 		if (!player.IsAlive()) {
-			details.Status = ZBerryPlayerDetails.DEAD;
+			details.PlayerStatus = ZBerryPlayerDetails.DEAD;
 		} else if (player.IsUnconscious()) {
-			details.Status = ZBerryPlayerDetails.UNCONSCIOUS;
+			details.PlayerStatus = ZBerryPlayerDetails.UNCONSCIOUS;
 		} else if (player.IsRestrained()) {
-			details.Status = ZBerryPlayerDetails.RESTRAINED;
+			details.PlayerStatus = ZBerryPlayerDetails.RESTRAINED;
 		}
 
-		if (player.GetCommand_Vehicle()) details.Vehicle = player.GetCommand_Vehicle().GetTransport().GetDisplayName();
+		if (player.GetCommand_Vehicle()) details.VehicleName = player.GetCommand_Vehicle().GetTransport().GetDisplayName();
 		return details;
 	}
 
@@ -368,7 +368,7 @@ class ZBerryStreamServer {
 	protected void SendMarkers(ZBerrySubscriber subscriber, map<int, ref ZBerryMarkerBatch> batches) {
 		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
 			bool wanted = (subscriber.MarkerMask & (1 << category)) != 0;
-			if (!wanted || !m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.MapMarkerNode(category))) {
+			if (!wanted || !m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.MapMarkerNode(category))) {
 				subscriber.MarkerSignatures[category] = ZBerrySubscriber.NOT_SENT; //Sent again once shown again
 				continue;
 			}
@@ -378,11 +378,11 @@ class ZBerryStreamServer {
 				batch = ZBerryMapMarkers.Build(category);
 				batches.Set(category, batch);
 			}
-			if (subscriber.MarkerSignatures[category] == batch.Signature) continue;
+			if (subscriber.MarkerSignatures[category] == batch.BatchSignature) continue;
 
-			subscriber.MarkerSignatures[category] = batch.Signature;
-			ZBerryMapMarkerArray markers = batch.Markers;
-			GetZBerryRPC().SendRPC( ZBerryRPCOp.Markers, new Param3<int, int, ref ZBerryMapMarkerArray>(category, batch.Dropped, markers), true, subscriber.Identity );
+			subscriber.MarkerSignatures[category] = batch.BatchSignature;
+			ZBerryMapMarkerArray markers = batch.BatchMarkers;
+			GetZBerryRPC().SendRPC( ZBerryRPCOp.Markers, new Param3<int, int, ref ZBerryMapMarkerArray>(category, batch.DroppedCount, markers), true, subscriber.Recipient );
 		}
 	}
 

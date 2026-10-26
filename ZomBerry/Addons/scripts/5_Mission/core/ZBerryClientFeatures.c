@@ -1,12 +1,12 @@
 //A feature switched on for one client, as the server remembers it
 class ZBerryActiveFeature {
 	int SessionId; //Players are matched by id: two PlayerIdentity references to one player don't compare equal. 0 in singleplayer
-	string Name;
+	string FeatureName;
 	string RequiredNode; //Switched off again when the player loses it ("" for none)
 
 	void ZBerryActiveFeature(int sessionId, string name, string requiredNode) {
 		SessionId = sessionId;
-		Name = name;
+		FeatureName = name;
 		RequiredNode = requiredNode;
 	}
 };
@@ -46,7 +46,7 @@ class ZBerryClientFeatures {
 	protected int FindActive(PlayerIdentity identity, string name) {
 		int sessionId = GetSessionId(identity);
 		for (int i = 0; i < m_Active.Count(); ++i) {
-			if (m_Active[i].SessionId == sessionId && m_Active[i].Name == name) return i;
+			if (m_Active[i].SessionId == sessionId && m_Active[i].FeatureName == name) return i;
 		}
 		return -1;
 	}
@@ -73,7 +73,7 @@ class ZBerryClientFeatures {
 		for (int i = m_Active.Count() - 1; i >= 0; --i) {
 			if (m_Active[i].SessionId != sessionId) continue;
 
-			string name = m_Active[i].Name;
+			string name = m_Active[i].FeatureName;
 			m_Active.Remove(i);
 			OnServerFeatureChanged.Invoke(identity, name, false);
 		}
@@ -95,8 +95,8 @@ class ZBerryClientFeatures {
 			}
 			if (feature.RequiredNode == "" || auth.HasPermission(identity, feature.RequiredNode)) continue;
 
-			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, NULL, identity, "{target} lost " + feature.RequiredNode + ", so client feature " + feature.Name + " was switched off for them" );
-			Set(identity, feature.Name, false);
+			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, NULL, identity, "{target} lost " + feature.RequiredNode + ", so client feature " + feature.FeatureName + " was switched off for them" );
+			Set(identity, feature.FeatureName, false);
 		}
 	}
 

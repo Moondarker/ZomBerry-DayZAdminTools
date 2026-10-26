@@ -40,7 +40,7 @@ class ZBerryUIDeathLoadoutDialog extends ZBerryUIComponent {
 	void Open(ZBerryLogEvent killEvent, string description, string deathTime) {
 		if (!m_Root || !killEvent) return;
 
-		m_EventId = killEvent.Id;
+		m_EventId = killEvent.EventId;
 		m_VictimName = killEvent.TargetName;
 		m_DeathTime = deathTime;
 		m_Answered = false;

@@ -280,34 +280,34 @@ class ZBerryLoadoutServer {
 		}
 
 		ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(player, loadout, m_Auth, sender);
-		job.Note = source;
+		job.LogNote = source;
 		job.OnDone.Insert(OnTried);
 		SendList(sender); //Restore is possible from now on
 	}
 
 	protected void OnTried(ZBerryLoadoutJob job) {
-		string source = job.Note;
+		string source = job.LogNote;
 		PlayerIdentity sender = GetJobIdentity(job);
-		if (!job.Dressed) {
-			ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, "{actor} took off their gear for " + source + ZBerryMessages.ForLog(job.Loadout.Name) + ", but couldn't put it on" );
+		if (!job.IsDressed) {
+			ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, "{actor} took off their gear for " + source + ZBerryMessages.ForLog(job.JobLoadout.Name) + ", but couldn't put it on" );
 			Tell(sender, "Loadout not put on: your character is gone or busy, Undo gives your gear back");
 			return;
 		}
 
-		ZBerryLoadoutResult result = job.Result;
-		string text = "{actor} applied " + source + ZBerryMessages.ForLog(job.Loadout.Name);
+		ZBerryLoadoutResult result = job.JobResult;
+		string text = "{actor} applied " + source + ZBerryMessages.ForLog(job.JobLoadout.Name);
 		if (source == "") text = "{actor} applied {target}'s current gear";
-		string told = "Applied " + job.Loadout.Name;
-		if (result.Restricted > 0) {
-			text += ", without " + result.Restricted + " items their spawn rules don't allow";
-			told += ", without " + result.Restricted + " items your spawn rules don't allow";
+		string told = "Applied " + job.JobLoadout.Name;
+		if (result.RestrictedCount > 0) {
+			text += ", without " + result.RestrictedCount + " items their spawn rules don't allow";
+			told += ", without " + result.RestrictedCount + " items your spawn rules don't allow";
 		}
-		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		if (result.MissingCount > 0) text += ", without " + result.MissingCount + " items this server doesn't have";
 		told += result.DescribeLosses();
 		if (source == "") { //Another player's current gear: they're the target, they may be offline by now
 			string actorId, actorName;
 			ZomberryBase.DescribeIdentity(sender, actorId, actorName);
-			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.Loadout.OwnerId, job.Loadout.OwnerName, text );
+			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.JobLoadout.OwnerId, job.JobLoadout.OwnerName, text );
 		} else {
 			ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, text );
 		}
@@ -351,15 +351,15 @@ class ZBerryLoadoutServer {
 	//Kept saved unless it's back on: a character that died meanwhile gets it with the next restore
 	protected void OnRestored(ZBerryLoadoutJob job) {
 		PlayerIdentity sender = GetJobIdentity(job);
-		if (!job.Dressed) {
+		if (!job.IsDressed) {
 			Tell(sender, "Gear not restored: your character is gone or busy, try again");
 			return;
 		}
 
-		m_Originals.Remove(job.Loadout.Name);
+		m_Originals.Remove(job.JobLoadout.Name);
 		ZomberryBase.LogEvent( ZBerryEventType.LOADOUT, sender, NULL, "{actor} got their own gear back" );
 		string told = "Your own gear is back";
-		told += job.Result.DescribeLosses();
+		told += job.JobResult.DescribeLosses();
 		Tell(sender, told);
 		if (sender || !GetGame().IsMultiplayer()) SendList(sender);
 	}
@@ -430,7 +430,7 @@ class ZBerryLoadoutServer {
 			}
 
 			ZBerryLoadoutJob job = ZBerryLoadoutJob.Start(player, loadout, m_Auth, sender);
-			job.Note = source;
+			job.LogNote = source;
 			DescribeTarget(job, player);
 			job.OnDone.Insert(OnGiven);
 		}
@@ -492,20 +492,20 @@ class ZBerryLoadoutServer {
 		PlayerIdentity sender = GetJobIdentity(job);
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
-		if (!job.Dressed) {
-			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, "{actor} took off {target}'s gear for " + job.Note + ZBerryMessages.ForLog(job.Loadout.Name) + ", but couldn't put it on", ZBerryEventFlags.HARMFUL );
+		if (!job.IsDressed) {
+			ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, "{actor} took off {target}'s gear for " + job.LogNote + ZBerryMessages.ForLog(job.JobLoadout.Name) + ", but couldn't put it on", ZBerryEventFlags.HARMFUL );
 			Tell(sender, "Loadout not put on " + job.TargetName + ": they left, died or are busy. Undo gives their gear back");
 			return;
 		}
 
-		ZBerryLoadoutResult result = job.Result;
-		string text = "{actor} put " + job.Note + ZBerryMessages.ForLog(job.Loadout.Name) + " on {target}";
-		string told = "Put " + job.Loadout.Name + " on " + job.TargetName;
-		if (result.Restricted > 0) {
-			text += ", without " + result.Restricted + " items their spawn rules don't allow";
-			told += ", without " + result.Restricted + " items your spawn rules don't allow";
+		ZBerryLoadoutResult result = job.JobResult;
+		string text = "{actor} put " + job.LogNote + ZBerryMessages.ForLog(job.JobLoadout.Name) + " on {target}";
+		string told = "Put " + job.JobLoadout.Name + " on " + job.TargetName;
+		if (result.RestrictedCount > 0) {
+			text += ", without " + result.RestrictedCount + " items their spawn rules don't allow";
+			told += ", without " + result.RestrictedCount + " items your spawn rules don't allow";
 		}
-		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		if (result.MissingCount > 0) text += ", without " + result.MissingCount + " items this server doesn't have";
 		told += result.DescribeLosses();
 		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, text, ZBerryEventFlags.HARMFUL );
 		Tell(sender, told);
@@ -514,17 +514,17 @@ class ZBerryLoadoutServer {
 
 	protected void OnUndone(ZBerryLoadoutJob job) {
 		PlayerIdentity sender = GetJobIdentity(job);
-		if (!job.Dressed) {
+		if (!job.IsDressed) {
 			Tell(sender, job.TargetName + "'s gear not given back: they left, died or are busy, try again");
 			return;
 		}
 
-		m_Originals.Remove(job.Loadout.Name);
+		m_Originals.Remove(job.JobLoadout.Name);
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
 		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, job.TargetId, job.TargetName, "{actor} gave {target} their own gear back", ZBerryEventFlags.HARMFUL );
 		string told = job.TargetName + " has their own gear back";
-		told += job.Result.DescribeLosses();
+		told += job.JobResult.DescribeLosses();
 		Tell(sender, told);
 		SendListToTarget(job);
 	}
@@ -627,22 +627,22 @@ class ZBerryLoadoutServer {
 
 	protected void OnDeathRestored(ZBerryLoadoutJob job) {
 		PlayerIdentity sender = GetJobIdentity(job);
-		ZBerryLoadout loadout = job.Loadout;
-		if (!job.Dressed) {
+		ZBerryLoadout loadout = job.JobLoadout;
+		if (!job.IsDressed) {
 			Tell(sender, "Not restored: " + loadout.OwnerName + " left, died or is busy, their gear was taken off");
 			return;
 		}
 
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
-		ZBerryLoadoutResult result = job.Result;
+		ZBerryLoadoutResult result = job.JobResult;
 		string text = "{actor} gave {target} the gear they died with";
 		string told = loadout.OwnerName + " got the gear they died with";
-		if (result.Restricted > 0) {
-			text += ", without " + result.Restricted + " items their spawn rules don't allow";
-			told += ", without " + result.Restricted + " items your spawn rules don't allow";
+		if (result.RestrictedCount > 0) {
+			text += ", without " + result.RestrictedCount + " items their spawn rules don't allow";
+			told += ", without " + result.RestrictedCount + " items your spawn rules don't allow";
 		}
-		if (result.Missing > 0) text += ", without " + result.Missing + " items this server doesn't have";
+		if (result.MissingCount > 0) text += ", without " + result.MissingCount + " items this server doesn't have";
 		told += result.DescribeLosses();
 		ZomberryBase.LogEventRaw( ZBerryEventType.LOADOUT, actorId, actorName, loadout.OwnerId, loadout.OwnerName, text, ZBerryEventFlags.HARMFUL );
 		Tell(sender, told);

@@ -593,12 +593,12 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 
 		ZBerryLoadoutHeaderArray shared = loadouts.GetShared();
 		foreach (ZBerryLoadoutHeader header : shared) {
-			string sharedText = header.Name + "  (shared by " + header.OwnerName + ")" + DescribeLeftOut(header.Restricted, header.Missing);
-			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param3<bool, string, int>(true, header.Name, -1), 0);
+			string sharedText = header.LoadoutName + "  (shared by " + header.OwnerName + ")" + DescribeLeftOut(header.RestrictedCount, header.MissingCount);
+			int sharedRow = m_LoadoutsList.AddItem(sharedText, new Param3<bool, string, int>(true, header.LoadoutName, -1), 0);
 			int color = COLOR_CATEGORY;
-			if (header.Restricted + header.Missing > 0) color = COLOR_PARTLY;
+			if (header.RestrictedCount + header.MissingCount > 0) color = COLOR_PARTLY;
 			m_LoadoutsList.SetItemColor(sharedRow, 0, color);
-			if (m_SelectedPlayer < 0 && m_SelectedShared && ZBerryLoadoutKit.GetKey(header.Name) == selectedKey) selectedRow = sharedRow;
+			if (m_SelectedPlayer < 0 && m_SelectedShared && ZBerryLoadoutKit.GetKey(header.LoadoutName) == selectedKey) selectedRow = sharedRow;
 		}
 
 		if (m_LoadoutsList.GetNumItems() == 0) {
@@ -692,7 +692,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		} else if (m_SelectedShared) {
 			ZBerryLoadoutHeader header = loadouts.FindShared(m_SelectedName);
 			if (!header) return;
-			AddInfoRow(header.Name + ": shared by " + header.OwnerName + ", " + header.ItemCount + " items", COLOR_CATEGORY);
+			AddInfoRow(header.LoadoutName + ": shared by " + header.OwnerName + ", " + header.ItemCount + " items", COLOR_CATEGORY);
 			loadout = loadouts.GetSharedDetails(m_SelectedName);
 			if (!loadout) {
 				AddInfoRow("Loading...", COLOR_CATEGORY_HIDDEN);
@@ -887,7 +887,7 @@ class ZBerryUISpawnTab extends ZBerryUITab {
 		ZBerryClientLoadouts loadouts = GetZBerryClientLoadouts();
 		if (m_SelectedShared) {
 			ZBerryLoadoutHeader header = loadouts.FindShared(m_SelectedName);
-			if (header && !header.Editable) {
+			if (header && !header.IsEditable) {
 				ZBerryUIUtils.Message("You may not delete " + header.OwnerName + "'s loadouts");
 				return;
 			}

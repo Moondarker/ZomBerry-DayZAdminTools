@@ -80,6 +80,11 @@ All code lives in `ZomBerry/Addons/scripts`, packed into one PBO with the prefix
 ## Enforce Script pitfalls
 
 These cost real debugging time on this project:
+- **One namespace for every loaded mod.** A field or variable can't share its name with any class, typedef or enum, including one from an unrelated mod: 0.8.0's `bool Admin;` broke compiling next to a mod with a class `Admin` (#74).
+  - Fields are never a single plain word. Use `m_` members, or compound names in data classes (`IsAdmin`, `EventTime`, `PlayerName`).
+  - Check new names against vanilla too: `EventType`, for example, is a vanilla typedef.
+  - The fields of classes saved as JSON (permissions, bans, locations, loadouts, ESP settings, teleport returns) are the files' keys, so renaming them changes the file format. They keep their names until a clash is reported. Choose new JSON field names with extra care, as they're permanent.
+  - Classes sent over the network are serialized by field order, not by name: renaming their fields keeps clients and servers of the same major.minor compatible, but reordering or retyping them doesn't.
 - **Reserved words:** `func`, `local` and `protected` can't be used as names. Neither can engine class names like `Weapon`, as variables. The compiler's error doesn't always say so.
 - **Temporaries passed to weak references get freed.** A `new` array passed straight into a `Param` constructor or a method argument may be gone by the time it's used. Hold it in a local first (see `ZBerryServerRPC.RunFunction`).
 - **String temporaries can be overwritten by nested calls.** In `a.Substring(...) + F()`, a `Substring` inside `F` once replaced the pending left part. Put each piece in its own local before concatenating (see `ZBerryLocText.Resolve`).

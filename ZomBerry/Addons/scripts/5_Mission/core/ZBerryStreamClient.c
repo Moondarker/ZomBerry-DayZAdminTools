@@ -103,8 +103,8 @@ class ZBerryStreamClient {
 		m_Roster.Clear();
 		m_RosterOrder.Clear();
 		foreach (ZBerryRosterEntry entry : data.param3) {
-			m_Roster.Set(entry.Id, entry);
-			m_RosterOrder.Insert(entry.Id);
+			m_Roster.Set(entry.SessionId, entry);
+			m_RosterOrder.Insert(entry.SessionId);
 		}
 
 		//States of players who left
@@ -155,7 +155,7 @@ class ZBerryStreamClient {
 		Param1<ref ZBerryPlayerDetails> data;
 		if (type != ZBerryCallType.Client) return;
 		if ( !ctx.Read( data ) || !data.param1 ) return;
-		if (data.param1.Id != m_SelectedId) return; //Sent before the selection changed
+		if (data.param1.SessionId != m_SelectedId) return; //Sent before the selection changed
 
 		m_Details = data.param1;
 		OnPlayersChanged.Invoke();
@@ -191,7 +191,7 @@ class ZBerryStreamClient {
 
 	//The selected player's details, NULL until they arrived (or for another player)
 	ZBerryPlayerDetails GetDetails(int playerId) {
-		if (!m_Details || m_Details.Id != playerId) return NULL;
+		if (!m_Details || m_Details.SessionId != playerId) return NULL;
 		return m_Details;
 	}
 
@@ -208,8 +208,8 @@ class ZBerryStreamClient {
 		ZBerryPlayerArray players = new ZBerryPlayerArray;
 		foreach (int id : m_RosterOrder) {
 			ZBerryRosterEntry entry = m_Roster.Get(id);
-			string name = entry.Name;
-			if (entry.Extra != "") name += " [" + entry.Extra + "]";
+			string name = entry.PlayerName;
+			if (entry.ExtraText != "") name += " [" + entry.ExtraText + "]";
 
 			vector position = GetPosition(id);
 			int misc = m_Misc.Get(id);
@@ -265,7 +265,7 @@ class ZBerryStreamClient {
 	string GetName(int playerId) {
 		ZBerryRosterEntry entry = m_Roster.Get(playerId);
 		if (!entry) return "";
-		return entry.Name;
+		return entry.PlayerName;
 	}
 
 	TIntArray GetPlayerIds() {

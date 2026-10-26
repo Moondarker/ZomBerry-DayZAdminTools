@@ -74,7 +74,7 @@ class ZBerryDeathLoadouts {
 		if (!loadout) return;
 
 		m_Pending.Remove(key);
-		Add(new ZBerryDeathLoadout(killEvent.Id, loadout));
+		Add(new ZBerryDeathLoadout(killEvent.EventId, loadout));
 	}
 
 	void Add(ZBerryDeathLoadout death) {

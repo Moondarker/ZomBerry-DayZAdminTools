@@ -30,15 +30,15 @@ class ZBerryTeleportEvent {
 //One player of a teleport as the Logs tab shows it. Travels to clients
 class ZBerryTeleportRow {
 	string SteamId;
-	string Name;
-	vector From;
-	int Status; //ZBerryTeleportStatus
+	string PlayerName;
+	vector FromPos;
+	int RowStatus; //ZBerryTeleportStatus
 
 	void ZBerryTeleportRow(string steamId = "", string name = "", vector from = "0 0 0", int status = 0) {
 		SteamId = steamId;
-		Name = name;
-		From = from;
-		Status = status;
+		PlayerName = name;
+		FromPos = from;
+		RowStatus = status;
 	}
 };
 

@@ -13,20 +13,20 @@ class ZBerryStreamFlags {
 
 //One online player as the roster lists them. Changes rarely, so it's only sent when something in it changes
 class ZBerryRosterEntry {
-	int Id; //Session id
-	string Name;
+	int SessionId;
+	string PlayerName;
 	bool IsAdmin;
-	string Extra; //Item in hands or vehicle, shown after the name
+	string ExtraText; //Item in hands or vehicle, shown after the name
 
 	void ZBerryRosterEntry(int id = 0, string name = "", bool isAdmin = false, string extra = "") {
-		Id = id;
-		Name = name;
+		SessionId = id;
+		PlayerName = name;
 		IsAdmin = isAdmin;
-		Extra = extra;
+		ExtraText = extra;
 	}
 
 	bool IsSameAs(ZBerryRosterEntry other) {
-		return other && Id == other.Id && Name == other.Name && IsAdmin == other.IsAdmin && Extra == other.Extra;
+		return other && SessionId == other.SessionId && PlayerName == other.PlayerName && IsAdmin == other.IsAdmin && ExtraText == other.ExtraText;
 	}
 };
 
@@ -39,14 +39,14 @@ class ZBerryPlayerDetails {
 	static const int RESTRAINED = 2;
 	static const int DEAD = 3;
 
-	int Id; //Session id
+	int SessionId;
 	string SteamId; //Empty in singleplayer
-	int Ping; //ms
+	int PingMs;
 	bool HasPosition; //Only for admins who see player markers
-	vector Position;
+	vector PlayerPos;
 	int OnlineSeconds = -1; //-1: unknown (singleplayer)
-	int Status;
-	string Vehicle; //Display name, empty when on foot
+	int PlayerStatus;
+	string VehicleName; //Display name, empty when on foot
 
 	static string GetStatusName(int status) {
 		TStringArray names = {"Alive", "Unconscious", "Restrained", "Dead"};

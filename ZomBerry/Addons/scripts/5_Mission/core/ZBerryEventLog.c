@@ -49,24 +49,24 @@ class ZBerryEventFlags {
 //highlight them (or make them clickable) without parsing names out of text. A function run on several players at once
 //has the first as the target and the others in ExtraTarget*: {target} then names them all
 class ZBerryLogEvent {
-	int Id; //Increasing, for syncing
-	int Time; //ZBerryTime seconds (UTC)
-	int Type; //ZBerryEventType
-	int Flags; //ZBerryEventFlags
+	int EventId; //Increasing, for syncing
+	int EventTime; //ZBerryTime seconds (UTC)
+	int EventKind; //ZBerryEventType
+	int EventFlags; //ZBerryEventFlags
 	string ActorId; //Steam64, "" for none
 	string ActorName;
 	string TargetId;
 	string TargetName;
-	string Text;
+	string EventText;
 	ref TStringArray ExtraTargetIds = new TStringArray; //Since FILE_VERSION 2
 	ref TStringArray ExtraTargetNames = new TStringArray;
-	vector Position; //Since FILE_VERSION 3: where it happened (a death, a teleport's destination, a spawn), see HasPosition
+	vector EventPos; //Since FILE_VERSION 3: where it happened (a death, a teleport's destination, a spawn), see HasPosition
 	bool HasPosition;
 
 	//As the log file writes it: players as "Name (Steam64 id)". Game names (ZBerryLocText tags) in this game's language,
 	//or with translate false in the server's, as the event was logged
 	string Format(bool translate = true) {
-		string text = ZBerryLocText.Resolve(Text, translate); //Before the players: their names can't make tags
+		string text = ZBerryLocText.Resolve(EventText, translate); //Before the players: their names can't make tags
 		text.Replace("{actor}", DescribeParty(ActorName, ActorId));
 		text.Replace("{target}", DescribeTargets(true));
 		return text;
@@ -97,7 +97,7 @@ class ZBerryLogEvent {
 
 	//Names only, for the log view's rows (the ids are in Format)
 	string FormatNames() {
-		string text = ZBerryLocText.Resolve(Text, true);
+		string text = ZBerryLocText.Resolve(EventText, true);
 		text.Replace("{actor}", ActorName);
 		text.Replace("{target}", DescribeTargets(false));
 		return text;
@@ -125,20 +125,20 @@ typedef array<ref ZBerryLogEvent> ZBerryLogEventArray;
 
 //An admin's client being sent the log: history first in batches, then whatever is new
 class ZBerryLogSubscriber {
-	PlayerIdentity Identity; //Weak. NULL in singleplayer
+	PlayerIdentity Recipient; //Weak. NULL in singleplayer
 	int NextEventId;
 	int NextDamageSeq;
 	int SentPlayers; //Entries of the damage name tables this client has
 	int SentWeapons;
-	bool Reset = true; //The next batch tells the client to start over
+	bool ResetNext = true; //The next batch tells the client to start over
 };
 
 //Hits between two players, merged while they keep coming
 class ZBerryDamageBurst {
 	int AttackerIndex, VictimIndex, WeaponIndex; //Into the player and weapon name tables
-	int Hits;
-	float Damage;
-	float Distance;
+	int HitCount;
+	float TotalDamage;
+	float HitDistance;
 	int StartTime; //ZBerryTime
 	int LastHitMs; //GetGame().GetTime()
 };
@@ -237,22 +237,22 @@ class ZBerryEventLog {
 	//extraIds/extraNames: further targets of a function run on several players at once
 	ZBerryLogEvent Add(int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL, vector position = "0 0 0", bool hasPosition = false) {
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
-		logEvent.Id = m_NextEventId;
+		logEvent.EventId = m_NextEventId;
 		++m_NextEventId;
-		logEvent.Time = ZBerryTime.Now();
-		logEvent.Type = type;
-		logEvent.Flags = flags;
+		logEvent.EventTime = ZBerryTime.Now();
+		logEvent.EventKind = type;
+		logEvent.EventFlags = flags;
 		logEvent.ActorId = actorId;
 		logEvent.ActorName = actorName;
 		logEvent.TargetId = targetId;
 		logEvent.TargetName = targetName;
-		logEvent.Text = text;
-		if (text.Length() > MAX_TEXT) logEvent.Text = text.Substring(0, MAX_TEXT) + "...";
+		logEvent.EventText = text;
+		if (text.Length() > MAX_TEXT) logEvent.EventText = text.Substring(0, MAX_TEXT) + "...";
 		if (extraIds && extraNames && extraIds.Count() == extraNames.Count()) {
 			logEvent.ExtraTargetIds.InsertAll(extraIds);
 			logEvent.ExtraTargetNames.InsertAll(extraNames);
 		}
-		logEvent.Position = position;
+		logEvent.EventPos = position;
 		logEvent.HasPosition = hasPosition;
 
 		InsertEvent(logEvent);
@@ -264,7 +264,7 @@ class ZBerryEventLog {
 	protected void InsertEvent(ZBerryLogEvent logEvent) {
 		m_Events.Insert(logEvent);
 		while (m_Events.Count() > MAX_EVENTS) m_Events.RemoveOrdered(0);
-		if (logEvent.Id >= m_NextEventId) m_NextEventId = logEvent.Id + 1;
+		if (logEvent.EventId >= m_NextEventId) m_NextEventId = logEvent.EventId + 1;
 	}
 
 	//Server: the id the next event gets
@@ -279,7 +279,7 @@ class ZBerryEventLog {
 	//Server: an event still in the log, NULL if it dropped out
 	ZBerryLogEvent FindEvent(int eventId) {
 		for (int i = m_Events.Count() - 1; i >= 0; --i) {
-			if (m_Events[i].Id == eventId) return m_Events[i];
+			if (m_Events[i].EventId == eventId) return m_Events[i];
 		}
 		return NULL;
 	}
@@ -290,7 +290,7 @@ class ZBerryEventLog {
 		search.ToLower();
 		for (int i = m_Events.Count() - 1; i >= 0 && result.Count() < maxResults; --i) {
 			ZBerryLogEvent logEvent = m_Events[i];
-			if ((typeMask & (1 << logEvent.Type)) == 0 || !logEvent.Matches(search)) continue;
+			if ((typeMask & (1 << logEvent.EventKind)) == 0 || !logEvent.Matches(search)) continue;
 			result.Insert(logEvent);
 		}
 		return result;
@@ -325,9 +325,9 @@ class ZBerryEventLog {
 		}
 
 		burst.WeaponIndex = GetTableIndex(m_Weapons, m_WeaponIndex, weapon, weapon);
-		burst.Hits = burst.Hits + 1;
-		burst.Damage = burst.Damage + damage;
-		burst.Distance = vector.Distance(victim.GetPosition(), attacker.GetPosition());
+		burst.HitCount = burst.HitCount + 1;
+		burst.TotalDamage = burst.TotalDamage + damage;
+		burst.HitDistance = vector.Distance(victim.GetPosition(), attacker.GetPosition());
 		burst.LastHitMs = GetGame().GetTime();
 	}
 
@@ -358,11 +358,11 @@ class ZBerryEventLog {
 	}
 
 	protected void StoreBurst(ZBerryDamageBurst burst) {
-		float damageTenths = burst.Damage * 10;
+		float damageTenths = burst.TotalDamage * 10;
 		int damage = Math.Round(damageTenths);
-		int distance = Math.Round(burst.Distance);
-		StoreRecord(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.Hits, damage, burst.WeaponIndex, distance);
-		if (m_SavePath != "") JournalDamage(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.Hits, damage, burst.WeaponIndex, distance);
+		int distance = Math.Round(burst.HitDistance);
+		StoreRecord(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.HitCount, damage, burst.WeaponIndex, distance);
+		if (m_SavePath != "") JournalDamage(burst.StartTime, burst.AttackerIndex, burst.VictimIndex, burst.HitCount, damage, burst.WeaponIndex, distance);
 	}
 
 	//New and replayed records
@@ -505,7 +505,7 @@ class ZBerryEventLog {
 		if (GetGame().IsMultiplayer() && (!m_Auth || !m_Auth.HasPermission(identity, ZBerryPermissions.LOGS_VIEW))) return;
 
 		ZBerryLogSubscriber subscriber = new ZBerryLogSubscriber;
-		subscriber.Identity = identity;
+		subscriber.Recipient = identity;
 		subscriber.NextEventId = m_NextEventId - m_Events.Count();
 		subscriber.NextDamageSeq = m_NextDamageSeq - GetDamageCount();
 		m_Subscribers.Set(id, subscriber);
@@ -520,14 +520,14 @@ class ZBerryEventLog {
 
 		TIntArray gone = new TIntArray;
 		foreach (int id, ZBerryLogSubscriber subscriber : m_Subscribers) {
-			bool connected = !GetGame().IsMultiplayer() || subscriber.Identity;
-			if (!connected || (GetGame().IsMultiplayer() && !m_Auth.HasPermission(subscriber.Identity, ZBerryPermissions.LOGS_VIEW))) {
+			bool connected = !GetGame().IsMultiplayer() || subscriber.Recipient;
+			if (!connected || (GetGame().IsMultiplayer() && !m_Auth.HasPermission(subscriber.Recipient, ZBerryPermissions.LOGS_VIEW))) {
 				gone.Insert(id); //Gets everything again if they regain the right
 				continue;
 			}
 			SendEvents(subscriber);
 			SendDamage(subscriber);
-			subscriber.Reset = false;
+			subscriber.ResetNext = false;
 		}
 		foreach (int goneId : gone) m_Subscribers.Remove(goneId);
 	}
@@ -535,21 +535,21 @@ class ZBerryEventLog {
 	protected void SendEvents(ZBerryLogSubscriber subscriber) {
 		int firstId = m_NextEventId - m_Events.Count();
 		if (subscriber.NextEventId < firstId) subscriber.NextEventId = firstId; //Fell out of the buffer meanwhile
-		if (subscriber.NextEventId >= m_NextEventId && !subscriber.Reset) return;
+		if (subscriber.NextEventId >= m_NextEventId && !subscriber.ResetNext) return;
 
 		ZBerryLogEventArray batch = new ZBerryLogEventArray;
 		for (int i = subscriber.NextEventId - firstId; i < m_Events.Count() && batch.Count() < BATCH_EVENTS; ++i) {
 			batch.Insert(m_Events[i]);
 		}
 		subscriber.NextEventId += batch.Count();
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.LogEvents, new Param2<bool, ref ZBerryLogEventArray>(subscriber.Reset, batch), true, subscriber.Identity );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LogEvents, new Param2<bool, ref ZBerryLogEventArray>(subscriber.ResetNext, batch), true, subscriber.Recipient );
 	}
 
 	protected void SendDamage(ZBerryLogSubscriber subscriber) {
 		int firstSeq = m_NextDamageSeq - GetDamageCount();
 		if (subscriber.NextDamageSeq < firstSeq) subscriber.NextDamageSeq = firstSeq;
-		if (subscriber.NextDamageSeq >= m_NextDamageSeq && !subscriber.Reset) return;
-		if (subscriber.Reset) {
+		if (subscriber.NextDamageSeq >= m_NextDamageSeq && !subscriber.ResetNext) return;
+		if (subscriber.ResetNext) {
 			subscriber.SentPlayers = 0;
 			subscriber.SentWeapons = 0;
 		}
@@ -569,7 +569,7 @@ class ZBerryEventLog {
 		subscriber.SentPlayers = m_Players.Count();
 		subscriber.SentWeapons = m_Weapons.Count();
 
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.LogDamage, new Param4<bool, ref TStringArray, ref TStringArray, ref TIntArray>(subscriber.Reset, players, weapons, records), true, subscriber.Identity );
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.LogDamage, new Param4<bool, ref TStringArray, ref TStringArray, ref TIntArray>(subscriber.ResetNext, players, weapons, records), true, subscriber.Recipient );
 	}
 
 	//---------------------------------------------------------------- Server: persistence
@@ -743,7 +743,7 @@ class ZBerryEventLog {
 		m_Events = new ZBerryLogEventArray;
 		for (int e = Math.Max(0, events.Count() - MAX_EVENTS); e < events.Count(); ++e) m_Events.Insert(events[e]);
 		m_NextEventId = nextEventId;
-		if (m_Events.Count() > 0 && m_NextEventId <= m_Events[m_Events.Count() - 1].Id) m_NextEventId = m_Events[m_Events.Count() - 1].Id + 1;
+		if (m_Events.Count() > 0 && m_NextEventId <= m_Events[m_Events.Count() - 1].EventId) m_NextEventId = m_Events[m_Events.Count() - 1].EventId + 1;
 
 		for (int d = 0; d < records.Count(); ++d) m_Damage[d] = records[d];
 		m_NextDamageSeq = records.Count() / DAMAGE_INTS;
@@ -882,18 +882,18 @@ class ZBerryEventLog {
 	}
 
 	protected static void WriteEvent(FileSerializer file, ZBerryLogEvent logEvent) {
-		file.Write(logEvent.Id);
-		file.Write(logEvent.Time);
-		file.Write(logEvent.Type);
-		file.Write(logEvent.Flags);
+		file.Write(logEvent.EventId);
+		file.Write(logEvent.EventTime);
+		file.Write(logEvent.EventKind);
+		file.Write(logEvent.EventFlags);
 		file.Write(logEvent.ActorId);
 		file.Write(logEvent.ActorName);
 		file.Write(logEvent.TargetId);
 		file.Write(logEvent.TargetName);
-		file.Write(logEvent.Text);
+		file.Write(logEvent.EventText);
 		file.Write(logEvent.ExtraTargetIds);
 		file.Write(logEvent.ExtraTargetNames);
-		file.Write(logEvent.Position);
+		file.Write(logEvent.EventPos);
 		file.Write(logEvent.HasPosition);
 	}
 
@@ -918,17 +918,17 @@ class ZBerryEventLog {
 		if (version >= 3 && (!file.Read(position) || !file.Read(hasPosition))) return NULL;
 
 		ZBerryLogEvent logEvent = new ZBerryLogEvent;
-		logEvent.Id = id;
-		logEvent.Time = time;
-		logEvent.Type = type;
-		logEvent.Flags = flags;
+		logEvent.EventId = id;
+		logEvent.EventTime = time;
+		logEvent.EventKind = type;
+		logEvent.EventFlags = flags;
 		logEvent.ActorId = actorId;
 		logEvent.ActorName = actorName;
 		logEvent.TargetId = targetId;
 		logEvent.TargetName = targetName;
-		logEvent.Text = text;
+		logEvent.EventText = text;
 		logEvent.ExtraTargetIds.InsertAll(extraIds);
-		logEvent.Position = position;
+		logEvent.EventPos = position;
 		logEvent.HasPosition = hasPosition;
 		logEvent.ExtraTargetNames.InsertAll(extraNames);
 		return logEvent;
@@ -1007,7 +1007,7 @@ class ZBerryEventLog {
 		search.ToLower();
 		for (int i = m_ClientEvents.Count() - 1; i >= 0; --i) {
 			ZBerryLogEvent logEvent = m_ClientEvents[i];
-			if ((typeMask & (1 << logEvent.Type)) != 0 && logEvent.Matches(search)) result.Insert(logEvent);
+			if ((typeMask & (1 << logEvent.EventKind)) != 0 && logEvent.Matches(search)) result.Insert(logEvent);
 		}
 		return result;
 	}

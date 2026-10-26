@@ -71,7 +71,7 @@ class ZBerryUITeleportBackDialog extends ZBerryUIComponent {
 		}
 		for (int i = m_Ticked.Count() - 1; i >= 0; --i) { //Only who can still be moved stays ticked
 			int ticked = FindRow(m_Ticked[i]);
-			if (ticked == -1 || m_Rows[ticked].Status != ZBerryTeleportStatus.PENDING) m_Ticked.Remove(i);
+			if (ticked == -1 || m_Rows[ticked].RowStatus != ZBerryTeleportStatus.PENDING) m_Ticked.Remove(i);
 		}
 		Refresh(reason);
 	}
@@ -101,17 +101,17 @@ class ZBerryUITeleportBackDialog extends ZBerryUIComponent {
 		} else {
 			int pending = 0;
 			foreach (ZBerryTeleportRow counted : m_Rows) {
-				if (counted.Status == ZBerryTeleportStatus.PENDING) ++pending;
+				if (counted.RowStatus == ZBerryTeleportStatus.PENDING) ++pending;
 			}
 			SetStatus(m_Rows.Count().ToString() + " players, " + pending + " can be moved back. Click players to tick them", ZBerryUIUtils.TEXT_DEFAULT);
 
 			foreach (ZBerryTeleportRow row : m_Rows) {
 				string tick = "[  ]  ";
 				if (m_Ticked.Find(row.SteamId) != -1) tick = "[x]  ";
-				string from = ZBDescribePosition(row.From);
-				string status = DescribeStatus(row.Status);
-				int index = m_List.AddItem(tick + row.Name + "    from " + from + "    " + status, NULL, 0);
-				if (row.Status != ZBerryTeleportStatus.PENDING) m_List.SetItemColor(index, 0, COLOR_UNAVAILABLE);
+				string from = ZBDescribePosition(row.FromPos);
+				string status = DescribeStatus(row.RowStatus);
+				int index = m_List.AddItem(tick + row.PlayerName + "    from " + from + "    " + status, NULL, 0);
+				if (row.RowStatus != ZBerryTeleportStatus.PENDING) m_List.SetItemColor(index, 0, COLOR_UNAVAILABLE);
 			}
 		}
 		UpdateButtons();
@@ -124,7 +124,7 @@ class ZBerryUITeleportBackDialog extends ZBerryUIComponent {
 
 	//Ticks or unticks a row that can be moved back
 	protected void Toggle(int row) {
-		if (row < 0 || row >= m_Rows.Count() || m_Rows[row].Status != ZBerryTeleportStatus.PENDING) return;
+		if (row < 0 || row >= m_Rows.Count() || m_Rows[row].RowStatus != ZBerryTeleportStatus.PENDING) return;
 
 		string steamId = m_Rows[row].SteamId;
 		int ticked = m_Ticked.Find(steamId);
@@ -139,7 +139,7 @@ class ZBerryUITeleportBackDialog extends ZBerryUIComponent {
 
 	protected bool HasPending() {
 		foreach (ZBerryTeleportRow row : m_Rows) {
-			if (row.Status == ZBerryTeleportStatus.PENDING) return true;
+			if (row.RowStatus == ZBerryTeleportStatus.PENDING) return true;
 		}
 		return false;
 	}

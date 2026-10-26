@@ -1,13 +1,13 @@
 //The first run of Clean up around cursor: what it found, so the confirming run deletes exactly that
 class ZBerryPendingCleanup {
-	string Key; //Kind, radius and spot (to 10 m)
-	int Time; //GetGame().GetTime()
-	ref array<EntityAI> Entities; //Entries turn NULL when an object is deleted meanwhile
+	string CleanupKey; //Kind, radius and spot (to 10 m)
+	int AskedMs; //GetGame().GetTime()
+	ref array<EntityAI> FoundEntities; //Entries turn NULL when an object is deleted meanwhile
 
 	void ZBerryPendingCleanup(string key, int time, array<EntityAI> entities) {
-		Key = key;
-		Time = time;
-		Entities = entities;
+		CleanupKey = key;
+		AskedMs = time;
+		FoundEntities = entities;
 	}
 };
 
@@ -1072,17 +1072,17 @@ class ZomberryStockFunctions {
 		string key = kind.ToString() + ":" + radius + ":" + cellX + ":" + cellZ;
 		int now = GetGame().GetTime();
 		ZBerryPendingCleanup pending = m_PendingCleanups.Get(adminId);
-		if (pending && pending.Key == key && now - pending.Time <= CONFIRM_MS) {
+		if (pending && pending.CleanupKey == key && now - pending.AskedMs <= CONFIRM_MS) {
 			//What the prompt counted, not what's there now: objects that came since stay. Those gone meanwhile are
 			//skipped, and so are items someone picked up (they'd vanish from a player's inventory)
 			int deleted = 0;
-			foreach (EntityAI entity : pending.Entities) {
+			foreach (EntityAI entity : pending.FoundEntities) {
 				if (!entity || entity.GetHierarchyParent()) continue;
 
 				GetGame().ObjectDelete(entity);
 				++deleted;
 			}
-			int counted = pending.Entities.Count();
+			int counted = pending.FoundEntities.Count();
 			m_PendingCleanups.Remove(adminId);
 
 			string gone = "";

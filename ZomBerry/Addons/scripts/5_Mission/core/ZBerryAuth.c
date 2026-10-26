@@ -410,8 +410,8 @@ class ZBerryAuth {
 
 	ZBerryPermsSnapshot BuildSnapshot() {
 		ZBerryPermsSnapshot snapshot = new ZBerryPermsSnapshot;
-		snapshot.Groups = m_Config.Groups;
-		snapshot.Admins = m_Config.Admins;
+		snapshot.SnapGroups = m_Config.Groups;
+		snapshot.SnapAdmins = m_Config.Admins;
 		snapshot.KnownNodes.InsertAll(ZBerryPermissions.GetFixedNodes());
 
 		ZBerryCategoryArray categories = GetZomberryCmdAPI().GetList();
@@ -430,7 +430,7 @@ class ZBerryAuth {
 		GetGame().GetPlayers(players);
 		foreach (Man player : players) {
 			PlayerIdentity identity = ZBGetIdentity(player);
-			if (identity) snapshot.Online.Insert(new ZBerryOnlineIdentity(identity.GetPlayerId(), identity.GetPlainId(), identity.GetName()));
+			if (identity) snapshot.OnlinePlayers.Insert(new ZBerryOnlineIdentity(identity.GetPlayerId(), identity.GetPlainId(), identity.GetName()));
 		}
 
 		return snapshot;
@@ -483,10 +483,10 @@ class ZBerryAuth {
 	//rejected, "" when saved. Below the superadmin level, groups ranked at or above the editor's own level and the
 	//admins in them must stay exactly as they were, and nothing may be added at or above that level
 	string ApplyUpdate(ZBerryPermsSnapshot update, int editorLevel = 100) {
-		if (!update.Groups || !update.Admins) return "incomplete data";
+		if (!update.SnapGroups || !update.SnapAdmins) return "incomplete data";
 
 		ZBerryPermsConfig newConfig = new ZBerryPermsConfig;
-		foreach (ZBerryPermGroup group : update.Groups) {
+		foreach (ZBerryPermGroup group : update.SnapGroups) {
 			if (!group) continue;
 			group.Sanitize();
 			group.Name = group.Name.Trim();
@@ -496,7 +496,7 @@ class ZBerryAuth {
 		}
 
 		bool anyManager = false;
-		foreach (ZBerryAdminEntry admin : update.Admins) {
+		foreach (ZBerryAdminEntry admin : update.SnapAdmins) {
 			if (!admin || admin.Id == "") continue;
 			if (newConfig.FindAdmin(admin.Id)) return "admin " + admin.Id + " is listed twice";
 

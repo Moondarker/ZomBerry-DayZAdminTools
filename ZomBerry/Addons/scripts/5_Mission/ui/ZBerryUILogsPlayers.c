@@ -1,12 +1,12 @@
 //Everyone the synced log mentions, for the log view's left pane: online players first (admins green), then offline ones
 //by their last event. Double-click one to see only the events they took part in, again (or Show all) for everybody
 class ZBerryLogParty {
-	string Id; //Steam64
-	string Name;
+	string SteamId; //Steam64
+	string PlayerName;
 	int LastTime; //ZBerryTime of their newest event, 0 for damage only
-	int Events;
-	bool Admin;
-	bool Online;
+	int EventCount;
+	bool IsAdmin;
+	bool IsOnline;
 };
 
 typedef array<ref ZBerryLogParty> ZBerryLogPartyArray;
@@ -48,7 +48,7 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 
 	string GetSelectedName() {
 		ZBerryLogParty party = FindParty(m_SelectedId);
-		if (party) return party.Name;
+		if (party) return party.PlayerName;
 		return "";
 	}
 
@@ -59,10 +59,10 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 
 		ZBerryLogEventArray events = log.GetEvents();
 		foreach (ZBerryLogEvent logEvent : events) {
-			ZBerryLogParty actor = AddParty(byId, logEvent.ActorId, logEvent.ActorName, logEvent.Time, true);
-			if (actor && IsAdminAction(logEvent.Type)) actor.Admin = true;
-			AddParty(byId, logEvent.TargetId, logEvent.TargetName, logEvent.Time, true);
-			for (int extra = 0; extra < logEvent.ExtraTargetIds.Count() && extra < logEvent.ExtraTargetNames.Count(); ++extra) AddParty(byId, logEvent.ExtraTargetIds[extra], logEvent.ExtraTargetNames[extra], logEvent.Time, true);
+			ZBerryLogParty actor = AddParty(byId, logEvent.ActorId, logEvent.ActorName, logEvent.EventTime, true);
+			if (actor && IsAdminAction(logEvent.EventKind)) actor.IsAdmin = true;
+			AddParty(byId, logEvent.TargetId, logEvent.TargetName, logEvent.EventTime, true);
+			for (int extra = 0; extra < logEvent.ExtraTargetIds.Count() && extra < logEvent.ExtraTargetNames.Count(); ++extra) AddParty(byId, logEvent.ExtraTargetIds[extra], logEvent.ExtraTargetNames[extra], logEvent.EventTime, true);
 		}
 
 		for (int i = 0; i < log.GetClientPlayerCount(); ++i) {
@@ -75,9 +75,9 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 		ZBerryPlayerArray online = GetZBerryStreams().BuildPlayers();
 		foreach (string partyId, ZBerryLogParty party : byId) {
 			foreach (ZBerryPlayer ply : online) {
-				if (ply.m_PlayerName != party.Name) continue;
-				party.Online = true;
-				if (ply.m_IsAdmin) party.Admin = true;
+				if (ply.m_PlayerName != party.PlayerName) continue;
+				party.IsOnline = true;
+				if (ply.m_IsAdmin) party.IsAdmin = true;
 				break;
 			}
 		}
@@ -94,7 +94,7 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 	}
 
 	protected static bool IsBefore(ZBerryLogParty a, ZBerryLogParty b) {
-		if (a.Online != b.Online) return a.Online;
+		if (a.IsOnline != b.IsOnline) return a.IsOnline;
 		return a.LastTime > b.LastTime;
 	}
 
@@ -109,18 +109,18 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 		ZBerryLogParty party = byId.Get(id);
 		if (!party) {
 			party = new ZBerryLogParty;
-			party.Id = id;
+			party.SteamId = id;
 			byId.Set(id, party);
 		}
-		if (name != "") party.Name = name; //Events come oldest first: the newest name wins
+		if (name != "") party.PlayerName = name; //Events come oldest first: the newest name wins
 		if (time > party.LastTime) party.LastTime = time;
-		if (isEvent) ++party.Events;
+		if (isEvent) ++party.EventCount;
 		return party;
 	}
 
 	protected ZBerryLogParty FindParty(string id) {
 		foreach (ZBerryLogParty party : m_Parties) {
-			if (party.Id == id) return party;
+			if (party.SteamId == id) return party;
 		}
 		return NULL;
 	}
@@ -130,8 +130,8 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 
 		m_List.ClearItems();
 		foreach (ZBerryLogParty party : m_Parties) {
-			string text = " " + party.Name;
-			if (party.Name == "") text = " " + party.Id;
+			string text = " " + party.PlayerName;
+			if (party.PlayerName == "") text = " " + party.SteamId;
 			int row = m_List.AddItem(text, NULL, 0);
 			m_List.SetItemColor(row, 0, GetColor(party));
 		}
@@ -139,9 +139,9 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 	}
 
 	protected int GetColor(ZBerryLogParty party) {
-		if (party.Id == m_SelectedId) return COLOR_SELECTED;
-		if (!party.Online) return COLOR_OFFLINE;
-		if (party.Admin) return COLOR_ADMIN;
+		if (party.SteamId == m_SelectedId) return COLOR_SELECTED;
+		if (!party.IsOnline) return COLOR_OFFLINE;
+		if (party.IsAdmin) return COLOR_ADMIN;
 		return ZBerryUIUtils.TEXT_DEFAULT;
 	}
 
@@ -155,8 +155,8 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 		}
 
 		string status = "offline";
-		if (party.Online) status = "online";
-		m_Info.SetText("Id: " + party.Id + " | " + status + " | " + party.Events + " events");
+		if (party.IsOnline) status = "online";
+		m_Info.SetText("Id: " + party.SteamId + " | " + status + " | " + party.EventCount + " events");
 	}
 
 	protected void Select(string id) {
@@ -172,10 +172,10 @@ class ZBerryUILogsPlayers extends ZBerryUIComponent {
 		int row = m_List.GetSelectedRow();
 		if (row < 0 || row >= m_Parties.Count()) return true;
 
-		if (m_Parties[row].Id == m_SelectedId) {
+		if (m_Parties[row].SteamId == m_SelectedId) {
 			Select(""); //Again: everybody
 		} else {
-			Select(m_Parties[row].Id);
+			Select(m_Parties[row].SteamId);
 		}
 		return true;
 	}

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- **Compile error next to some other mods** (#74): "Variable name 'Admin' already used as type name", when another mod declares a class with the same name as one of ZomBerry's fields. Fields named with a single word (`Admin`, `Online`, `Label`...) are renamed, except in the classes saved as JSON files, so no file changes. 0.8.0 games still work with 0.8.1 servers and the other way round.
 - **Motorbikes:** Refuel and repair now covers them, and boats too; it only knew cars. Motorbikes also show up as vehicle markers on the map and on the ESP.
 - **Refuel and repair** restores every damaged part of a vehicle (fuel tank, chassis...), not just the engine, and says when there's no vehicle within 15 m of the target.
 

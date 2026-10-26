@@ -293,13 +293,13 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_EntryNames.Clear();
 		m_EntryColors.Clear();
 
-		foreach (ZBerryOnlineIdentity online : snapshot.Online) {
+		foreach (ZBerryOnlineIdentity online : snapshot.OnlinePlayers) {
 			int color = ZBerryUIUtils.TEXT_DEFAULT;
-			if (snapshot.FindAdmin(online.Id)) color = COLOR_ADMIN;
-			AddEntry(online.Id, online.Name, online.Name, color);
+			if (snapshot.FindAdmin(online.SteamId)) color = COLOR_ADMIN;
+			AddEntry(online.SteamId, online.PlayerName, online.PlayerName, color);
 		}
 
-		foreach (ZBerryAdminEntry admin : snapshot.Admins) {
+		foreach (ZBerryAdminEntry admin : snapshot.SnapAdmins) {
 			if (m_EntryIds.Find(admin.Id) != -1) continue; //Online, already listed
 
 			string name = admin.Name;
@@ -615,17 +615,17 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 			SetInfo(first);
 			return;
 		}
-		if (GetGame().IsMultiplayer()) first += " | Ping: " + details.Ping.ToString() + " ms";
+		if (GetGame().IsMultiplayer()) first += " | Ping: " + details.PingMs.ToString() + " ms";
 
 		string second = "";
-		if (details.HasPosition) second = ZBDescribePosition(details.Position);
+		if (details.HasPosition) second = ZBDescribePosition(details.PlayerPos);
 		if (details.OnlineSeconds >= 0) {
 			if (second != "") second += " | ";
 			second += "Online: " + ZBerryTime.FormatDuration(details.OnlineSeconds);
 		}
 
-		string third = ZBerryPlayerDetails.GetStatusName(details.Status);
-		if (details.Vehicle != "") third += ", in " + details.Vehicle;
+		string third = ZBerryPlayerDetails.GetStatusName(details.PlayerStatus);
+		if (details.VehicleName != "") third += ", in " + details.VehicleName;
 
 		string fourth = "";
 		if (details.SteamId != "") fourth = "Steam64: " + details.SteamId;

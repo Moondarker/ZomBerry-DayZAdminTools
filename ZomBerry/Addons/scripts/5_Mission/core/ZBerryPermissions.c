@@ -252,13 +252,13 @@ class ZBerryPermsConfig {
 
 class ZBerryOnlineIdentity {
 	int SessionId;
-	string Id;
-	string Name;
+	string SteamId;
+	string PlayerName;
 
 	void ZBerryOnlineIdentity(int sessionId = 0, string id = "", string name = "") {
 		SessionId = sessionId;
-		Id = id;
-		Name = name;
+		SteamId = id;
+		PlayerName = name;
 	}
 };
 
@@ -266,28 +266,28 @@ typedef array<ref ZBerryOnlineIdentity> ZBerryOnlineIdentityArray;
 
 //What the Permissions tab edits: the whole config, plus the known nodes and who is online
 class ZBerryPermsSnapshot {
-	ref ZBerryPermGroupArray Groups;
-	ref ZBerryAdminEntryArray Admins;
+	ref ZBerryPermGroupArray SnapGroups;
+	ref ZBerryAdminEntryArray SnapAdmins;
 	ref TStringArray KnownNodes;
-	ref ZBerryOnlineIdentityArray Online;
+	ref ZBerryOnlineIdentityArray OnlinePlayers;
 	int EditorLevel; //Level of the admin this snapshot was sent to
 
 	void ZBerryPermsSnapshot() {
-		Groups = new ZBerryPermGroupArray;
-		Admins = new ZBerryAdminEntryArray;
+		SnapGroups = new ZBerryPermGroupArray;
+		SnapAdmins = new ZBerryAdminEntryArray;
 		KnownNodes = new TStringArray;
-		Online = new ZBerryOnlineIdentityArray;
+		OnlinePlayers = new ZBerryOnlineIdentityArray;
 	}
 
 	ZBerryPermGroup FindGroup(string name) {
-		foreach (ZBerryPermGroup group : Groups) {
+		foreach (ZBerryPermGroup group : SnapGroups) {
 			if (group.Name == name) return group;
 		}
 		return NULL;
 	}
 
 	ZBerryAdminEntry FindAdmin(string id) {
-		foreach (ZBerryAdminEntry admin : Admins) {
+		foreach (ZBerryAdminEntry admin : SnapAdmins) {
 			if (admin.Id == id) return admin;
 		}
 		return NULL;
