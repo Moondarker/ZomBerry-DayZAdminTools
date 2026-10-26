@@ -1,23 +1,21 @@
 class ZomBerryCamFree extends ZomBerryCamBase {
 
 	private float speedMultiplier = 1.0;
-	protected static int s_Count; //FreeCam cameras on this machine: the admin's own body is hidden while there's one
 	static const float PROBE_DEPTH = 10; //Metres below the terrain an underground structure is looked for
 	static const float PROBE_MOVE = 1; //Metres moved sideways before looking again
 	protected bool m_Probed;
 	protected vector m_ProbePos;
 	protected bool m_ProbeFound;
 
-	void ZomBerryCamFree() {
-		++s_Count;
-	}
+	protected static int s_ActiveAtMs = -1; //GetGame().GetTime() of the active FreeCam camera's last update
 
-	void ~ZomBerryCamFree() {
-		--s_Count;
-	}
-
+	//Whether this machine looks through a FreeCam camera now: the admin's own body is hidden meanwhile. Counting the
+	//cameras doesn't tell, they aren't deleted when the client gets its body back; Camera.GetCurrentCamera() can
+	//return a camera that no longer exists and crashed the game. So the active camera reports itself
 	static bool IsUsedHere() {
-		return s_Count > 0;
+		if (s_ActiveAtMs < 0) return false;
+		int now = GetGame().GetTime();
+		return now >= s_ActiveAtMs && now - s_ActiveAtMs < 500; //The game time starts over in a new mission
 	}
 
 	//Whether an object lies within PROBE_DEPTH under the terrain here. Only cast when the camera is about to go under
@@ -45,6 +43,7 @@ class ZomBerryCamFree extends ZomBerryCamBase {
 	}
 
 	override void OnUpdate(float timeSlice) {
+		s_ActiveAtMs = GetGame().GetTime();
 
 		Input input = GetGame().GetInput();
 

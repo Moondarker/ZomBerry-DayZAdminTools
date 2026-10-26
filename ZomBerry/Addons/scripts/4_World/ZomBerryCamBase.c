@@ -14,6 +14,9 @@ class ZomBerryCamBase extends Camera {
 	}
 
 	override void EOnFrame(IEntity other, float timeSlice) {
+		//Cameras aren't deleted when the client gets its body back (SelectPlayer): old ones mustn't follow the input or
+		//report positions any more
+		if (!IsActive()) return;
 		OnUpdate(timeSlice);
 
 		//While the client controls no character (ZBerryBodies), this position is where the server keeps its network

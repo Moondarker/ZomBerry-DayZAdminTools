@@ -169,9 +169,10 @@ modded class PlayerBase
 
 	//In FreeCam the admin's client controls only the camera, and their body is left behind: hidden and silent on that
 	//client too, so it isn't in the way and plays no sounds when the camera moves. Only drawn invisible, never shrunk or
-	//frozen: this client takes the body back when FreeCam ends, and taking back a shrunk one crashed the game
+	//frozen: this client takes the body back when FreeCam ends, and taking back a shrunk one crashed the game. The body
+	//stays this client's own character (INSTANCETYPE_CLIENT, still GetGame().GetPlayer()) while it's detached
 	protected bool ZBInFreeCamHere() {
-		if (!GetGame().IsClient() || GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT) return false;
+		if (!GetGame().IsClient()) return false;
 		return ZomBerryCamFree.IsUsedHere() && ZBIsOwnBody();
 	}
 
