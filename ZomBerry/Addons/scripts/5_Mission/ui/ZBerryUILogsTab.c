@@ -6,6 +6,7 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	static const int ACTION_LOADOUT = 1;
 	static const int ACTION_COPY_LINE = 2;
 	static const int ACTION_COPY_ALL = 3;
+	static const int ACTION_TELEPORT_BACK = 4;
 
 	static const int TYPE_DAMAGE = 20; //Filter bit of the damage queue, after the event types
 	static const int ALL_TYPES = 2097150; //Bits 1..20
@@ -53,6 +54,9 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 	protected ZBerryUIActionsMenu m_ActionsMenu;
 	protected ZBerryUIDeathLoadoutDialog m_DeathDialog;
+	protected ZBerryUITeleportBackDialog m_TeleportDialog;
+	protected int m_ActionsTeleportId = -1; //The revertable teleport the actions menu was opened for, -1 for none
+	protected int m_PendingTeleportId = -1; //Teleport back asked for, waiting for its players
 	protected ref ZBerryLogEvent m_ActionsEvent; //The row the actions menu was opened for
 	protected int m_ActionsRow = -1;
 
@@ -61,13 +65,15 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		m_SideParent = parent;
 	}
 
-	//Both belong to the menu (drawn above every tab)
-	void SetDialogs(ZBerryUIActionsMenu actionsMenu, ZBerryUIDeathLoadoutDialog deathDialog) {
+	//They belong to the menu (drawn above every tab)
+	void SetDialogs(ZBerryUIActionsMenu actionsMenu, ZBerryUIDeathLoadoutDialog deathDialog, ZBerryUITeleportBackDialog teleportDialog) {
 		m_ActionsMenu = actionsMenu;
 		m_DeathDialog = deathDialog;
+		m_TeleportDialog = teleportDialog;
 	}
 
 	void ~ZBerryUILogsTab() {
+		if (g_ZBerryClientTeleports) g_ZBerryClientTeleports.OnReturns.Remove(OnTeleportReturns);
 		if (!g_ZBerryEventLog) return;
 		g_ZBerryEventLog.OnEventsChanged.Remove(OnLogChanged);
 		g_ZBerryEventLog.OnDamageChanged.Remove(OnLogChanged);
@@ -273,6 +279,13 @@ class ZBerryUILogsTab extends ZBerryUITab {
 		m_ActionsRow = row;
 		m_ActionsMenu.Clear();
 		if (death) m_ActionsMenu.Add("Loadout overview", ACTION_LOADOUT);
+		m_ActionsTeleportId = -1;
+		ZBerryLogEvent rowEvent = NULL;
+		if (row < m_RowEvents.Count()) rowEvent = m_RowEvents[row];
+		if (rowEvent && (rowEvent.Flags & ZBerryEventFlags.REVERTABLE) != 0 && GetZBerryClientAuth().Has(ZBerryPermissions.TELEPORT_REVERT)) {
+			m_ActionsTeleportId = rowEvent.Id;
+			m_ActionsMenu.Add("Teleport back", ACTION_TELEPORT_BACK);
+		}
 		m_ActionsMenu.Add("Copy this line", ACTION_COPY_LINE);
 		m_ActionsMenu.Add("Copy the shown log", ACTION_COPY_ALL);
 		m_ActionsMenu.OnAction.Clear(); //Whoever opens it listens
@@ -285,7 +298,9 @@ class ZBerryUILogsTab extends ZBerryUITab {
 	}
 
 	protected void OnRowAction(int action) {
-		if (action == ACTION_LOADOUT) {
+		if (action == ACTION_TELEPORT_BACK) {
+			StartTeleportBack(m_ActionsTeleportId);
+		} else if (action == ACTION_LOADOUT) {
 			OpenOverview(m_ActionsEvent, m_ActionsRow);
 		} else if (action == ACTION_COPY_LINE) {
 			if (m_ActionsRow < 0 || m_ActionsRow >= m_RowDetails.Count()) return;
@@ -308,6 +323,43 @@ class ZBerryUILogsTab extends ZBerryUITab {
 
 		OpenOverview(logEvent, row);
 		return true;
+	}
+
+	//Asks for the teleport's players: one is sent back at once, several open the dialog
+	protected void StartTeleportBack(int eventId) {
+		if (eventId < 0) return;
+		m_PendingTeleportId = eventId;
+		ZBerryClientTeleports teleports = GetZBerryClientTeleports(); //Again each time: the client side is built anew per server
+		teleports.OnReturns.Remove(OnTeleportReturns);
+		teleports.OnReturns.Insert(OnTeleportReturns);
+		teleports.RequestReturns(eventId);
+	}
+
+	protected void OnTeleportReturns(int eventId) {
+		if (eventId != m_PendingTeleportId) return;
+		m_PendingTeleportId = -1; //The answer to the revert comes back too, it's not for this
+
+		string reason;
+		ZBerryTeleportRowArray rows;
+		if (!GetZBerryClientTeleports().GetReturns(eventId, reason, rows)) return;
+		if (reason != "") {
+			ZBerryUIUtils.Message(reason);
+			return;
+		}
+		if (rows && rows.Count() == 1) {
+			TStringArray everyone = new TStringArray;
+			GetZBerryClientTeleports().Revert(eventId, everyone);
+			return;
+		}
+		if (m_TeleportDialog) m_TeleportDialog.OpenFor(eventId, DescribeEventRow(eventId));
+	}
+
+	//The details line of the event's row, "" if it isn't shown
+	protected string DescribeEventRow(int eventId) {
+		for (int i = 0; i < m_RowEvents.Count() && i < m_RowDetails.Count(); ++i) {
+			if (m_RowEvents[i] && m_RowEvents[i].Id == eventId) return m_RowDetails[i];
+		}
+		return "";
 	}
 
 	protected void OpenOverview(ZBerryLogEvent logEvent, int row) {

@@ -348,6 +348,12 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - **Save as my loadout** keeps a copy among your own loadouts.
   - Your spawn rules apply when it's put on anyone.
   - The server keeps each player's last 5 deaths, up to 500 in all. They're written to `ZomBerryDeathLoadouts.json` only when the server stops cleanly, and read back (and the file deleted) at the next start. After a crash or a killed server, the deaths before it are gone.
+- **Teleport back:** with `zomberry.teleport.revert`, right-click a teleport and choose **Teleport back**. Every teleport is kept this way: the Teleport functions, Map tab teleports and saved locations. Each player goes back to where they were before that teleport, even if they've moved since.
+  - **One player:** they're moved back at once, and chat says how it went.
+  - **Several players:** a window lists them, with where they were and whether they can be moved back now. Click players to tick them, then choose **Teleport selected back**, or **Teleport all back**.
+  - **Who stays:** players in a vehicle, offline, or protected from your rank stay where they are, and you can try again later. Players who died since aren't moved: it's a new character. Players already moved back are skipped.
+  - **The revert is a teleport too:** it's logged, and it can be reverted in turn.
+  - **What's kept:** the server keeps the last 200 teleports, up to 100 players each. They're written to `ZomBerryTeleportReturns.json` only when the server stops cleanly, and read back (and the file deleted) at the next start.
 - **Language:** names from the game (animals, vehicles, weapons, objects) show in your game's language. The server's log file has them in the server's language.
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.

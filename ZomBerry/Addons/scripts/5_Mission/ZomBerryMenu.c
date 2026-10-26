@@ -23,6 +23,7 @@ class ZomberryMenu extends UIScriptedMenu {
 	protected ref ZBerryUIKickBanDialog m_KickBanDialog;
 	protected ref ZBerryUIMessageDialog m_MessageDialog;
 	protected ref ZBerryUIDeathLoadoutDialog m_DeathDialog;
+	protected ref ZBerryUITeleportBackDialog m_TeleportDialog;
 	protected ref ZBerryUIActionsMenu m_ActionsMenu;
 	protected ref ZBerryUIConfirmDialog m_ConfirmDialog;
 
@@ -87,9 +88,11 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_PlayersPanel.SetMessageDialog(m_MessageDialog);
 		m_DeathDialog = new ZBerryUIDeathLoadoutDialog();
 		m_DeathDialog.Init(layoutRoot);
+		m_TeleportDialog = new ZBerryUITeleportBackDialog();
+		m_TeleportDialog.Init(layoutRoot);
 		m_ActionsMenu = new ZBerryUIActionsMenu();
 		m_ActionsMenu.Init(layoutRoot); //Above the dialogs
-		m_LogsTab.SetDialogs(m_ActionsMenu, m_DeathDialog);
+		m_LogsTab.SetDialogs(m_ActionsMenu, m_DeathDialog, m_TeleportDialog);
 		m_ConfirmDialog = new ZBerryUIConfirmDialog();
 		m_ConfirmDialog.Init(layoutRoot); //Above everything
 		m_SpawnTab.SetConfirmDialog(m_ConfirmDialog);
@@ -191,6 +194,10 @@ class ZomberryMenu extends UIScriptedMenu {
 			m_DeathDialog.Close();
 			return true;
 		}
+		if (m_TeleportDialog && m_TeleportDialog.IsVisible()) {
+			m_TeleportDialog.Close();
+			return true;
+		}
 		if (m_MessageDialog && m_MessageDialog.IsVisible()) {
 			m_MessageDialog.Close();
 			return true;
@@ -276,6 +283,7 @@ class ZomberryMenu extends UIScriptedMenu {
 		m_KickBanDialog.Close();
 		m_MessageDialog.Close();
 		m_DeathDialog.Close();
+		m_TeleportDialog.Close();
 		m_ActionsMenu.Close();
 		m_ConfirmDialog.Close();
 		ShowDropdown(false);

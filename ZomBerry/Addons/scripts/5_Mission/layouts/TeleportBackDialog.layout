@@ -1,0 +1,228 @@
+FrameWidgetClass TeleportBackDialog {
+ visible 0
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ priority 10
+ {
+  PanelWidgetClass TeleportShade {
+   color 0 0 0 0.5
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass TeleportBox {
+   color 0 0 0 0.9
+   size 640 460
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass TeleportTitle {
+     ignorepointer 1
+     position 15 12
+     size 610 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Teleport back"
+     "text valign" center
+     font "gui/fonts/Metron22"
+     "exact text" 1
+     "exact text size" 22
+    }
+    MultilineTextWidgetClass TeleportInfo {
+     ignorepointer 1
+     position 15 46
+     size 610 44
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     wrap 1
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    TextWidgetClass TeleportStatus {
+     ignorepointer 1
+     position 15 94
+     size 610 20
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     "text valign" center
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+    }
+    TextListboxWidgetClass TeleportRows {
+     visible 1
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron14"
+    }
+    TextListboxWidgetClass TeleportRows_F12 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron12"
+    }
+    TextListboxWidgetClass TeleportRows_F16 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron16"
+    }
+    TextListboxWidgetClass TeleportRows_F22 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron22"
+    }
+    TextListboxWidgetClass TeleportRows_F28 {
+     visible 0
+     color 0 0 0 0.7843
+     position 15 122
+     size 610 266
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     lines 500
+     font "gui/fonts/Metron28"
+    }
+    ButtonWidgetClass TeleportClose {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 15 15
+     size 140 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass TeleportCloseLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Close"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass TeleportSelected {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 165 15
+     size 200 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass TeleportSelectedLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Teleport selected back"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass TeleportAll {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 375 15
+     size 200 36
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass TeleportAllLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Teleport all back"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

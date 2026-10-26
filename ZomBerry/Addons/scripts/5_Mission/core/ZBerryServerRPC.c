@@ -479,16 +479,23 @@ class ZBerryServerRPC {
 		SendTeleportReturns(sender, eventId);
 	}
 
+	//One player: from where to where; several: just that they went back (each player's spot is in "Teleport back")
 	protected void LogRevert(PlayerIdentity sender, ZBerryTeleportEvent teleport, ZBerryTeleportRecordArray moved) {
-		string when = ZBerryTeleportReturns.DescribeTime(teleport.Time);
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
 		int flags = ZBerryEventFlags.REVERTABLE;
-		string text = "{actor} teleported back to where they were before the teleport at " + when;
 		bool onlyThemselves = moved.Count() == 1 && moved[0].SteamId == actorId;
-		if (!onlyThemselves) {
-			flags = flags | ZBerryEventFlags.HARMFUL;
-			text = "{actor} teleported {target} back to where they were before the teleport at " + when;
+		if (!onlyThemselves) flags = flags | ZBerryEventFlags.HARMFUL;
+
+		string text = "{actor} teleported {target} back to where they were before";
+		if (moved.Count() == 1) {
+			string leftAt = ZBDescribePosition(moved[0].From);
+			string backTo = leftAt;
+			foreach (ZBerryTeleportRecord original : teleport.Records) {
+				if (original.SteamId == moved[0].SteamId) backTo = ZBDescribePosition(original.From);
+			}
+			text = "{actor} teleported {target} back from " + leftAt + " to " + backTo;
+			if (onlyThemselves) text = "{actor} teleported back from " + leftAt + " to " + backTo;
 		}
 
 		string firstId = "";
