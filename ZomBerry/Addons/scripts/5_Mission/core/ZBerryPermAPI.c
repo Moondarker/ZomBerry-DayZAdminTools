@@ -114,6 +114,14 @@ class ZomberryPermAPI {
 		return ZBerryAuth.CanActOnLevel(GetLevel(actor), GetLevel(target));
 	}
 
+	//ZomBerry's rule for functions: may actor run a (harmful) function on target? Groups shield their members from
+	//lower-ranked or same-level admins with zomberry.protect.* nodes, superadmins ignore those. Everyone may target themselves
+	bool CanTarget(PlayerIdentity actor, PlayerIdentity target, bool harmful) {
+		if (!m_Auth || !actor || !target) return false;
+
+		return m_Auth.CanTarget(actor, target, harmful);
+	}
+
 	//Do this player's spawn rules allow the class
 	bool CanSpawn(PlayerIdentity identity, string className) {
 		return m_Auth && m_Auth.CanSpawn(identity, className);

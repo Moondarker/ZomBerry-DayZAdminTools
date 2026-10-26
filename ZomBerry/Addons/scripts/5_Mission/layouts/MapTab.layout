@@ -15,6 +15,561 @@ PanelWidgetClass MapWrapper {
    hexactsize 0
    vexactsize 0
   }
+  CanvasWidgetClass MapArrows {
+   priority 100
+   ignorepointer 1
+   position 0 0
+   size 1 0.95
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+  }
+  ButtonWidgetClass MapFiltersButton {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 2 4
+   size 130 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass MapFiltersButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Filters: all"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  PanelWidgetClass MapFiltersDropdown {
+   visible 0
+   color 0 0 0 0.95
+   position 2 34
+   size 140 222
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   priority 110
+   style rover_sim_colorable
+   {
+    ButtonWidgetClass MapFilterAll {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 4
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterAllLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  All"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterNone {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 28
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterNoneLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  None"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterPlayers {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 52
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterPlayersLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Players"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterVehicles {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 76
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterVehiclesLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Vehicles"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterTents {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 100
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterTentsLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Tents"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterStorage {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 124
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterStorageLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Storage"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterBases {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 148
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterBasesLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Bases"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterBodies {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 172
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterBodiesLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Bodies"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapFilterLocations {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 196
+     size 132 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapFilterLocationsLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "  Locations"
+       font "gui/fonts/Metron14"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+  FrameWidgetClass MapCoords {
+   priority 100
+   position 0 4
+   size 314 28
+   halign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass MapCoordXLabel {
+     ignorepointer 1
+     position 0 0
+     size 16 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "X"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+    EditBoxWidgetClass MapCoordX {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 18 5
+     size 86 18
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    TextWidgetClass MapCoordYLabel {
+     ignorepointer 1
+     position 108 0
+     size 16 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "Y"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+    EditBoxWidgetClass MapCoordY {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 126 5
+     size 86 18
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    ButtonWidgetClass MapCoordGo {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 218 0
+     size 40 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapCoordGoLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Go"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass MapCoordPlayer {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 262 0
+     size 52 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapCoordPlayerLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Player"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+  ButtonWidgetClass MapLocationsButton {
+   priority 100
+   color 0.3255 0.3255 0.3255 0.7843
+   position 2 4
+   size 110 28
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass MapLocationsButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Locations"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  PanelWidgetClass MapLocationsDropdown {
+   visible 0
+   color 0 0 0 0.95
+   position 2 34
+   size 300 286
+   halign right_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   priority 110
+   style rover_sim_colorable
+   {
+    TextWidgetClass MapLocationsEmpty {
+     ignorepointer 1
+     position 8 6
+     size 284 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.6 0.6 0.6 1
+     text "No saved locations yet"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" left
+     "text valign" center
+    }
+    ScrollWidgetClass MapLocationsScroll {
+     clipchildren 1
+     color 0 0 0 0
+     position 4 4
+     size 292 238
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     "Scrollbar V" 1
+     {
+      WrapSpacerWidgetClass MapLocationsRows {
+       ignorepointer 1
+       position 0 0
+       size 276 10
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       Padding 0
+       Margin 0
+       "Size To Content V" 1
+      }
+     }
+    }
+    EditBoxWidgetClass MapLocationName {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 4 250
+     size 196 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    ButtonWidgetClass MapLocationAdd {
+     priority 100
+     color 0.3255 0.3255 0.3255 0.7843
+     position 204 250
+     size 92 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass MapLocationAddLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Save here"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 14
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
   TextWidgetClass MapHint {
    position 0 0.0118
    size 480 24

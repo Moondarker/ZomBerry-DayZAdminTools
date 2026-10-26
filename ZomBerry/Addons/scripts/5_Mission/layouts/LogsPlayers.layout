@@ -1,0 +1,114 @@
+FrameWidgetClass LogsPlayers {
+ position 0 0
+ size 350 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 0
+ {
+  TextListboxWidgetClass LogPlayerList {
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 800
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 20
+   font "gui/fonts/Metron14"
+  }
+  TextListboxWidgetClass LogPlayerList_F12 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 800
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 20
+   font "gui/fonts/Metron12"
+  }
+  TextListboxWidgetClass LogPlayerList_F16 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 800
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 20
+   font "gui/fonts/Metron16"
+  }
+  TextListboxWidgetClass LogPlayerList_F22 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 800
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 20
+   font "gui/fonts/Metron22"
+  }
+  TextListboxWidgetClass LogPlayerList_F28 {
+   visible 0
+   color 0 0 0 0.7843
+   position 0 10
+   size 350 800
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   lines 20
+   font "gui/fonts/Metron28"
+  }
+  ButtonWidgetClass LogsShowAll {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 0 10
+   size 112 36
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LogsShowAllLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Show all"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass LogPlayerInfo {
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+ }
+}

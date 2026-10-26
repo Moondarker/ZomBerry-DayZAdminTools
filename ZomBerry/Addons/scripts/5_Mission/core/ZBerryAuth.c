@@ -10,6 +10,7 @@ class ZBerryAuth {
 	protected ref ZBerryPermsConfig m_Config = new ZBerryPermsConfig;
 	protected string m_ConfigPath;
 	protected string m_SetupToken = ""; //Set while no admin exists
+	protected ref TStringArray m_LastChanges = new TStringArray; //What the last ApplyUpdate changed, for the log
 	protected ref map<string, int> m_TokenAttempts = new map<string, int>;
 
 	void ZBerryAuth() {
@@ -217,6 +218,30 @@ class ZBerryAuth {
 		return group.Level;
 	}
 
+	//Functions: may an admin of actorLevel run a (harmful) function on a target of targetLevel, whose group grants
+	//targetPermissions? Targets shield themselves with zomberry.protect.* nodes, level 100 ignores those
+	static bool CanTargetLevels(int actorLevel, int targetLevel, TStringArray targetPermissions, bool harmful) {
+		if (targetLevel < 0 || actorLevel >= ZBerryPermGroup.SUPERADMIN_LEVEL || targetLevel < actorLevel) return true;
+
+		string allNode = ZBerryPermissions.PROTECT_LOWER;
+		string harmNode = ZBerryPermissions.PROTECT_LOWER_HARM;
+		if (targetLevel == actorLevel) {
+			allNode = ZBerryPermissions.PROTECT_SAME;
+			harmNode = ZBerryPermissions.PROTECT_SAME_HARM;
+		}
+
+		if (ZBerryPermissions.IsGranted(targetPermissions, allNode)) return false;
+		return !harmful || !ZBerryPermissions.IsGranted(targetPermissions, harmNode);
+	}
+
+	bool CanTarget(PlayerIdentity actor, PlayerIdentity target, bool harmful) {
+		if (!GetGame().IsMultiplayer() || !actor || !target) return true;
+		if (actor.GetPlainId() == target.GetPlainId()) return true;
+
+		TStringArray targetPermissions = GetPermissions(target);
+		return CanTargetLevels(GetLevel(actor), GetLevel(target), targetPermissions, harmful);
+	}
+
 	//Kicks and bans: admins can only act on admins ranked below them, superadmins on everyone
 	static bool CanActOnLevel(int actorLevel, int targetLevel) {
 		if (targetLevel < 0) return true;
@@ -284,6 +309,7 @@ class ZBerryAuth {
 
 		TStringArray permissions = GetPermissions(identity);
 		TStringArray spawnRules = GetSpawnRules(identity);
+		GetZBerryEventLog().StartSync(identity); //Only if they may read the log and aren't synced yet
 		GetZBerryRPC().SendRPC( ZBerryRPCOp.AuthState, new Param4<string, int, ref TStringArray, ref TStringArray>(g_zbryVer, state, permissions, spawnRules), true, identity );
 	}
 
@@ -292,8 +318,9 @@ class ZBerryAuth {
 		GetGame().GetPlayers(players);
 
 		foreach (Man player : players) {
-			if (player.GetIdentity()) PushAuthState(player.GetIdentity());
+			if (ZBGetIdentity(player)) PushAuthState(ZBGetIdentity(player));
 		}
+		GetZBerryClientFeatures().Revalidate(this); //Rights may be gone: switch off what they allowed
 	}
 
 	protected bool IsServerCall(ZBerryCallType type, PlayerIdentity sender) {
@@ -301,7 +328,7 @@ class ZBerryAuth {
 	}
 
 	protected string Who(PlayerIdentity sender) {
-		return sender.GetName() + " (" + sender.GetPlainId() + ")";
+		return ZBDescribePlayer(sender);
 	}
 
 	protected void Tell(PlayerIdentity sender, string message) {
@@ -312,12 +339,12 @@ class ZBerryAuth {
 		Param2< bool, string > authInfo; //direction (always true), client version
 		if (!IsServerCall(type, sender)) return;
 		if ( !ctx.Read( authInfo ) ) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " - Auth error, please update client to latest version (v" + g_zbryVer + "+)!");
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} couldn't authenticate, their ZomBerry is too old (server: v" + g_zbryVer + ")" );
 			return;
 		}
 
 		if (authInfo.param2 != g_zbryVer) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " ZomBerry version mismatch! S: v" + g_zbryVer + ", C: v" + authInfo.param2 );
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} has another ZomBerry version: v" + authInfo.param2 + " (server: v" + g_zbryVer + ")" );
 		}
 
 		ZBerryAdminEntry admin = FindAdmin(sender);
@@ -329,7 +356,7 @@ class ZBerryAuth {
 		if (IsAdmin(sender)) {
 			ZomberryBase.Log( "ZomBerryDbg", "Auth respond to admin " + Who(sender) );
 		} else if (m_SetupToken != "") {
-			ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " joined while setup is pending, look for the SETUP TOKEN banner in the server's logs" );
+			ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} joined while setup is pending, look for the SETUP TOKEN banner in the server's logs" );
 		}
 
 		PushAuthState(sender);
@@ -342,14 +369,14 @@ class ZBerryAuth {
 
 		string id = sender.GetPlainId();
 		if (m_SetupToken == "") {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a setup token, but setup is already done" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a setup token, but setup is already done" );
 			PushAuthState(sender);
 			return;
 		}
 
 		int attempts = m_TokenAttempts.Get(id);
 		if (attempts >= MAX_TOKEN_ATTEMPTS) {
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a setup token after " + MAX_TOKEN_ATTEMPTS + " wrong attempts, ignored" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a setup token after " + MAX_TOKEN_ATTEMPTS + " wrong attempts, ignored" );
 			Tell(sender, "Too many wrong setup tokens");
 			return;
 		}
@@ -358,7 +385,7 @@ class ZBerryAuth {
 		token.ToUpper();
 		if (token != m_SetupToken) {
 			m_TokenAttempts.Set(id, attempts + 1);
-			ZomberryBase.Log( "ZomBerryAuth", "WARN: " + Who(sender) + " sent a wrong setup token (attempt " + (attempts + 1) + "/" + MAX_TOKEN_ATTEMPTS + ")" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} sent a wrong setup token (attempt " + (attempts + 1) + "/" + MAX_TOKEN_ATTEMPTS + ")" );
 			Tell(sender, "Wrong setup token");
 			return;
 		}
@@ -376,7 +403,7 @@ class ZBerryAuth {
 		m_SetupToken = "";
 		m_TokenAttempts.Clear();
 
-		ZomberryBase.Log( "ZomBerryAuth", "INFO: " + Who(sender) + " entered the setup token and is now in the " + SUPERADMIN_GROUP + " group" );
+		ZomberryBase.LogEvent( ZBerryEventType.AUTH, sender, NULL, "{actor} entered the setup token and is now in the " + SUPERADMIN_GROUP + " group" );
 		Tell(sender, "Setup done, you are a superadmin now");
 		PushAuthStateToEveryone();
 	}
@@ -402,7 +429,7 @@ class ZBerryAuth {
 		array<Man> players = new array<Man>;
 		GetGame().GetPlayers(players);
 		foreach (Man player : players) {
-			PlayerIdentity identity = player.GetIdentity();
+			PlayerIdentity identity = ZBGetIdentity(player);
 			if (identity) snapshot.Online.Insert(new ZBerryOnlineIdentity(identity.GetPlayerId(), identity.GetPlainId(), identity.GetName()));
 		}
 
@@ -418,7 +445,7 @@ class ZBerryAuth {
 	void PermsRequest( ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target ) {
 		if (!IsServerCall(type, sender)) return;
 		if (!HasPermission(sender, ZBerryPermissions.PERMISSIONS_MANAGE)) {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to read permissions, but IS NOT ALLOWED" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to read permissions without " + ZBerryPermissions.PERMISSIONS_MANAGE );
 			return;
 		}
 
@@ -431,19 +458,22 @@ class ZBerryAuth {
 		if ( !ctx.Read( update ) || !update.param1 ) return;
 
 		if (!HasPermission(sender, ZBerryPermissions.PERMISSIONS_MANAGE)) {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " tried to change permissions, but IS NOT ALLOWED" );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to change permissions without " + ZBerryPermissions.PERMISSIONS_MANAGE );
 			return;
 		}
 
 		string problem = ApplyUpdate(update.param1, GetLevel(sender));
 		if (problem != "") {
-			ZomberryBase.Log( "ZomBerryAdmin", "WARN: " + Who(sender) + " permission change rejected: " + problem );
+			ZomberryBase.LogEvent( ZBerryEventType.REFUSED, sender, NULL, "{actor} tried to change permissions, rejected: " + problem );
 			Tell(sender, "Permissions not saved: " + problem);
 			SendSnapshot(sender);
 			return;
 		}
 
-		ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " changed permissions: " + m_Config.Groups.Count() + " groups, " + m_Config.Admins.Count() + " admins" );
+		if (m_LastChanges.Count() == 0) ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, sender, NULL, "{actor} saved permissions without changes" );
+		foreach (string change : m_LastChanges) {
+			ZomberryBase.LogEvent( ZBerryEventType.PERMISSIONS, sender, NULL, "{actor} changed permissions: " + change );
+		}
 		Tell(sender, "Permissions saved");
 		PushAuthStateToEveryone();
 		SendSnapshot(sender);
@@ -483,9 +513,106 @@ class ZBerryAuth {
 		string hierarchyProblem = CheckHierarchy(m_Config, newConfig, editorLevel);
 		if (hierarchyProblem != "") return hierarchyProblem;
 
+		m_LastChanges = DescribeChanges(m_Config, newConfig);
 		m_Config = newConfig;
 		SaveConfig();
 		return "";
+	}
+
+	//One line per change between two configs, for the log: groups added, removed or edited (level, permissions,
+	//spawn rules), admins added, removed or moved to another group
+	static TStringArray DescribeChanges(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig) {
+		TStringArray changes = new TStringArray;
+
+		foreach (ZBerryPermGroup oldGroup : oldConfig.Groups) {
+			if (!newConfig.FindGroup(oldGroup.Name)) changes.Insert("removed group " + oldGroup.Name);
+		}
+
+		foreach (ZBerryPermGroup newGroup : newConfig.Groups) {
+			ZBerryPermGroup before = oldConfig.FindGroup(newGroup.Name);
+			if (!before) {
+				changes.Insert("added group " + newGroup.Name + " (level " + newGroup.Level + ", permissions: " + DescribeList(newGroup.Permissions) + ", spawn rules: " + DescribeList(newGroup.SpawnAllowed) + ")");
+				continue;
+			}
+
+			if (before.Level != newGroup.Level) changes.Insert("group " + newGroup.Name + ": level " + before.Level + " -> " + newGroup.Level);
+			DescribePermissionChanges(newGroup.Name, before.Permissions, newGroup.Permissions, changes);
+			string spawnRules = DescribeListChange(before.SpawnAllowed, newGroup.SpawnAllowed);
+			if (spawnRules != "") changes.Insert("group " + newGroup.Name + ": spawn rules " + spawnRules);
+		}
+
+		foreach (ZBerryAdminEntry oldAdmin : oldConfig.Admins) {
+			if (!newConfig.FindAdmin(oldAdmin.Id)) changes.Insert("removed admin " + DescribeAdmin(oldAdmin) + " from group " + oldAdmin.Group);
+		}
+
+		foreach (ZBerryAdminEntry newAdmin : newConfig.Admins) {
+			ZBerryAdminEntry adminBefore = oldConfig.FindAdmin(newAdmin.Id);
+			if (!adminBefore) {
+				changes.Insert("added admin " + DescribeAdmin(newAdmin) + " to group " + newAdmin.Group);
+			} else if (adminBefore.Group != newAdmin.Group) {
+				changes.Insert("moved admin " + DescribeAdmin(newAdmin) + " from group " + adminBefore.Group + " to " + newAdmin.Group);
+			}
+		}
+
+		return changes;
+	}
+
+	protected static string DescribeAdmin(ZBerryAdminEntry admin) {
+		if (admin.Name == "") return admin.Id;
+		return admin.Name + " (" + admin.Id + ")";
+	}
+
+	protected static string DescribeList(TStringArray items) {
+		if (items.Count() == 0) return "none";
+		return ZBerryPermissions.JoinList(items);
+	}
+
+	//"added a, b; removed c", "" when nothing changed. Spawn rules can start with "-" themselves, so no +/- signs
+	protected static string DescribeListChange(TStringArray before, TStringArray after) {
+		TStringArray added = new TStringArray;
+		TStringArray removed = new TStringArray;
+		foreach (string item : after) {
+			if (before.Find(item) == -1) added.Insert(item);
+		}
+		foreach (string oldItem : before) {
+			if (after.Find(oldItem) == -1) removed.Insert(oldItem);
+		}
+
+		string result = "";
+		if (added.Count() > 0) result = "added " + ZBerryPermissions.JoinList(added);
+		if (removed.Count() > 0) {
+			if (result != "") result += "; ";
+			result += "removed " + ZBerryPermissions.JoinList(removed);
+		}
+		return result;
+	}
+
+	//One line per node that changed, in the Permissions tab's three states: "group admin: zomberry.players.ban allowed -> denied"
+	protected static void DescribePermissionChanges(string groupName, TStringArray before, TStringArray after, TStringArray changes) {
+		TStringArray nodes = new TStringArray;
+		AddPermissionNodes(before, nodes);
+		AddPermissionNodes(after, nodes);
+
+		foreach (string node : nodes) {
+			string stateBefore = DescribeNodeState(before, node);
+			string stateAfter = DescribeNodeState(after, node);
+			if (stateBefore != stateAfter) changes.Insert("group " + groupName + ": " + node + " " + stateBefore + " -> " + stateAfter);
+		}
+	}
+
+	protected static void AddPermissionNodes(TStringArray entries, TStringArray nodes) {
+		foreach (string entry : entries) {
+			string node = entry;
+			if (node.IndexOf("-") == 0) node = node.Substring(1, node.Length() - 1);
+			if (nodes.Find(node) == -1) nodes.Insert(node);
+		}
+	}
+
+	//A deny always wins over a grant, as in ZBerryPermissions
+	protected static string DescribeNodeState(TStringArray entries, string node) {
+		if (entries.Find("-" + node) != -1) return "denied";
+		if (entries.Find(node) != -1) return "allowed";
+		return "unset";
 	}
 
 	protected string CheckHierarchy(ZBerryPermsConfig oldConfig, ZBerryPermsConfig newConfig, int editorLevel) {

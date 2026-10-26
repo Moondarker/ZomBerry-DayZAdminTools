@@ -70,10 +70,38 @@ FrameWidgetClass PlayersPanel {
    lines 20
    font "gui/fonts/Metron28"
   }
-  ButtonWidgetClass PlayersKick {
+  ButtonWidgetClass PlayersMessage {
    color 0.3255 0.3255 0.3255 0.7843
    position 0 10
-   size 112 36
+   size 83 36
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass PlayersMessageLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Message"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass PlayersKick {
+   color 0.3255 0.3255 0.3255 0.7843
+   position 89 10
+   size 83 36
    valign bottom_ref
    hexactpos 1
    vexactpos 1
@@ -102,7 +130,7 @@ FrameWidgetClass PlayersPanel {
    visible 0
    color 0.3255 0.3255 0.3255 0.7843
    position 0 10
-   size 112 36
+   size 83 36
    valign bottom_ref
    hexactpos 1
    vexactpos 1
@@ -129,8 +157,8 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBan {
    color 0.3255 0.3255 0.3255 0.7843
-   position 119 10
-   size 112 36
+   position 178 10
+   size 83 36
    valign bottom_ref
    hexactpos 1
    vexactpos 1
@@ -157,8 +185,8 @@ FrameWidgetClass PlayersPanel {
   }
   ButtonWidgetClass PlayersBans {
    color 0.3255 0.3255 0.3255 0.7843
-   position 238 10
-   size 112 36
+   position 267 10
+   size 83 36
    valign bottom_ref
    hexactpos 1
    vexactpos 1
@@ -184,6 +212,7 @@ FrameWidgetClass PlayersPanel {
    }
   }
   TextWidgetClass PlayerInfo {
+   ignorepointer 1
    position 4 900
    size 342 20
    hexactpos 1
@@ -194,6 +223,73 @@ FrameWidgetClass PlayersPanel {
    font "gui/fonts/Metron14"
    "exact text" 1
    "exact text size" 14
+  }
+  TextWidgetClass PlayerInfo2 {
+   ignorepointer 1
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass PlayerInfo3 {
+   ignorepointer 1
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  TextWidgetClass PlayerInfo4 {
+   ignorepointer 1
+   position 4 900
+   size 342 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   "text valign" center
+   font "gui/fonts/Metron14"
+   "exact text" 1
+   "exact text size" 14
+  }
+  ButtonWidgetClass PlayersCopyId {
+   visible 0
+   color 0.3255 0.3255 0.3255 0.7843
+   position 270 900
+   size 80 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass PlayersCopyIdLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Copy ID"
+     font "gui/fonts/Metron14"
+     "exact text" 1
+     "exact text size" 14
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
  }
 }

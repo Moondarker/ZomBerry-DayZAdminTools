@@ -1,7 +1,11 @@
 class ZomBerryCamBase extends Camera {
 
+	static const float SEND_INTERVAL = 0.5; //Seconds between position reports, as vanilla's spectator camera
+	static const float JUMP_DISTANCE = 50; //Metres moved since the last report that are reported at once
+
 	float sendUpdateAcc = 0.0;
 	Object camTarget;
+	protected vector m_LastSent;
 
 	void ZomBerryCamBase() {
 		SetEventMask( EntityEvent.FRAME );
@@ -10,11 +14,17 @@ class ZomBerryCamBase extends Camera {
 	}
 
 	override void EOnFrame(IEntity other, float timeSlice) {
+		//Cameras aren't deleted when the client gets its body back (SelectPlayer): old ones mustn't follow the input or
+		//report positions any more
+		if (!IsActive()) return;
 		OnUpdate(timeSlice);
 
-		if (sendUpdateAcc > 0.8) {
-			GetGame().UpdateSpectatorPosition(GetPosition()); //Seems clientside, doesn't change bubble pos on both client/server :(
-
+		//While the client controls no character (ZBerryBodies), this position is where the server keeps its network
+		//bubble. A big jump (following a target that left the bubble) is reported at once, so the bubble catches up
+		vector position = GetPosition();
+		if (sendUpdateAcc > SEND_INTERVAL || vector.Distance(position, m_LastSent) > JUMP_DISTANCE) {
+			GetGame().UpdateSpectatorPosition(position);
+			m_LastSent = position;
 			sendUpdateAcc = 0;
 		}
 

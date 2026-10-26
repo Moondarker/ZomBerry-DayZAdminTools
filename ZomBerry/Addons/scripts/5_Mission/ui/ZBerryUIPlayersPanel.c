@@ -1,26 +1,38 @@
-//Player list on the left side: selection (double click), health/blood readout, kick and ban. Refreshes itself while shown.
+//Player list on the left side: selection (double click), health/blood readout, kick and ban. Fed by the streams (GetZBerryStreams).
 //In permissions mode (Permissions tab) it lists online players plus offline known admins instead,
 //in bans mode (Bans button) the ban list
 class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	static const int COLOR_ADMIN = 0xFF47EB00;
-	static const int COLOR_SELECTED = 0xFFFF751A;
+	static const int COLOR_SELECTED = 0xFFFF751A; //The last selected player: single-target functions act on them
+	static const int COLOR_SELECTED_MORE = 0xFFFFB27A; //The other selected players
 	static const int COLOR_OFFLINE = 0xFF909090;
 
 	protected TextListboxWidget m_PlayersList; //The visible variant of m_PlayersLists
 	protected ref ZBerryScaledList m_PlayersLists;
-	static const float PLAYERS_REFRESH_INTERVAL = 5; //Seconds
-	static const float MAP_REFRESH_INTERVAL = 2; //While the map shows player markers
 	static const float BANS_REFRESH_INTERVAL = 30; //Keeps "time left" current
+	static const float BUTTON_WIDTH = 83; //Layout units: four buttons and three gaps fill the 350 wide panel
+	static const float BUTTON_GAP = 6;
 
-	protected TextWidget m_PlyInfo; //Health and blood, ban or admin details of the selected row
-	protected float m_PlayersTimer = 0;
+	static const int INFO_LINES = 4; //Under the player list: health, position, status, Steam64. Other modes use one
+	static const float INFO_LINE_HEIGHT = 20;
+
+	protected TextWidget m_PlyInfo; //First info line: health and blood, ban or admin details of the selected row
+	protected ref array<TextWidget> m_InfoLines = new array<TextWidget>; //m_PlyInfo and the lines below it
+	protected ButtonWidget m_CopyIdButton;
+	protected string m_ShownSteamId = ""; //What Copy ID copies
+	protected int m_LaidOutInfoLines = -1;
 	protected float m_BansTimer = 0;
 	protected float m_LaidOutHeight = -1;
-	protected bool m_LaidOutWithButtons;
-	protected ButtonWidget m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
+	protected int m_LaidOutButtons = -1; //Bit per shown button of m_RowButtons
+	protected ButtonWidget m_MessageButton, m_KickButton, m_BanButton, m_UnbanButton, m_BansButton;
+	protected ref array<ButtonWidget> m_RowButtons = new array<ButtonWidget>; //Bottom row, left to right
 	protected ZBerryUIKickBanDialog m_Dialog;
+	protected ZBerryUIMessageDialog m_MessageDialog;
 
-	protected int m_SelectedPlayerId = -1;
+	protected int m_SelectedPlayerId = -1; //The last of m_SelectedIds, -1 for none
+	protected ref TIntArray m_SelectedIds = new TIntArray; //Session ids in the order they were selected
+	protected int m_AnchorId = -1; //Shift + double-click selects from here: the last plain double-click
+	protected bool m_SingleFocus; //The selected function takes one player: only the last selected is highlighted
 	protected ref ZBerryPlayerArray m_LastPlayers;
 
 	protected bool m_PermsMode = false;
@@ -43,19 +55,22 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersLists = new ZBerryScaledList(m_Root, "PlayerList", this);
 		m_PlayersLists.Pick();
 		m_PlayersList = m_PlayersLists.GetActive();
+		m_MessageButton = ButtonWidget.Cast( BindWidget("PlayersMessage") );
 		m_KickButton = ButtonWidget.Cast( BindWidget("PlayersKick") );
 		m_BanButton = ButtonWidget.Cast( BindWidget("PlayersBan") );
 		m_UnbanButton = ButtonWidget.Cast( BindWidget("PlayersUnban") );
 		m_BansButton = ButtonWidget.Cast( BindWidget("PlayersBans") );
+		m_RowButtons.Insert(m_MessageButton);
+		m_RowButtons.Insert(m_UnbanButton);
+		m_RowButtons.Insert(m_KickButton);
+		m_RowButtons.Insert(m_BanButton);
+		m_RowButtons.Insert(m_BansButton);
 		UpdateActionButtons();
 		m_PlyInfo = TextWidget.Cast( m_Root.FindAnyWidget("PlayerInfo") );
-	}
-
-	//The list feeds both this panel and the map markers, so either right is enough to ask for it
-	static void RequestSync() {
-		if (!GetZBerryClientAuth().HasAny({ZBerryPermissions.PLAYERS_LIST, ZBerryPermissions.MAP_PLAYER_MARKERS})) return;
-
-		GetZBerryRPC().SendRPC( ZBerryRPCOp.SyncPlayersRequest, new Param1< int >( 0 ), true, NULL );
+		m_InfoLines.Insert(m_PlyInfo);
+		for (int line = 2; line <= INFO_LINES; ++line) m_InfoLines.Insert(TextWidget.Cast( m_Root.FindAnyWidget("PlayerInfo" + line) ));
+		m_CopyIdButton = ButtonWidget.Cast( BindWidget("PlayersCopyId") );
+		SetInfo("");
 	}
 
 	static void RequestBans() {
@@ -66,6 +81,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 
 	void SetDialog(ZBerryUIKickBanDialog dialog) {
 		m_Dialog = dialog;
+	}
+
+	void SetMessageDialog(ZBerryUIMessageDialog dialog) {
+		m_MessageDialog = dialog;
 	}
 
 	//Menu shown: the resolution may have changed since
@@ -87,11 +106,13 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		UpdateActionButtons();
 	}
 
-	//Kick, ban and the ban list need a server and the matching right; none of them in permissions mode
+	//Kick, ban and the ban list need a server and the matching right; none of them in permissions mode.
+	//Messages work in singleplayer too
 	protected void UpdateActionButtons() {
 		ZBerryClientAuth auth = GetZBerryClientAuth();
 		bool shown = GetGame().IsMultiplayer() && !m_PermsMode;
 
+		m_MessageButton.Show(!m_PermsMode && !m_BansMode && ZBerryUIMessageDialog.CanSend());
 		m_KickButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_KICK));
 		m_BanButton.Show(shown && !m_BansMode && auth.Has(ZBerryPermissions.PLAYERS_BAN));
 		m_UnbanButton.Show(shown && m_BansMode);
@@ -105,26 +126,51 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 	}
 
 	//Layouts can't pin a widget to both the top and the bottom of its parent, so the bottom is laid out here, bottom up:
-	//the button row (when any button is shown) 10 units above the bottom, the info line 8 above it, the list down to 8 above that
+	//the button row (when any button is shown) 10 units above the bottom, the info line 8 above it, the list down to 8 above that.
+	//The shown buttons are packed to the left, so hidden ones leave no gaps
 	protected void LayoutRows() {
 		float screenWidth, screenHeight;
 		m_Root.GetScreenSize(screenWidth, screenHeight);
 		if (screenWidth <= 0 || screenHeight <= 0) return;
 
-		bool withButtons = m_KickButton.IsVisible() || m_BanButton.IsVisible() || m_UnbanButton.IsVisible() || m_BansButton.IsVisible();
-		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5 && withButtons == m_LaidOutWithButtons) return;
+		int shownButtons = 0;
+		for (int i = 0; i < m_RowButtons.Count(); ++i) {
+			if (m_RowButtons[i].IsVisible()) shownButtons = shownButtons | (1 << i);
+		}
+		bool withButtons = shownButtons != 0;
+		int infoLines = 1;
+		if (!m_PermsMode && !m_BansMode) infoLines = INFO_LINES;
+		if (Math.AbsFloat(screenHeight - m_LaidOutHeight) < 0.5 && shownButtons == m_LaidOutButtons && infoLines == m_LaidOutInfoLines) return;
 		m_LaidOutHeight = screenHeight;
-		m_LaidOutWithButtons = withButtons;
+		m_LaidOutButtons = shownButtons;
+		m_LaidOutInfoLines = infoLines;
 
 		//SetPos/SetSize take physical pixels, the offsets below are layout units: the panel is exactly 350 units wide
 		float u = screenWidth / 350;
+		float buttonX = 0;
+		foreach (ButtonWidget rowButton : m_RowButtons) {
+			if (!rowButton.IsVisible()) continue;
+
+			float oldX, buttonY;
+			rowButton.GetPos(oldX, buttonY);
+			rowButton.SetPos(buttonX, buttonY);
+			buttonX += (BUTTON_WIDTH + BUTTON_GAP) * u;
+		}
+
 		float rowBottom = screenHeight - 10 * u;
 		if (withButtons) rowBottom -= (36 + 8) * u;
-		float infoY = rowBottom - 20 * u;
+		float infoY = rowBottom - infoLines * INFO_LINE_HEIGHT * u;
 		float listY = 10 * u;
 		float listHeight = Math.Max(60 * u, infoY - 8 * u - listY);
 
-		m_PlyInfo.SetPos(4 * u, infoY);
+		//Lines a mode doesn't use are hidden: placed below the first line, they'd cover the button row
+		for (int line = 0; line < m_InfoLines.Count(); ++line) {
+			m_InfoLines[line].SetPos(4 * u, infoY + line * INFO_LINE_HEIGHT * u);
+			m_InfoLines[line].Show(line < infoLines);
+		}
+		float copyWidth, copyHeight;
+		m_CopyIdButton.GetSize(copyWidth, copyHeight);
+		m_CopyIdButton.SetPos(screenWidth - copyWidth, infoY + (INFO_LINES - 1) * INFO_LINE_HEIGHT * u);
 
 		array<TextListboxWidget> lists = m_PlayersLists.GetAll();
 		foreach (TextListboxWidget list : lists) {
@@ -139,7 +185,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_BansMode = bansMode;
 
 		m_SelectedBanId = "";
-		m_PlyInfo.SetText("");
+		SetInfo("");
 		m_PlayersList.ClearItems();
 		UpdateActionButtons();
 
@@ -168,7 +214,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		int selRow = m_BanIds.Find(m_SelectedBanId);
 		if (selRow == -1) {
 			m_SelectedBanId = "";
-			m_PlyInfo.SetText("");
+			SetInfo("");
 		} else {
 			HighlightBan(selRow);
 		}
@@ -183,7 +229,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersList.SetItemColor(row, 0, COLOR_SELECTED);
 
 		ZBerryBanEntry ban = m_Bans[row];
-		m_PlyInfo.SetText(ban.Reason + " (by " + ban.BannedBy + ")"); //Time left is in the row
+		SetInfo(ban.Reason + " (by " + ban.BannedBy + ")"); //Time left is in the row
 	}
 
 	protected bool SelectBan() {
@@ -208,21 +254,10 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		return "";
 	}
 
-	//Called by the menu every frame while it's open: the one place the player list (also the map's markers) and the ban list
-	//are refreshed. Permissions mode has no timer: the tab reloads it on open and after saving
-	void Update(float tDelta, bool mapShown) {
+	//Called by the menu every frame while it's open. Players arrive by themselves (streams), the ban list is asked for
+	//every BANS_REFRESH_INTERVAL. Permissions mode has no timer: the tab reloads it on open and after saving
+	void Update(float tDelta) {
 		LayoutRows();
-
-		float playersInterval = PLAYERS_REFRESH_INTERVAL;
-		if (mapShown) playersInterval = MAP_REFRESH_INTERVAL;
-		bool listShown = !m_PermsMode && !m_BansMode;
-
-		m_PlayersTimer += tDelta;
-		if ((mapShown || listShown) && m_PlayersTimer >= playersInterval) {
-			m_PlayersTimer = 0;
-			RequestSync();
-		}
-
 		if (!m_BansMode) return;
 
 		m_BansTimer += tDelta;
@@ -242,7 +277,7 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PermsMode = permsMode;
 
 		m_SelectedEntryId = "";
-		m_PlyInfo.SetText("");
+		SetInfo("");
 		m_PlayersList.ClearItems();
 		UpdateActionButtons();
 
@@ -292,10 +327,36 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		if (m_PermsSnapshot) admin = m_PermsSnapshot.FindAdmin(m_EntryIds[row]);
 		if (admin) group = admin.Group;
 
-		m_PlyInfo.SetText("Group: " + group + " | Id: " + m_EntryIds[row]);
+		SetInfo("Group: " + group + " | Id: " + m_EntryIds[row]);
 	}
 
-	//Returns false if nobody is selected (or selected player has left). Kept while the ban list is shown
+	//Everyone selected who's still online, in the order they were selected: the last is GetSelectedPlayerId's
+	TIntArray GetSelectedPlayerIds() {
+		TIntArray ids = new TIntArray;
+		if (m_PermsMode || !m_LastPlayers) return ids;
+
+		foreach (int id : m_SelectedIds) {
+			if (FindPlayer(id)) ids.Insert(id);
+		}
+		return ids;
+	}
+
+	protected ZBerryPlayer FindPlayer(int playerId) {
+		foreach (ZBerryPlayer ply : m_LastPlayers) {
+			if (ply.m_PlayerID == playerId) return ply;
+		}
+		return NULL;
+	}
+
+	//The Functions tab: true while the selected function takes one player, so only the one it acts on stands out
+	void SetSingleFocus(bool singleFocus) {
+		if (m_SingleFocus == singleFocus) return;
+		m_SingleFocus = singleFocus;
+		if (!m_PermsMode && !m_BansMode) RecolorRows();
+	}
+
+	//The last selected player (the one single-target functions act on). False if nobody is selected or they left.
+	//Kept while the ban list is shown
 	bool GetSelectedPlayerId(out int playerId) {
 		if (m_PermsMode || m_SelectedPlayerId < 0 || !m_LastPlayers) return false;
 
@@ -329,11 +390,28 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 			} else {
 				m_PlayersList.AddItem(text, rowData, 0);
 			}
-			ResetRowColor(i);
 		}
 
+		RecolorRows();
 		int selRow = FindPlayerRow(m_SelectedPlayerId);
 		if (selRow != -1) HighlightRow(selRow);
+	}
+
+	//Admins green, the last selected orange, the other selected light orange (unless the function takes one player)
+	protected void RecolorRows() {
+		for (int row = 0; row < m_PlayersList.GetNumItems(); ++row) {
+			Param4<int, bool, int, int> plyData;
+			m_PlayersList.GetItemData( row, 0, plyData );
+			if (!plyData) continue;
+
+			if (plyData.param1 == m_SelectedPlayerId) {
+				m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED );
+			} else if (!m_SingleFocus && m_SelectedIds.Find(plyData.param1) != -1) {
+				m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED_MORE );
+			} else {
+				ResetRowColor(row);
+			}
+		}
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button) {
@@ -343,6 +421,17 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		}
 		if (w == m_KickButton || w == m_BanButton) {
 			OpenDialog(w == m_BanButton);
+			return true;
+		}
+		if (w == m_MessageButton) {
+			OpenMessageDialog();
+			return true;
+		}
+		if (w == m_CopyIdButton) {
+			if (m_ShownSteamId != "") {
+				GetGame().CopyToClipboard(m_ShownSteamId);
+				ZBerryUIUtils.Message("Copied " + m_ShownSteamId);
+			}
 			return true;
 		}
 		if (w == m_UnbanButton) {
@@ -375,23 +464,102 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		}
 	}
 
+	//To the selected player, or to everyone when nobody is selected
+	protected void OpenMessageDialog() {
+		if (!m_MessageDialog) return;
+
+		int playerId;
+		if (GetSelectedPlayerId(playerId)) {
+			m_MessageDialog.Open(playerId, GetZBerryStreams().GetName(playerId)); //Without the item in hands
+		} else {
+			m_MessageDialog.Open(-1, "");
+		}
+	}
+
 	override bool OnDoubleClick(Widget w, int x, int y, int button) {
 		if (w != m_PlayersList) return false;
 		if (m_PermsMode) return SelectEntry();
 		if (m_BansMode) return SelectBan();
-
-		int oldRow = FindPlayerRow(m_SelectedPlayerId);
-		if (oldRow != -1) ResetRowColor(oldRow);
 
 		int selRow = m_PlayersList.GetSelectedRow();
 		if (selRow == -1) return true;
 
 		Param4<int, bool, int, int> plyData;
 		m_PlayersList.GetItemData( selRow, 0, plyData );
-		m_SelectedPlayerId = plyData.param1;
+		int clickedId = plyData.param1;
+		bool ctrl = KeyState(KeyCode.KC_LCONTROL) != 0 || KeyState(KeyCode.KC_RCONTROL) != 0;
+		bool shift = KeyState(KeyCode.KC_LSHIFT) != 0 || KeyState(KeyCode.KC_RSHIFT) != 0;
+		int anchorRow = FindPlayerRow(m_AnchorId);
 
-		HighlightRow(selRow);
+		if (shift && anchorRow != -1) {
+			//From the anchor to the clicked player, in list order: the clicked one ends up last
+			m_SelectedIds.Clear();
+			int step = 1;
+			if (selRow < anchorRow) step = -1;
+			for (int row = anchorRow; row != selRow + step; row += step) {
+				Param4<int, bool, int, int> rangeData;
+				m_PlayersList.GetItemData( row, 0, rangeData );
+				if (rangeData) m_SelectedIds.Insert(rangeData.param1);
+			}
+		} else if (ctrl) {
+			int index = m_SelectedIds.Find(clickedId);
+			if (index != -1) {
+				m_SelectedIds.RemoveOrdered(index);
+			} else {
+				m_SelectedIds.Insert(clickedId);
+			}
+			if (m_AnchorId == -1) m_AnchorId = clickedId;
+		} else {
+			m_SelectedIds.Clear();
+			m_SelectedIds.Insert(clickedId);
+			m_AnchorId = clickedId;
+		}
+
+		ApplySelection();
 		return true;
+	}
+
+	//Ctrl+A: every player in the list but the admin, in list order, so the last row is the one single-player functions use
+	void SelectAll() {
+		if (m_PermsMode || m_BansMode) return;
+
+		int selfId = ZBerryUIUtils.GetLocalPlayerId();
+		m_SelectedIds.Clear();
+		for (int row = 0; row < m_PlayersList.GetNumItems(); ++row) {
+			Param4<int, bool, int, int> rowData;
+			m_PlayersList.GetItemData( row, 0, rowData );
+			if (!rowData || rowData.param1 == selfId || m_SelectedIds.Find(rowData.param1) != -1) continue;
+			m_SelectedIds.Insert(rowData.param1);
+		}
+		m_AnchorId = -1;
+		if (m_SelectedIds.Count() > 0) m_AnchorId = m_SelectedIds[0];
+		ApplySelection();
+	}
+
+	//Whether the mouse is over the players list (Ctrl+A applies there only)
+	bool IsMouseOverList() {
+		if (!IsVisible()) return false;
+		Widget hovered = GetWidgetUnderCursor();
+		while (hovered) {
+			if (hovered == m_PlayersList) return true;
+			hovered = hovered.GetParent();
+		}
+		return false;
+	}
+
+	//The last selected player is "the" selected one: the server sends their details, the info lines show them
+	protected void ApplySelection() {
+		m_SelectedPlayerId = -1;
+		if (m_SelectedIds.Count() > 0) m_SelectedPlayerId = m_SelectedIds[m_SelectedIds.Count() - 1];
+		GetZBerryStreams().SetSelected(m_SelectedPlayerId);
+
+		RecolorRows();
+		int selRow = FindPlayerRow(m_SelectedPlayerId);
+		if (selRow != -1) {
+			HighlightRow(selRow);
+		} else {
+			SetInfo("");
+		}
 	}
 
 	protected bool SelectEntry() {
@@ -423,7 +591,51 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		m_PlayersList.GetItemData( row, 0, plyData );
 
 		m_PlayersList.SetItemColor( row, 0, COLOR_SELECTED );
-		m_PlyInfo.SetText("Health: " + plyData.param3.ToString() + " | Blood: " + plyData.param4.ToString());
+		ShowPlayerInfo(plyData.param1, plyData.param3, plyData.param4);
+	}
+
+	//One line of text in the first info line, the others empty
+	protected void SetInfo(string text) {
+		for (int i = 0; i < m_InfoLines.Count(); ++i) {
+			if (i == 0) {
+				m_InfoLines[i].SetText(text);
+			} else {
+				m_InfoLines[i].SetText("");
+			}
+		}
+		m_ShownSteamId = "";
+		m_CopyIdButton.Show(false);
+	}
+
+	//Health and blood come with the player states, the rest with the details the server sends for the selected player
+	protected void ShowPlayerInfo(int playerId, int health, int blood) {
+		ZBerryPlayerDetails details = GetZBerryStreams().GetDetails(playerId);
+		string first = "Health: " + health.ToString() + " | Blood: " + blood.ToString();
+		if (!details) {
+			SetInfo(first);
+			return;
+		}
+		if (GetGame().IsMultiplayer()) first += " | Ping: " + details.Ping.ToString() + " ms";
+
+		string second = "";
+		if (details.HasPosition) second = ZBDescribePosition(details.Position);
+		if (details.OnlineSeconds >= 0) {
+			if (second != "") second += " | ";
+			second += "Online: " + ZBerryTime.FormatDuration(details.OnlineSeconds);
+		}
+
+		string third = ZBerryPlayerDetails.GetStatusName(details.Status);
+		if (details.Vehicle != "") third += ", in " + details.Vehicle;
+
+		string fourth = "";
+		if (details.SteamId != "") fourth = "Steam64: " + details.SteamId;
+
+		m_InfoLines[0].SetText(first);
+		m_InfoLines[1].SetText(second);
+		m_InfoLines[2].SetText(third);
+		m_InfoLines[3].SetText(fourth);
+		m_ShownSteamId = details.SteamId;
+		m_CopyIdButton.Show(m_ShownSteamId != "");
 	}
 
 	protected bool SameRows(ZBerryPlayerArray players) {

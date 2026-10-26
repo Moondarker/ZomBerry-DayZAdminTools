@@ -1,6 +1,6 @@
 # ZomBerry Admin Tools
 
-A lightweight in-game admin menu for DayZ: player management, a function list (heal, teleport, weather, time and more), an object spawner and a live map. The function list is defined on the server, so missions and server-side mods can add their own commands.
+A lightweight in-game admin menu for DayZ: player management, a function list (heal, teleport, ESP, spectating, weather, time and more), an object spawner with loadouts, a live map with object markers, and an admin and kill log. The function list is defined on the server, so missions and server-side mods can add their own commands.
 
 ZomBerry has **no dependencies**, so it doesn't need Community Framework or any other mod. It's still in an early testing stage, so please report any issues, and mention your game and ZomBerry versions in the issue.
 
@@ -22,12 +22,17 @@ ZomBerry is a client **and** server mod. Admins need it loaded on their game, an
 2. **Accept the signature on the server.** Copy `Keys/Vaker.bikey` into the server's `keys` folder.
 3. **Start the server with a profile folder.** Use `-profiles=<folder>`; ZomBerry keeps its configuration and logs in `<profiles>/ZomBerry/`.
 4. **Become the first admin.** Start the server, take the setup token from its log, join, press `O` and enter it. See [First start](#first-start).
-5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab.
+5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab, under the gear icon in the header.
 
-Client and server must run the same major and minor version (for example 0.7.x on both). Otherwise the client refuses to open the menu and says why in chat.
+Client and server must run the same major and minor version (for example 0.8.x on both). Otherwise the client refuses to open the menu and says why in chat.
+
+**Upgrading from 0.7.x:**
+- Update both sides: 0.7.x and 0.8.x clients and servers can't talk to each other.
+- New permissions are only granted by `*` or a matching wildcard. Groups with hand-picked permissions need the new ones added, and wildcards such as the moderator's `zomberry.map.*` now cover more (see [Permissions](#permissions)).
+- The [changelog](CHANGELOG.md#upgrading-from-070) lists everything else.
 
 **Upgrading from 0.6.x:**
-- Update both sides: a 0.6.x client gets no answer from a 0.7 server, and the other way round.
+- Update both sides: a 0.6.x client gets no answer from a 0.7 or later server, and the other way round.
 - Community Framework is no longer needed.
 - Your `admins.cfg` is imported on the first start (see [Upgrading from admins.cfg](#upgrading-from-adminscfg)).
 - The [changelog](CHANGELOG.md#upgrading-from-06x) lists everything else.
@@ -72,20 +77,54 @@ Each admin belongs to one group, and each group has a level, permission patterns
 
 The `superadmin` group is always level 100, and level 100 may change everything, including itself. So a level 90 admin can manage moderators, but not fellow level 90 admins and not superadmins.
 
+#### Protecting admins from functions
+
+By default, any admin may run any function they have on anyone, including higher-ranked admins. A group can shield its members with these permissions:
+- **`zomberry.protect.lower`:** lower-ranked admins can't run any function on them.
+- **`zomberry.protect.lower.harm`:** lower-ranked admins can't run *harmful* functions on them, but can still heal or repair them.
+- **`zomberry.protect.same`** and **`zomberry.protect.same.harm`:** the same, against admins of the same level.
+
+Harmful functions are the ones that hurt, move or work against the target:
+- teleport target to cursor, and teleport target to you;
+- toggle god mode, invisibility, infinite ammo and freeze;
+- kill, bite and strip;
+- vomiting, laughter and sneezing;
+- set health and set blood.
+
+Commands added by mods decide for themselves (see [Adding commands](#adding-commands)).
+- **Superadmins ignore protections:** level 100 can always act on everyone.
+- **Groups with `*`** (superadmin, and the `admin` group from an imported `admins.cfg`) are protected automatically.
+- **Running a function on yourself** is always allowed.
+- **Kicks and bans** keep their own stricter rule, described below.
+
 #### Permissions
 
 | Permission | Allows |
 |---|---|
-| `zomberry.players.list` | The player list, with health and blood |
+| `zomberry.players.list` | The player list, and the selected player's health, blood, ping, time online, status and Steam64 ID |
 | `zomberry.players.kick` | Kicking players |
 | `zomberry.players.ban` | Banning players, also offline ones by ID |
 | `zomberry.players.unban` | The ban list, and unbanning |
+| `zomberry.messages.private` | Private messages to the selected player |
+| `zomberry.messages.announce` | Announcements to everyone online |
 | `zomberry.map.view` | The Map tab |
 | `zomberry.map.player_markers` | Player markers on the map |
-| `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map |
+| `zomberry.map.teleport` | Teleporting yourself with `Alt` + click on the map, to typed coordinates or to a saved location |
+| `zomberry.map.teleport_players` | Teleporting the selected player with `Ctrl` + click on the map, to typed coordinates or to a saved location. Follows the protection nodes |
+| `zomberry.map.locations.manage` | Saving and deleting locations on the Map tab |
+| `zomberry.map.markers.<category>` | Object markers on the map: `vehicles`, `tents`, `storage`, `bases` or `bodies`. `zomberry.map.markers.*` grants all of them |
 | `zomberry.spawn.ground` | Spawning at the cursor or at your feet |
 | `zomberry.spawn.inventory` | Spawning into your inventory |
-| `zomberry.permissions.manage` | The Permissions tab |
+| `zomberry.spawn.player` | Spawning for the selected player: at their feet or into their inventory (together with `zomberry.spawn.ground` or `.inventory`). Follows the protection nodes |
+| `zomberry.loadouts.use` | Loadouts in the Spawn tab: saving your own, trying loadouts on (together with `zomberry.spawn.inventory`) and getting your gear back, and using shared ones |
+| `zomberry.loadouts.share` | Sharing loadouts with the other admins, and replacing or deleting your own shared ones and those of lower-ranked admins |
+| `zomberry.loadouts.manage` | Replacing or deleting anyone's shared loadouts, whatever their rank |
+| `zomberry.loadouts.restore` | Giving players back the gear they died with, from the Logs tab |
+| `zomberry.loadouts.give` | Putting loadouts on other players, and giving them their own gear back |
+| `zomberry.permissions.manage` | The Permissions tab (under the gear icon) |
+| `zomberry.logs.view` | The Logs tab: the in-game admin and kill log |
+| `zomberry.teleport.revert` | Teleport players back from the Logs tab (with `zomberry.logs.view`). Rank protections apply to each player moved back |
+| `zomberry.protect.lower`, `.lower.harm`, `.same`, `.same.harm` | Protect the group's members from functions run by lower-ranked or same-level admins, see [Protecting admins from functions](#protecting-admins-from-functions) |
 | `zomberry.functions.<FunctionName>` | One function, for example `zomberry.functions.HealTarget`. Commands added by missions and mods get one too. |
 
 Other mods and missions can add their own nodes through the [Permissions API](#permissions-api). These are listed after ZomBerry's own in the Permissions tab.
@@ -130,9 +169,9 @@ For a local test server only, `-zbryGiveAdminRightsToEveryone=true` gives every 
 
 Bans are ZomBerry's own list, stored in `<profiles>/ZomBerry/ZomBerryBans.json`. They don't touch BattlEye's `ban.txt`.
 - **Who can be kicked or banned:** levels apply here too. Admins can only kick or ban admins ranked **below** them, and superadmins can kick or ban everyone. Nobody can kick or ban themselves. This also applies to offline bans of an admin's ID.
-- **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect.
+- **Reasons:** a kicked or banned player who is online gets the reason in chat, then is disconnected two seconds later. Their character is saved and logged out as on a normal disconnect. Back in the main menu, their game shows the reason again in a dialog, and for bans how long the ban still lasts and when it ends.
 - **Unconscious or restrained players:** kicking them kills their character. The normal logout treats it like combat logging. See [#53](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/53).
-- **Rejoining:** banned players are refused while they connect, before their character loads. The game can't show them a reason at that point, so they only see a disconnect. The server's ZomBerry log names them and the reason.
+- **Rejoining:** banned players are refused while they connect, before their character loads. Back in the main menu, their game shows the reason, how long the ban still lasts and when it ends. The server's ZomBerry log names them and the reason.
 - **Durations:** 1 hour, 1 day, 7 days, 30 days or permanent. Expired bans are removed on their own.
 - **The file:** entries have `Id` (Steam64), `Guid` (BattlEye GUID), `Name`, `Reason`, `BannedBy`, `Since` and `Until` (seconds since 1970, UTC; `0` means permanent). Either ID is enough for a ban to match. If the file can't be read, nobody is banned until it's fixed, and ZomBerry never overwrites it.
 
@@ -170,67 +209,198 @@ Keybinds only work while no menu is open, so they don't fire while you type in c
 
 ## Using the menu
 
-Open and close the menu with `O`, or close it with `Esc`. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
+Open and close the menu with `O`, or close it with `Esc` or the **×** in the header's top-right corner. The `O` key can be changed in DayZ's control settings as **Open Admin menu**.
+
+- **Closing with the mouse:** the **×** always works, even while a search or text field would stop `O` from closing the menu.
+- **The gear icon** next to it opens pages that don't need a tab of their own: Permissions and ESP. Only the pages you may use are listed. The dropdown closes by itself shortly after the mouse leaves it. The gear turns green while one of its pages is open, and it's hidden when you may not use any of them.
 
 ### Players
 
 The left panel lists everyone online. Admins are green, and the item in a player's hands or their vehicle is shown next to their name.
-- **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and their health and blood are shown below the list.
-- **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
+- **Selecting a target:** double-click a player to make them the target of functions. The selected player turns orange, and below the list you see:
+  - their health, blood and ping;
+  - their position (only with `zomberry.map.player_markers`) and how long they've been online;
+  - whether they're alive, unconscious, restrained or dead, and the vehicle they're in;
+  - their Steam64 ID. **Copy ID** puts it on the clipboard.
+
+  These details refresh every 5 seconds, and only for the selected player.
+- **Several players:** `Ctrl` + double-click adds a player to the selection or takes them out, `Shift` + double-click selects everyone from the last plain double-click to this one, and `Ctrl` + `A` with the mouse over the list selects everyone but you. Functions that work on several players (teleport target to cursor or to you, heal, god mode, invisibility, freeze, kill and the other Player and Punish functions) run on all of them and are logged once with every name. Any other function acts on the player selected last, the dark orange one; while such a function is selected, the others aren't highlighted. The info lines show the player selected last.
+- **Refreshing:** players who join or leave show up right away, health and the selected player's details update every 5 seconds, and the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
+- **Message:** sends a private message to the selected player, or an announcement to everyone. The **To** button switches between the two (with nobody selected, it's an announcement). Players see it as a notification at the side of the screen for 15 seconds, and in chat. Messages are up to 300 characters, and every one is logged with its text.
 - **Bans:** switches the list to the ban list, showing time left. Double-click a ban to see who banned them and why, then press **Unban** to lift it. **Players** switches back.
 
 ### Functions
 
 - **Running a function:** click it in the list, set its parameters if it has any (slider or exact value), then press **Execute** or double-click the function.
-  - Functions in the "OnTarget" and "==" categories act on the selected player. If no player is selected, some of them use you as the target and the rest ask you to select a player first.
-  - "Delete object near cursor" asks for confirmation: run it a second time on the same object.
-- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound yet.
+  - Functions in the Teleport, Player and Punish categories act on the selected player. If no player is selected, some of them use you as the target and the rest ask you to select a player first.
+  - "Delete object near cursor" deletes what the cursor is on: items, vehicles, bodies, base parts, infected or animals. It never deletes living players or objects that belong to the map. Run it a second time on the same object to confirm.
+  - "Clean up around cursor" removes one kind of thing within a radius (5–200 m): infected, dead bodies, loose items, or ruined items.
+    - Bases, tents, storage, stashes and fireplaces are never touched.
+    - The first run says how many it found, and running it again within 10 seconds deletes them.
+  - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
+- **Keys:** each function's key is shown after its name in the list.
+- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound; the button has no caption while such a function is selected.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
-- **Removing all binds:** select any function without parameters, hold `A` and press the button twice.
+- **Removing all binds:** select any function that can be bound, hold `A` and press the button twice.
 
 The stock set:
 
 | Category | Functions |
 |---|---|
-| OnTarget | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, heal, partial heal (diseases, wounds, food and water), toggle god mode, repair item in hands, refuel and repair nearby vehicles |
-| == | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
-| OnServer | FreeCam, time to day or night, set time, set date, set weather (fog, overcast, rain), delete object near cursor |
+| Teleport | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you |
+| Player | Heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, toggle infinite ammo, toggle freeze, repair item in hands, repair all gear |
+| Punish | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
+| Camera | FreeCam, spectate target, ESP |
+| World | Time to day or night, set time, set date, set weather (fog, overcast, rain) |
+| Objects | Delete object near cursor, clean up around cursor, flip vehicle near cursor, refuel and repair nearby vehicles |
 
-**God mode:** the target takes no damage until the function is run again. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+Set time, set date and set weather start from the game's current time, date and weather when you select them.
 
-**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character.
+**God mode:** the target takes no damage and their stamina stays full until the function is run again. Nothing they wear or carry is damaged either, weapons included, and their body temperature stays comfortable. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
+
+**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them or their gear until it's switched off again, and their body temperature stays comfortable. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard. Other players walk through them and get no actions on them, such as checking their pulse. Logging out or respawning doesn't end it.
+
+**Teleporting several players:** select them in the players list, then run Teleport - Target to Me or Teleport - Target to Cursor. They're placed on a ring around the spot, 2 m apart, so they don't end up inside each other. Players in vehicles stay where they are, and so do admins protected from your rank.
+
+**Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot, and an empty one is filled too; an empty chamber still needs a reload. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
+
+**Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
+
+**Spectate target:** see through the selected player's eyes.
+- **Camera:** it follows where their own camera looks, up and down and free look included. While they play in third person, the camera moves over their shoulder.
+- **Distance:** it works anywhere on the map. What your game loads moves with the camera, so you see the people and vehicles around them, and the camera follows them when they teleport or drive off.
+- **Your body** stays frozen where you left it. If you disconnect while spectating, it logs out like after a normal disconnect.
+- **Stopping:** run the function again, or it ends by itself when they die or leave, or when you lose the permission.
+- **Can't be combined:** you can't use it together with FreeCam.
+
+**Repair all gear:** like repair item in hands, for everything the target wears and carries, what's attached to or inside it, and the item in hands.
+
+**ESP:** draws players, vehicles, infected, animals and loot through walls on your own screen. Running it switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on the [ESP tab](#esp).
+- **Players:** a box with name, distance, health and blood, and a skeleton within 150 m. Players beyond what your game loads (about 1 km) show as a name and distance.
+- **Vehicles:** a box with the name, within 1.5 km.
+- **Infected and animals:** a box, within 300 m.
+- **Loot:** items on the ground, with name and distance, within 50 m.
+- **Who sees what:** only you see it, and it stays on when the menu is closed. It switches off by itself if you lose the permission.
+
+**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character. What your game loads moves with the camera, so you see players and vehicles wherever you fly. Your body stays frozen where you left it, hidden on your screen. The camera also works in underground areas, and goes through the ground where something is built below it.
 
 ### Spawn
 
 - **Picking an object:** use the filter buttons from `SpawnMenuSorting`, or the search field, which matches class names and display names. Double-click a category header to fold it, and double-click an entry to spawn it.
-- **Choosing where it goes:** the target button switches between three places:
+- **Choosing where it goes:** hover over the target button to open the list of places above it, then click one, or click the button itself to step through them. The list stays open until the mouse leaves it, and only shows the places you're allowed to use:
   - **Cursor:** where you look.
   - **Ground:** at your feet.
   - **Inventory:** into your own inventory.
     - Weapon attachments go straight onto a carried weapon with a free matching slot.
     - A matching magazine is loaded into it when the weapon is empty.
     - If nothing fits, chat tells you whether there's no room or the object can't be carried at all.
+  - **Player's feet** and **Player's inv.:** the same for the player you double-clicked in the list. They get a chat message when something lands in their inventory.
 - **Safe and Expert:** the header button switches between the two lists. Safe (green) hides classes without a proper display name, such as test and placeholder items. Expert (red) shows everything.
+
+#### Loadouts
+
+The **Loadouts** button (with `zomberry.loadouts.use`) swaps the spawn list for your loadouts: sets of gear you can put on yourself. The list on the left has your own loadouts first, then the shared ones with who shared them. The right side shows what the selected one holds.
+- **Save** keeps what you wear and hold right now, under the name typed next to it. A loadout keeps everything: clothing, attachments, what's in each pocket and where, the item in hands, hotbar slots, quantities and liquids, magazines and chambered rounds, health and wetness, so it can also be a worn-out kit on purpose. Saving under an existing name replaces that loadout. Your own loadouts are kept in `ZomBerryMyLoadouts.json` in your game's profile folder, so they go with you to every server.
+- **Try on** (or a double-click) replaces your gear with the loadout. Before the first try, the server keeps your own gear; more tries don't replace it.
+- **Restore** puts that gear back as it was and forgets it. It's kept until then, also when you log out or the server restarts (`ZomBerryLoadoutOriginals.json` in the server's `ZomBerry` profile folder). Restore replaces whatever you're wearing at that moment.
+- **Spawn rules apply:** items your group's spawn rules don't allow are shown in red, the list says how many each loadout has, and trying it on leaves them out. Whatever was inside them is put wherever there's room.
+- **Items from other mods:** a loadout saved on a server with other mods can hold items this server doesn't have. They're marked "not on this server" in red, counted in the list, and left out when you try it on, like items the spawn rules don't allow. So are rounds of ammo this server doesn't have.
+- **Share** (with `zomberry.loadouts.share`) puts the selected one of your loadouts on the server, for every admin with `zomberry.loadouts.use` to try on. Sharing under the name of a shared loadout replaces it, if you may change it: your own, those of admins ranked below you (by their current rank, even when they're offline), or anyone's with `zomberry.loadouts.manage`. Shared loadouts are kept in `ZomBerryLoadouts.json`, up to 100.
+- **Delete** asks for a second click, then deletes the selected loadout: one of yours, or a shared one you may change.
+- **Players online** are listed after the loadouts. Select one to see what they wear now, then **Save** keeps a copy as your own loadout (the name is filled in for you), or **Try on** puts it on you. Players whose group is protected from your rank can't be copied.
+- **Give to selected players** (with `zomberry.loadouts.give`) puts the selected loadout, or the selected player's current gear, on the players selected in the list on the left (`Ctrl` or `Shift` + double-click selects several). It asks first.
+  - What they wore is kept on the server, like your own gear when you try a loadout on. **Undo for selected players** gives it back, and an admin can also get it back with their own **Restore**. Only the gear from before the first replacement is kept until it's given back.
+  - Your spawn rules apply, and it counts as harmful: their group's protection from your rank applies, and it's logged.
 
 ### Map
 
-With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. They update every 2 seconds while the map is open.
+With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. Their positions update every 2 seconds while the map is open.
+
+**Filters**, top left, opens a list of marker types when you point at it, and closes shortly after the mouse leaves. Each type only appears with its permission.
+- **Players:** on by default.
+- **Vehicles:** cars and boats, with their names.
+- **Tents:** pitched tents and shelters.
+- **Storage:** barrels, sea chests, wooden crates and buried stashes.
+- **Bases:** fences, watchtowers and flagpoles.
+- **Bodies:** dead players, with their names.
+- **Locations:** saved locations, on by default.
+
+Storage and base parts are grouped: one marker per 50 m square, with a count, such as "Base (23)". Objects in someone's hands or inventory aren't shown. Object markers refresh every 10 seconds, and one map shows up to 1,000 of them. If there are more, the hint below the map says how many were left out.
 - **Teleporting:** hold `Alt` and click a spot.
+- **Teleporting a player:** select them in the list, then hold `Ctrl` and click a spot.
 - **Zooming out:** double-click the map.
 
 The cursor's coordinates are shown below the map.
 
+**Coordinates**, top centre: type X and Y as the map shows them, then press **Go** to teleport yourself there, or **Player** for the selected player. The height comes from the ground.
+
+**Locations**, top right, opens the saved locations: places all admins share, such as a trader or an admin area.
+- **Click a name** to show it on the map.
+- **Go** teleports you there, **Player** teleports the selected player. You arrive exactly where the location was saved, height included, so a spot inside a building works.
+- **Save here** (with `zomberry.map.locations.manage`) saves your current position under the name you typed. **X** deletes a location: click it twice.
+- The list is kept in `ZomBerryLocations.json` in the server's `ZomBerry` profile folder, up to 100 locations with names of up to 40 characters.
+
+### Logs
+
+Admins with `zomberry.logs.view` get this tab. It shows what the server logged, newest first: functions run, spawns, teleports, messages, saved locations, loadouts, kicks, bans, permission changes, refused attempts, logins, respawns and logouts, kills, damage between players, and server starts and stops. Times are in your local time.
+- **Kept across restarts:** the server keeps the last 2048 events and 10486 damage records in `ZomBerryEventLog.bin` in its `ZomBerry` profile folder, with the newest additions in `ZomBerryEventLog.bin.journal`.
+  - Each start logs "Server started", with how much it restored, and whether the previous run stopped without a clean shutdown. A clean shutdown logs "Server stopping".
+  - Even after a crash, everything logged up to it is kept.
+  - A file that can't be read is set aside as `.bad`, and the log starts empty.
+  - Delete both files, with the server stopped, to clear the log.
+- **Deaths** say what killed the player: another player, an infected, an animal, a vehicle, an explosion, a fall, drowning, fire, bleeding, poisoning, thirst or hunger. The damage log only covers damage between players.
+- **Gear at death:** with `zomberry.loadouts.use`, right-click a death and choose **Loadout overview**, or double-click it. The window shows what the player wore and held when they died, hotbar included, marked like loadouts in the Spawn tab.
+  - **Try on** puts it on you, like a loadout: your own gear is saved first, and **Restore** in the Spawn tab gives it back. It needs `zomberry.spawn.inventory` too.
+  - **Restore on victim** (with `zomberry.loadouts.restore`) gives it back to the player, if they're online and alive. It replaces what they wear, so their group's protection from harmful functions applies.
+  - **Save as my loadout** keeps a copy among your own loadouts.
+  - Your spawn rules apply when it's put on anyone.
+  - The server keeps each player's last 5 deaths, up to 500 in all. They're written to `ZomBerryDeathLoadouts.json` only when the server stops cleanly, and read back (and the file deleted) at the next start. After a crash or a killed server, the deaths before it are gone.
+- **Teleport here:** with `zomberry.map.teleport`, right-click an entry and choose **Teleport here** to go where it happened:
+  - **deaths:** where the player died;
+  - **teleports:** where the players went (the middle, for several);
+  - **spawns:** where the item was spawned;
+  - **functions run on players:** where the player was, or the middle of several players if they were within 100 m of it;
+  - **functions that act at a spot:** delete object, clean up and flip vehicle;
+  - **joins, respawns and logouts:** where the character was;
+  - **kicks and bans:** where the player was, if they were online;
+  - **saved and deleted locations.**
+
+  Time and weather entries, messages and loadout entries have no position. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Entries logged by 0.8.0 pre-releases may have no position.
+- **Teleport back:** with `zomberry.teleport.revert`, right-click a teleport and choose **Teleport back**. Every teleport is kept this way: the Teleport functions, Map tab teleports and saved locations. Each player goes back to where they were before that teleport, even if they've moved since.
+  - **One player:** they're moved back at once, and chat says how it went.
+  - **Several players:** a window lists them, with where they were and whether they can be moved back now. Click players to tick them, then choose **Teleport selected back**, or **Teleport all back**.
+  - **Who stays:** players in a vehicle, offline, or protected from your rank stay where they are, and you can try again later. Players who died since aren't moved: it's a new character. Players already moved back are skipped.
+  - **The revert is a teleport too:** it's logged, and it can be reverted in turn.
+  - **What's kept:** the server keeps the last 200 teleports, up to 100 players each. They're written to `ZomBerryTeleportReturns.json` only when the server stops cleanly, and read back (and the file deleted) at the next start.
+- **Language:** names from the game (animals, vehicles, weapons, objects) show in your game's language. The server's log file has them in the server's language.
+- **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
+- **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
+- **Copying:** right-click any line for **Copy this line** or **Copy the shown log**, with date, type and Steam64 ids.
+- **Live and Paused:** the header button stops the list from updating while you read it.
+- **Details:** select a row to see it in full below the list, wrapped over up to three lines.
+
+### ESP
+
+Admins who may run the ESP function open this tab from the gear icon in the header. It sets what ESP draws on your own screen. The settings are saved on your computer, in `ZomBerryESP.json` next to `ZomBerryConfig.json`.
+- **Players:** box, skeleton (within 150 m), name, distance and health, each on its own. **Far players** shows players outside your network range as labels, with name and distance.
+- **Vehicles, infected and animals:** each on its own.
+- **Loot:** items lying on the ground, as a small square with the name and distance. Things that are built or placed (bases, tents, barrels and crates) aren't loot here. With a lot of loot around, the nearest items get names first.
+- **Range:** how far players and vehicles are drawn, and separately infected and animals (50–3000 m), and loot (10–300 m, 50 m by default).
+- **The header button** shows whether ESP is on, and switches it like the ESP function does.
+
+Changes apply right away while ESP is on. The server only sends everyone's position and health while your settings use them (far players or health).
+
 ### Permissions
 
-Admins with `zomberry.permissions.manage` get this tab, which edits groups, permissions and spawn rules. See [In-game editor](#in-game-editor).
+Admins with `zomberry.permissions.manage` open this tab from the gear icon in the header. It edits groups, permissions and spawn rules. See [In-game editor](#in-game-editor).
 
 ## Troubleshooting
 
 - **The menu doesn't open:**
   - Check that both client and server load ZomBerry, and that your ID is in a group in `ZomBerryPermissions.json`.
   - The server log shows "Auth respond to admin <name>" for admins. A chat message when you press `O` tells you about a version mismatch.
-  - A 0.6.x client on a 0.7 server (or the other way round) gets no answer at all, so update both sides.
+  - A client and server of different minor versions (0.7.x and 0.8.x, say) don't work together, so update both sides. A 0.6.x client gets no answer at all.
   - If `ZomBerryPermissions.json` can't be read (broken JSON), the server says so in its ZomBerry log and nobody is an admin until it's fixed. ZomBerry never overwrites a broken file.
 - **A tab or function is missing:** the admin's group lacks the permission for it.
 - **A keybind does nothing:** keybinds don't run while chat, the inventory or any other menu is open.
@@ -250,13 +420,17 @@ The function list lives on the server and is sent to admins when they open the m
 GetZomberryCmdAPI().AddCategory("MyMod", COLOR_RED);
 ```
 
-**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL)** adds a command:
+**AddCommand(string displayName, string functionName, Class instance, string categoryName, bool targetRequired = true, ZBerryFuncParamArray functionParams = NULL, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false)** adds a command:
 - `displayName`: shown in the function list.
 - `functionName`: the method to call on `instance`.
 - `instance`: the object that has the method. Keep it alive for as long as the command exists.
-- `categoryName`: an existing category.
+- `categoryName`: an existing category. The stock ones are Teleport, Player, Punish, Camera, World and Objects. Commands for the categories from before 0.8.0 still work: OnTarget goes to Player, `==` to Punish and OnServer to World.
 - `targetRequired`: if `true`, the admin must select a player first. If `false`, the admin is the target when nobody is selected.
 - `functionParams`: up to 3 integer parameters, shown as sliders with an exact-value box. A parameter can name its values: the box then shows the name, and admins can type either a name or a number. With as many names as values, each value gets its own name. With fewer names, the range is split evenly between them. The function still receives the number.
+- `harmful`: set it to `true` if the command hurts, moves or works against its target. Groups with `zomberry.protect.lower.harm` or `zomberry.protect.same.harm` are then shielded from it.
+- `serverWide`: set it to `true` if the command acts on the world rather than on a player (time, weather, cleanup). The log files it that way, and its entry doesn't get a player's position for **Teleport here** (see `SetCallPosition`). Commands in the old OnServer category count as server-wide.
+- `keybindable`: set it to `false` to keep the command off keys, so it only runs from the menu.
+- `multiTarget`: set it to `true` if the command makes sense on several selected players at once. ZomBerry then calls it once per player, with the usual signature, and logs one event naming all of them. Without it, the command gets only the player the admin selected last.
 
 ```c
 GetZomberryCmdAPI().AddCommand("Induce sneeze", "MyModSneezeTarget", this, "MyMod", true);
@@ -285,10 +459,64 @@ Commands without parameters may leave out the `fValues` argument.
 Helpers:
 - **`ZBGetPlayerById(int sessionId)`** returns the `PlayerBase` of a session id, or `NULL` if that player is gone.
 - **`ZomberryStockFunctions.MessagePlayer(PlayerBase player, string message)`** shows a `[ZomBerry]` chat message to one player.
+- **`GetZomberryCmdAPI().RefuseCall(string reason)`**: call it from your command when it does nothing (no valid target, nothing to act on). The admin log then files the call as refused, with the reason, instead of as run. Tell the admin yourself with `MessagePlayer`.
+- **`GetZomberryCmdAPI().AwaitConfirmation()`**: call it when this run only asked the admin to run the command again to confirm. That run isn't logged; the confirmed one is.
+- **`GetZomberryCmdAPI().DescribeCall(string text)`**: what this run did, logged instead of "AdminName ran My command". Write `{actor}` for the admin and `{target}` for the selected player, e.g. `"{actor} gave {target} a medkit"` or `"{actor} switched night vision on"`. The log view highlights both names.
+- **`GetZomberryCmdAPI().RecordMove(PlayerBase player, vector from)`**: for a command that teleports players. Call it after each successful move, with where the player was before it. The log event is then marked revertable, and admins can teleport the player back from the Logs tab. Players without a Steam64 id (singleplayer) aren't recorded.
+- **`GetZomberryCmdAPI().SetCallPosition(vector position)`**: for a command that acts at a spot rather than on a player, like around the cursor or on an object. Admins can then use **Teleport here** on its log entry. Commands that aren't server-wide don't need it: their entry gets where the selected player is once the command has run (the admin, with nobody selected). Teleports recorded with `RecordMove` get where the players went. `SetCallPosition` takes precedence over both. For a command run on several players, the entry gets the middle of their positions if they're all within 100 m of it, and no position otherwise.
+- **`GetZomberryCmdAPI().GetCurrentCall()`**: the running call (`ZBerryCall`): `GetFunction()`, `GetAdmin()` and `GetTarget()` (identities, the target is `NULL` when the admin selected themselves). For a command run on several selected players, `GetTargetIndex()` and `GetTargetCount()` say which of them this run is for.
+
+The helpers above only work while your command runs. Called later, from a `CallLater` callback, they write a warning to the log and change nothing.
+
+```c
+void MyModHeal( string funcName, int adminId, int targetId, vector cursor ) {
+	PlayerBase admin = ZBGetPlayerById(adminId);
+	PlayerBase target = ZBGetPlayerById(targetId);
+	if (!target || !target.IsAlive()) {
+		ZomberryStockFunctions.MessagePlayer(admin, "Select a living player");
+		GetZomberryCmdAPI().RefuseCall("Select a living player");
+		return;
+	}
+	//...
+}
+```
 
 Working examples are in [ZomBerryStockFnc.c](ZomBerry/Addons/scripts/5_Mission/ZomBerryStockFnc.c), with all stock commands, and [Examples/missionExample.chernarusplus/init.c](Examples/missionExample.chernarusplus/init.c), with commands added from a mission.
 
 Every command gets the permission node `zomberry.functions.<functionName>` by itself, so groups can be given it in the Permissions tab.
+
+### Client-side functions
+
+Commands run on the server. When a command needs something on the admin's own game, such as an overlay, a camera or a sound, it can switch a **client feature** on that client. ZomBerry's ESP and spectating work this way.
+- **Server:** the command (after ZomBerry checked its permission) calls `SetClientFeature`.
+- **Client:** whatever was registered under the same name runs, with the arguments.
+
+| Method | Side | Does |
+|---|---|---|
+| `SetClientFeature(PlayerIdentity identity, string feature, bool enabled, TIntArray args = NULL, string requiredNode = "")` | Server | Switches the feature on that player's client. With `requiredNode`, it's switched off by itself when the player loses that permission |
+| `bool IsClientFeatureActive(PlayerIdentity identity, string feature)` | Server | Whether it's on for that player |
+| `RegisterClientFeature(string feature, Class instance, string funcName)` | Client | What runs when the server switches it: `void funcName(bool enabled, TIntArray args)` |
+| `bool IsClientFeatureEnabled(string feature)` | Client | Whether the server switched it on for this client |
+
+```c
+//Both sides load this mod. Server: a command that switches an overlay on the admin's client
+void MyModOverlayCmd( string funcName, int adminId, int targetId, vector cursor ) {
+	PlayerBase admin = ZBGetPlayerById(adminId);
+	if (!admin) return;
+
+	bool on = !GetZomberryCmdAPI().IsClientFeatureActive(admin.GetIdentity(), "mymod_overlay");
+	GetZomberryCmdAPI().SetClientFeature(admin.GetIdentity(), "mymod_overlay", on, NULL, ZBerryPermissions.FunctionNode(funcName));
+}
+
+//Client, at startup
+GetZomberryCmdAPI().RegisterClientFeature("mymod_overlay", this, "MyModOnOverlay");
+
+void MyModOnOverlay(bool enabled, TIntArray args) {
+	m_Overlay.Show(enabled);
+}
+```
+
+The server only decides whether a feature is *offered*: a modified client can always draw whatever its own game knows. Keep data the player shouldn't have on the server, and send it only while the feature is on.
 
 ### Permissions API
 
@@ -313,6 +541,7 @@ GetZomberryPermAPI().RegisterNode("mymod.vip.teleport");
 | `int GetLevel(PlayerIdentity identity)` | Group level, 0 to 100 (100 is superadmin), or -1 for players who aren't admins |
 | `string GetGroup(PlayerIdentity identity)` | Group name, or `""` |
 | `bool CanActOn(PlayerIdentity actor, PlayerIdentity target)` | ZomBerry's rank rule, the one kicks and bans use: admins can only act on lower-ranked admins, and superadmins on everyone. Players who aren't admins and the actor themselves are always allowed |
+| `bool CanTarget(PlayerIdentity actor, PlayerIdentity target, bool harmful)` | The rule functions use: whether the target's group is protected from the actor's rank (`zomberry.protect.*`). Superadmins and the actor themselves are always allowed |
 | `bool CanSpawn(PlayerIdentity identity, string className)` | Whether the player's spawn rules allow the class |
 
 ```c
@@ -345,16 +574,17 @@ The example mission registers `missionexample.vip_loadout` and gives members of 
 
 ### God mode and other mods
 
-ZomBerry's god mode uses the engine's damage switch, `SetAllowDamage(false)`. Other mods use the same switch: a safe zone, for example, turns damage off on the way in and back on on the way out. That also ends god mode for an admin who walks out of the zone.
+ZomBerry's god mode and invisibility use the engine's damage switch, `SetAllowDamage(false)`. Other mods use the same switch: a safe zone, for example, turns damage off on the way in and back on on the way out. That also ends god mode for an admin who walks out of the zone.
 
-To avoid that, check ZomBerry's god mode before turning damage back on:
+To avoid that, check ZomBerry before turning damage back on:
 - **`#define ZOMBERRY_AT`** is set while ZomBerry is loaded, so the code also compiles without it.
 - **`bool PlayerBase.ZBIsGod()`** says whether the player is in god mode.
+- **`bool PlayerBase.ZBIsInvisible()`** says whether the player is invisible (Toggle invisibility).
 
 ```c
 void MyModLeaveSafeZone(PlayerBase player) {
 #ifdef ZOMBERRY_AT
-	if (player.ZBIsGod()) return; //ZomBerry's god mode keeps damage off
+	if (player.ZBIsGod() || player.ZBIsInvisible()) return; //ZomBerry keeps damage off
 #endif
 	player.SetAllowDamage(true);
 }
@@ -362,7 +592,7 @@ void MyModLeaveSafeZone(PlayerBase player) {
 
 **`void PlayerBase.ZBSetGod(bool isGod)`** switches god mode on or off, like the stock function but without healing or a chat message.
 
-Both work on the **server** only. The flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client.
+God mode works on the **server** only. Its flag isn't sent to clients, so `ZBIsGod()` is always `false` there, and `ZBSetGod()` does nothing on a multiplayer client. Invisibility is sent to every client, so `ZBIsInvisible()` works on both sides.
 
 ### Testing without a server
 
@@ -379,10 +609,10 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 
 | Path | Contents |
 |---|---|
-| `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
-| `4_World/` | God mode on `PlayerBase` (`ZBIsGod`, `ZBSetGod`), and the free and spectator cameras |
-| `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, bans, spawning, version and build info |
-| `5_Mission/ui/` | Admin menu components, one class per tab or panel |
+| `3_Game/` | ZomBerry's own RPC layer (`ZBerryRPC.c`: one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp`), the kick notice shown in the main menu, localized game names |
+| `4_World/` | God mode and invisibility on `PlayerBase` (`ZBIsGod`, `ZBSetGod`, `ZBIsInvisible`) and what they protect (stamina, bleeding, gear, temperature), death causes, the entity registry for map markers, ESP drawing, the free and spectator cameras |
+| `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, streams to the menu, the event log, bans, kick notices, spawning, loadouts, saved locations, messages, teleport returns, spectating, client features, world tools, version and build info |
+| `5_Mission/ui/` | Admin menu components, one class per tab, panel or dialog, plus the ESP overlay |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
 | `5_Mission/*.c` | Mission hooks, command API, stock functions, config, logger, keybinds |
 
@@ -396,8 +626,8 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 
 Open ideas and known issues are tracked on [GitHub issues](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues). Among them:
 - Keybinds for functions with parameters
-- New functions from the community's suggestions, such as FreeCam camera modes, teleporting a player to a map spot or flipping cars ([#42](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/42))
+- Configurable Spawn tab categories ([#56](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/56))
+- More of the community's suggestions, such as FreeCam camera modes ([#42](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/42))
 - Translations ([#36](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/36))
-- Client-side functions registered by other mods ([#38](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/38))
 
 What's done is in the [changelog](CHANGELOG.md).

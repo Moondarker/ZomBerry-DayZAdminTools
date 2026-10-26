@@ -81,8 +81,8 @@ PanelWidgetClass FunctionsWrapper {
    vexactsize 0
    {
     PanelWidgetClass FuncParamSlot0 {
-     position 9.44093 0.75398
-     size 581.46503 36
+     position 2 0.75398
+     size 589 36
      valign bottom_ref
      hexactpos 1
      vexactpos 0
@@ -90,8 +90,8 @@ PanelWidgetClass FunctionsWrapper {
      vexactsize 1
     }
     PanelWidgetClass FuncParamSlot1 {
-     position 9.44533 0.51768
-     size 581.47003 36
+     position 2 0.51768
+     size 589 36
      valign bottom_ref
      hexactpos 1
      vexactpos 0
@@ -99,8 +99,8 @@ PanelWidgetClass FunctionsWrapper {
      vexactsize 1
     }
     PanelWidgetClass FuncParamSlot2 {
-     position 9.29193 0.28138
-     size 581.47003 36
+     position 2 0.28138
+     size 589 36
      valign bottom_ref
      hexactpos 1
      vexactpos 0

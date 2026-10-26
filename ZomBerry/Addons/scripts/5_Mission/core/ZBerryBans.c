@@ -54,6 +54,39 @@ class ZBerryTime {
 		return year.ToString() + "-" + month.ToStringLen(2) + "-" + day.ToStringLen(2) + " " + hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + " UTC";
 	}
 
+	//Seconds this machine's clock is ahead of UTC (time zone and daylight saving), to the nearest quarter hour
+	static int GetLocalOffset() {
+		int year, month, day, hour, minute, second;
+		GetYearMonthDay(year, month, day);
+		GetHourMinuteSecond(hour, minute, second);
+		int localNow = FromDate(year, month, day, hour, minute, second);
+		int utcNow = Now();
+		float difference = localNow - utcNow; //Typed locals: the same maths in one expression came out 0
+		float quarters = difference / 900.0;
+		int rounded = Math.Round(quarters);
+		return rounded * 900;
+	}
+
+	//"21:05:33" in the local time of this machine (offset from GetLocalOffset)
+	static string FormatLocalClock(int time, int offset) {
+		int localTime = time + offset;
+		int secondsOfDay = localTime % 86400;
+		if (secondsOfDay < 0) secondsOfDay += 86400;
+		int hour = secondsOfDay / 3600;
+		int minute = (secondsOfDay / 60) % 60;
+		int second = secondsOfDay % 60;
+		return hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2);
+	}
+
+	//"2026-10-18 21:05:33" in the local time of this machine (offset from GetLocalOffset)
+	static string FormatLocal(int time, int offset) {
+		int localTime = time + offset;
+		int days = localTime / 86400;
+		int year, month, day;
+		CivilFromDays(days, year, month, day);
+		return year.ToString() + "-" + month.ToStringLen(2) + "-" + day.ToStringLen(2) + " " + FormatLocalClock(time, offset);
+	}
+
 	//"3d 4h", "2h 5min", "45min"
 	static string FormatDuration(int seconds) {
 		if (seconds < 60) return "<1min";
@@ -264,22 +297,33 @@ class ZBerryBans {
 		return reason;
 	}
 
+	//Server: why they're being disconnected, for their game to show once it's back in the main menu (the engine's own
+	//disconnect screen can't show a reason). until: ban end (ZBerryTime), 0 permanent; ignored for kicks
+	static void SendKickNotice(PlayerIdentity identity, string reason, bool banned, int until) {
+		if (!identity) return;
+
+		int remaining = 0;
+		if (banned && until > 0) remaining = Math.Max(0, until - ZBerryTime.Now());
+		Param4<bool, string, int, int> notice = new Param4<bool, string, int, int>(banned, reason, until, remaining);
+		GetZBerryRPC().SendRPC( ZBerryRPCOp.KickNotice, notice, true, identity );
+	}
+
 	//Chat message first, the disconnect a moment later
 	void KickPlayer(PlayerBase player, string message) {
-		if (!player || !player.GetIdentity()) return;
+		if (!player || !ZBGetIdentity(player)) return;
 
 		ZomberryStockFunctions.MessagePlayer(player, message);
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(FinishKick, KICK_DELAY, false, player);
 	}
 
 	protected void FinishKick(PlayerBase player) {
-		if (!player || !player.GetIdentity()) return; //Left by themselves meanwhile
+		if (!player || !ZBGetIdentity(player)) return; //Left by themselves meanwhile
 
 		MissionServer mission = MissionServer.Cast(GetGame().GetMission());
 		if (!mission) return;
 
 		//Vanilla logout: saves the character and removes it from the world before disconnecting
-		PlayerIdentity identity = player.GetIdentity();
+		PlayerIdentity identity = ZBGetIdentity(player);
 		mission.PlayerDisconnected(player, identity, identity.GetId());
 	}
 };

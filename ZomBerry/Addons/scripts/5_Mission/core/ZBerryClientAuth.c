@@ -22,6 +22,7 @@ class ZBerryClientAuth {
 			m_State = ZBerryAuthState.ADMIN;
 			m_Permissions = {"*"};
 			m_SpawnRules = {"*"};
+			GetZBerryEventLog().StartSync(NULL); //Singleplayer: the local player reads the log
 			GetZomberryPermAPI().OnLocalPermissionsChanged.Invoke();
 			return;
 		}

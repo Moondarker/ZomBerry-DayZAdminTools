@@ -3,11 +3,10 @@
 //CF defines RPCManager, GetRPCManager and CallType itself, and both mods are often loaded together
 const int ZBERRY_RPC_ID = 74635;
 
-//Sent with every message, client and server must agree on them: only ever append, never renumber or reuse
+//Sent with every message, client and server must agree on them: only ever append, never renumber or reuse.
+//Retired in 0.8.0, never reuse: 2, 3 (player list polling), 19, 20 (map marker polling), 21 (player headings)
 enum ZBerryRPCOp {
 	AdminAuth = 1,
-	SyncPlayersRequest = 2,
-	SyncPlayers = 3,
 	SyncFunctionsRequest = 4,
 	SyncFunctions = 5,
 	ExecuteCommand = 6,
@@ -22,7 +21,48 @@ enum ZBerryRPCOp {
 	Ban = 15, //Client -> server: session id (-1: offline), offline id, reason, duration in seconds (0: permanent)
 	Unban = 16, //Client -> server: Steam64 id or GUID
 	BansRequest = 17,
-	BansData = 18 //Server -> client: ban list, server time
+	BansData = 18, //Server -> client: ban list, server time
+	Subscribe = 22, //Client -> server: what this client shows (ZBerryStreamFlags, marker categories, selected player, view)
+	Roster = 23, //Server -> client: who is online, when it changed
+	PlayerState = 24, //Server -> client: packed positions, headings, health (ZBerryStatePacker)
+	Markers = 25, //Server -> client: the map markers of one category, when they changed
+	ClientFeature = 26, //Server -> client: switch a client-side feature (name, on/off, arguments)
+	CameraMode = 27, //Client -> server: a watched player's 1st/3rd person mode (ZBerrySpectate)
+	LogEvents = 28, //Server -> client: start over, a batch of log events (ZBerryEventLog)
+	LogDamage = 29, //Server -> client: start over, new player and weapon names, a batch of damage records
+	Message = 30, //Client -> server: recipient's session id (-1: everyone), text
+	PlayerDetails = 31, //Server -> client: the selected player's id, ping, position, time online, status (ZBerryPlayerDetails)
+	LocationAdd = 32, //Client -> server: name; saved at the admin's position
+	LocationDelete = 33, //Client -> server: name
+	LocationTeleport = 34, //Client -> server: name, session id of the player to move (-1: the admin)
+	Locations = 35, //Server -> client: version, the saved locations (ZBerryLocations)
+	Chat = 36, //Server -> client: a chat line, for admins in FreeCam or spectating (their client has no character to get it)
+	CameraView = 37, //Client -> server: a watched player's camera heading and pitch (ZBerrySpectate)
+	SpectateView = 38, //Server -> client: the watched player's camera heading and pitch, relayed to whoever spectates them
+	KickNotice = 39, //Server -> client, just before a kick or ban: banned, reason, ban end, seconds left (ZBerryKickNotice)
+	ExecuteCommandTargets = 40, //Client -> server: function id, session ids of the selected players (last: the one single-target functions act on), cursor, values
+	LoadoutsRequest = 41, //Client -> server: the shared loadouts and whether original gear is saved
+	Loadouts = 42, //Server -> client: original gear saved, shared loadout headers (ZBerryLoadoutHeader)
+	LoadoutDetailsRequest = 43, //Client -> server: name of a shared loadout
+	LoadoutDetails = 44, //Server -> client: a shared loadout with its items
+	LoadoutCapture = 45, //Client -> server: name; the admin's current gear comes back as LoadoutCaptured
+	LoadoutCaptured = 46, //Server -> client: the admin's current gear as a loadout, to save on the client
+	LoadoutTry = 47, //Client -> server: shared, name, the loadout (the admin's own; empty for a shared one)
+	LoadoutRestore = 48, //Client -> server: put the gear from before the first try back on
+	LoadoutShare = 49, //Client -> server: a loadout to share (replaces the shared one of that name)
+	LoadoutDelete = 50, //Client -> server: name of a shared loadout
+	DeathLoadoutRequest = 51, //Client -> server: id of a kill event; the gear comes back as DeathLoadout
+	DeathLoadout = 52, //Server -> client: event id, why it's not kept ("" if it is), the gear, the victim's state (ZBerryVictimState)
+	DeathLoadoutTry = 53, //Client -> server: id of a kill event, its gear goes on the admin
+	DeathLoadoutRestore = 54, //Client -> server: id of a kill event, its gear goes back on the victim
+	LoadoutPlayerRequest = 55, //Client -> server: session id of a player whose current gear to copy
+	LoadoutPlayer = 56, //Server -> client: session id, why it can't be copied ("" if it can), the gear
+	LoadoutGive = 57, //Client -> server: shared, name, the loadout (empty for a shared one), session ids of the players to put it on
+	LoadoutUndo = 58, //Client -> server: session ids of players whose replaced gear goes back on
+	TeleportReturnsRequest = 59, //Client -> server: id of a teleport event; its players come back as TeleportReturns
+	TeleportReturns = 60, //Server -> client: event id, why it's not kept ("" if it is), the players (ZBerryTeleportRow)
+	TeleportRevert = 61, //Client -> server: id of a teleport event, Steam64 ids of the players to move back (empty: all)
+	TeleportToEvent = 62 //Client -> server: id of an event with a position; the admin goes there
 }
 
 //Which side received the call
@@ -39,14 +79,20 @@ enum ZBerrySPExec {
 }
 
 class ZBerryRPCHandler {
-	protected Class m_Instance;
+	protected Class m_Instance; //Weak, and not cleared when a plain class instance is deleted: see RemoveMissionHandlers
 	protected string m_FuncName;
 	protected int m_SPExec;
+	protected bool m_Persistent;
 
-	void ZBerryRPCHandler(Class instance, string funcName, int spExec) {
+	void ZBerryRPCHandler(Class instance, string funcName, int spExec, bool persistent = false) {
 		m_Instance = instance;
 		m_FuncName = funcName;
 		m_SPExec = spExec;
+		m_Persistent = persistent;
+	}
+
+	bool IsPersistent() {
+		return m_Persistent;
 	}
 
 	Class GetInstance() {
@@ -66,13 +112,24 @@ class ZBerryRPCManager {
 	protected ref map<int, ref ZBerryRPCHandler> m_Handlers = new map<int, ref ZBerryRPCHandler>;
 
 	//Handler signature: void funcName(ZBerryCallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-	bool AddRPC(ZBerryRPCOp opcode, string funcName, Class instance, int spExec = ZBerrySPExec.Server) {
-		m_Handlers.Set(opcode, new ZBerryRPCHandler(instance, funcName, spExec));
+	//persistent: the instance lives as long as the game (DayZGame's), not just the mission
+	bool AddRPC(ZBerryRPCOp opcode, string funcName, Class instance, int spExec = ZBerrySPExec.Server, bool persistent = false) {
+		m_Handlers.Set(opcode, new ZBerryRPCHandler(instance, funcName, spExec, persistent));
 		return true;
 	}
 
 	void RemoveRPC(ZBerryRPCOp opcode) {
 		m_Handlers.Remove(opcode);
+	}
+
+	//Client, when it leaves a server: everything the mission registered goes, its objects are built anew for the next
+	//one. A handler outliving its instance crashed the game on the next join (a deleted plain class still looks set)
+	void RemoveMissionHandlers() {
+		TIntArray stale = new TIntArray;
+		foreach (int opcode, ZBerryRPCHandler handler : m_Handlers) {
+			if (!handler.IsPersistent()) stale.Insert(opcode);
+		}
+		foreach (int staleOpcode : stale) m_Handlers.Remove(staleOpcode);
 	}
 
 	//Only target-less RPCs are routed here: the engine delivers RPCs with a target to that object instead

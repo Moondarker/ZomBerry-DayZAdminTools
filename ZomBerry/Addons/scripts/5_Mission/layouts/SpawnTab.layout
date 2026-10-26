@@ -11,7 +11,7 @@ PanelWidgetClass SpawnWrapper {
    visible 1
    color 0.3255 0.3255 0.3255 0.7843
    position 10 0
-   size 180 36
+   size 139 36
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -38,9 +38,8 @@ PanelWidgetClass SpawnWrapper {
   ButtonWidgetClass ObjectsButton {
    visible 1
    color 0.3255 0.3255 0.3255 0.7843
-   position 0 0
-   size 180 36
-   halign center_ref
+   position 157 0
+   size 139 36
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -67,9 +66,8 @@ PanelWidgetClass SpawnWrapper {
   ButtonWidgetClass AIButton {
    visible 1
    color 0.3255 0.3255 0.3255 0.7843
-   position 10 0
-   size 180 36
-   halign right_ref
+   position 304 0
+   size 139 36
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -85,6 +83,34 @@ PanelWidgetClass SpawnWrapper {
      hexactsize 0
      vexactsize 0
      text "AI"
+     font "gui/fonts/Metron16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ButtonWidgetClass LoadoutsButton {
+   visible 1
+   color 0.3255 0.3255 0.3255 0.7843
+   position 451 0
+   size 139 36
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   {
+    TextWidgetClass LoadoutsButtonLabel {
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Loadouts"
      font "gui/fonts/Metron16"
      "exact text" 1
      "exact text size" 16
@@ -215,6 +241,477 @@ PanelWidgetClass SpawnWrapper {
        hexactsize 0
        vexactsize 0
        text "Cursor"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass TargetDropup {
+     visible 0
+     color 0 0 0 0.95
+     position 6 0
+     size 183 174
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 100
+     style rover_sim_colorable
+     {
+     ButtonWidgetClass TargetCursor {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 4
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetCursorLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Cursor"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetGround {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 38
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetGroundLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Ground"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetInventory {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 72
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetInventoryLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Inventory"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetPlayerFeet {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 106
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetPlayerFeetLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Player's feet"
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     ButtonWidgetClass TargetPlayerInv {
+      color 0.3255 0.3255 0.3255 0.7843
+      position 4 140
+      size 175 30
+      hexactpos 1
+      vexactpos 1
+      hexactsize 1
+      vexactsize 1
+      style Colorable
+      {
+       TextWidgetClass TargetPlayerInvLabel {
+        ignorepointer 1
+        position 0 0
+        size 1 1
+        hexactpos 1
+        vexactpos 1
+        hexactsize 0
+        vexactsize 0
+        text "Player's inv."
+        font "gui/fonts/Metron16"
+        "exact text" 1
+        "exact text size" 16
+        "text halign" center
+        "text valign" center
+       }
+      }
+     }
+     }
+    }
+   }
+  }
+  PanelWidgetClass LoadoutsWrapper {
+   visible 0
+   position 0 46
+   size 1 0.94
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   {
+    TextListboxWidgetClass LoadoutsList {
+     visible 1
+     color 0 0 0 0.7843
+     position 0 0
+     size 0.4 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron14"
+    }
+    TextListboxWidgetClass LoadoutsList_F12 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 0.4 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron12"
+    }
+    TextListboxWidgetClass LoadoutsList_F16 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 0.4 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron16"
+    }
+    TextListboxWidgetClass LoadoutsList_F22 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 0.4 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron22"
+    }
+    TextListboxWidgetClass LoadoutsList_F28 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0 0
+     size 0.4 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron28"
+    }
+    TextListboxWidgetClass LoadoutItemsList {
+     visible 1
+     color 0 0 0 0.7843
+     position 0.41 0
+     size 0.59 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron14"
+    }
+    TextListboxWidgetClass LoadoutItemsList_F12 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0.41 0
+     size 0.59 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron12"
+    }
+    TextListboxWidgetClass LoadoutItemsList_F16 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0.41 0
+     size 0.59 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron16"
+    }
+    TextListboxWidgetClass LoadoutItemsList_F22 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0.41 0
+     size 0.59 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron22"
+    }
+    TextListboxWidgetClass LoadoutItemsList_F28 {
+     visible 0
+     color 0 0 0 0.7843
+     position 0.41 0
+     size 0.59 0.86
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Editor
+     lines 500
+     font "gui/fonts/Metron28"
+    }
+    EditBoxWidgetClass LoadoutName {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 10 18
+     size 140 20
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 0
+    }
+    ButtonWidgetClass LoadoutSave {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 156 10
+     size 70 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutSaveLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Save"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutShare {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 232 10
+     size 70 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutShareLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Share"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutDelete {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 308 10
+     size 70 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutDeleteLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Delete"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutApply {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 396 10
+     size 92 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutApplyLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Apply"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutUndo {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 498 10
+     size 92 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutUndoLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Undo"
+       font "gui/fonts/Metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass LoadoutTarget {
+     color 0.3255 0.3255 0.3255 0.7843
+     position 396 56
+     size 194 36
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Colorable
+     {
+      TextWidgetClass LoadoutTargetLabel {
+       ignorepointer 1
+       position 0 0
+       size 1 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "Apply to: myself"
        font "gui/fonts/Metron16"
        "exact text" 1
        "exact text size" 16

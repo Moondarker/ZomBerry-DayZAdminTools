@@ -131,8 +131,16 @@ class ZBerryFunction {
     protected int m_DisplayColor;
 	protected bool m_OnTarget;
 	protected ref ZBerryFuncParamArray m_Parameters;
+	protected bool m_Harmful; //Hurts or moves the target: groups can protect their members from it (zomberry.protect.*.harm)
+	protected bool m_ServerWide; //Acts on the world rather than on a player (time, weather, cleanup), for the log
+	protected bool m_Keybindable; //False: only runs from the menu, so a stray key press can't trigger it
+	protected bool m_MultiTarget; //Runs on every selected player at once (once per player, logged as one event)
 
-	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam ) {
+	void ZBerryFunction( int fID, string dName, string aName, string cName, Class instance, int dColor, bool tNeeded, ZBerryFuncParamArray fParam, bool harmful = false, bool serverWide = false, bool keybindable = true, bool multiTarget = false ) {
+		m_MultiTarget = multiTarget;
+		m_Harmful = harmful;
+		m_ServerWide = serverWide;
+		m_Keybindable = keybindable;
 		m_FunctionId = fID;
 		m_DisplayName = dName;
 		m_ActualName = aName;
@@ -169,6 +177,41 @@ class ZBerryFunction {
 
 	bool IsTargetRequired() {
 		return m_OnTarget;
+	}
+
+	bool IsHarmful() {
+		return m_Harmful;
+	}
+
+	bool IsServerWide() {
+		return m_ServerWide;
+	}
+
+	bool IsKeybindable() {
+		return m_Keybindable;
+	}
+
+	bool IsMultiTarget() {
+		return m_MultiTarget;
+	}
+
+	void SetMultiTarget(bool multiTarget) {
+		m_MultiTarget = multiTarget;
+	}
+
+	//"Set weather (Fog: 0, Overcast: 80, Rain: 100)", named values by name, for the log
+	string DescribeCall(TIntArray values) {
+		if (m_Parameters.Count() == 0 || !values) return m_DisplayName;
+
+		string text = m_DisplayName + " (";
+		for (int i = 0; i < m_Parameters.Count() && i < values.Count(); ++i) {
+			if (i > 0) text += ", ";
+			ZBerryFuncParam param = m_Parameters[i];
+			string valueName = param.GetValueName(values[i]);
+			if (valueName == "") valueName = values[i].ToString();
+			text += param.name + ": " + valueName;
+		}
+		return text + ")";
 	}
 
 	ref ZBerryFuncParamArray GetParams() {

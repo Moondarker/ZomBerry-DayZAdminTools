@@ -5,21 +5,49 @@ class ZBerryPermissions {
 	static const string MAP_VIEW = "zomberry.map.view";
 	static const string MAP_PLAYER_MARKERS = "zomberry.map.player_markers";
 	static const string MAP_TELEPORT = "zomberry.map.teleport";
+	static const string MAP_TELEPORT_PLAYERS = "zomberry.map.teleport_players"; //The selected player, with Ctrl + click
+	static const string MAP_LOCATIONS_MANAGE = "zomberry.map.locations.manage"; //Saving and deleting locations
+	static const string MAP_MARKERS_PREFIX = "zomberry.map.markers."; //+ vehicles, tents, storage, bases, bodies
 	static const string SPAWN_GROUND = "zomberry.spawn.ground"; //Cursor and Ground targets
 	static const string SPAWN_INVENTORY = "zomberry.spawn.inventory";
+	static const string SPAWN_PLAYER = "zomberry.spawn.player"; //For the selected player: at their feet or into their inventory
 	static const string PERMISSIONS_MANAGE = "zomberry.permissions.manage";
+	static const string LOGS_VIEW = "zomberry.logs.view"; //The in-game admin and kill log
+	static const string TELEPORT_REVERT = "zomberry.teleport.revert"; //Teleport back from the Logs tab (with LOGS_VIEW)
+	//Granted to a group, these shield its members from functions run by other admins (level 100 ignores them)
+	static const string PROTECT_LOWER = "zomberry.protect.lower"; //Lower-ranked admins can't run any function on them
+	static const string PROTECT_LOWER_HARM = "zomberry.protect.lower.harm"; //... no harmful ones
+	static const string PROTECT_SAME = "zomberry.protect.same"; //Same-level admins can't run any function on them
+	static const string PROTECT_SAME_HARM = "zomberry.protect.same.harm"; //... no harmful ones
 	static const string PLAYERS_KICK = "zomberry.players.kick";
 	static const string PLAYERS_BAN = "zomberry.players.ban";
 	static const string PLAYERS_UNBAN = "zomberry.players.unban"; //Also shows the ban list
+	static const string MESSAGES_ANNOUNCE = "zomberry.messages.announce"; //To everyone online
+	static const string MESSAGES_PRIVATE = "zomberry.messages.private"; //To the selected player
+	static const string LOADOUTS_USE = "zomberry.loadouts.use"; //Try on and save loadouts of their own, use shared ones
+	static const string LOADOUTS_SHARE = "zomberry.loadouts.share"; //Share loadouts, change their own and lower ranks' shared ones
+	static const string LOADOUTS_MANAGE = "zomberry.loadouts.manage"; //Change or delete anyone's shared loadouts
+	static const string LOADOUTS_RESTORE = "zomberry.loadouts.restore"; //Give players back the gear they died with (Logs tab)
+	static const string LOADOUTS_GIVE = "zomberry.loadouts.give"; //Put loadouts on other players, and undo it
 	static const string FUNCTIONS_PREFIX = "zomberry.functions.";
 
 	static string FunctionNode(string funcName) {
 		return FUNCTIONS_PREFIX + funcName;
 	}
 
+	//Map markers of one marker category (ZBerryEntityCategory below MARKER_COUNT)
+	static string MapMarkerNode(int category) {
+		return MAP_MARKERS_PREFIX + ZBerryEntityCategory.GetKey(category);
+	}
+
 	//Every fixed node; function nodes are added from the registered commands
 	static TStringArray GetFixedNodes() {
-		return {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, SPAWN_GROUND, SPAWN_INVENTORY, PERMISSIONS_MANAGE};
+		TStringArray nodes = {PLAYERS_LIST, PLAYERS_KICK, PLAYERS_BAN, PLAYERS_UNBAN, MESSAGES_ANNOUNCE, MESSAGES_PRIVATE, MAP_VIEW, MAP_PLAYER_MARKERS, MAP_TELEPORT, MAP_TELEPORT_PLAYERS, MAP_LOCATIONS_MANAGE};
+		for (int category = 0; category < ZBerryEntityCategory.MARKER_COUNT; ++category) {
+			nodes.Insert(MapMarkerNode(category));
+		}
+		nodes.InsertAll({SPAWN_GROUND, SPAWN_INVENTORY, SPAWN_PLAYER, LOADOUTS_USE, LOADOUTS_SHARE, LOADOUTS_MANAGE, LOADOUTS_RESTORE, LOADOUTS_GIVE, PERMISSIONS_MANAGE, LOGS_VIEW, TELEPORT_REVERT, PROTECT_LOWER, PROTECT_LOWER_HARM, PROTECT_SAME, PROTECT_SAME_HARM});
+		return nodes;
 	}
 
 	static bool Matches(string pattern, string node) {

@@ -49,4 +49,9 @@ class ZBerryUITab extends ZBerryUIComponent {
 	bool BlocksClose() {
 		return false;
 	}
+
+	//True when the tab brings its own left pane, shown instead of the players panel
+	bool HasSidePane() {
+		return false;
+	}
 };

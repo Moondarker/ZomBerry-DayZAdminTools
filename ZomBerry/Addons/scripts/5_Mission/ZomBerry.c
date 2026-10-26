@@ -1,4 +1,4 @@
-static string g_zbryVer = "0.7.0";
+static string g_zbryVer = "0.8.0";
 
 //Wires ZomBerry together on both sides (server: MissionServer, client and singleplayer: MissionGameplay)
 //and keeps the shared config/logger/keybinds. The actual work lives in core/: server auth and permissions, client auth, request handlers
@@ -7,6 +7,9 @@ class ZomberryBase {
 	protected ref ZBerryAuth m_Auth;
 	protected ref ZBerryServerRPC m_ServerRPC;
 	protected ref ZBerryBans m_Bans;
+	protected ref ZBerryStreamServer m_Streams;
+	protected ref ZBerryLocations m_Locations;
+	protected ref ZBerryLoadoutServer m_Loadouts;
 
 	static ref ZomberryConfig m_ZomberryConfig;
 	static ref ZomberryLogger m_ZomberryLogger;
@@ -23,7 +26,13 @@ class ZomberryBase {
 		if (GetGame().IsServer() || !GetGame().IsMultiplayer()) {
 			m_Auth = new ZBerryAuth;
 			m_Bans = new ZBerryBans;
-			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans);
+			m_Locations = new ZBerryLocations;
+			m_ServerRPC = new ZBerryServerRPC(m_Auth, m_Bans, m_Locations);
+			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
+			m_Loadouts = new ZBerryLoadoutServer(m_Auth);
+			g_ZBerryDeathLoadouts = new ZBerryDeathLoadouts();
+			g_ZBerryTeleportReturns = new ZBerryTeleportReturns();
+			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
 		}
@@ -57,8 +66,51 @@ class ZomberryBase {
 		return m_ZomberryKeybinds;
 	}
 
+	//A plain line for ZomBerry's log file. Admin actions, kicks, bans, kills and refusals go through LogEvent instead
 	static void Log( string module, string toLog ) {
 		GetLogger().Log( module, toLog );
+	}
+
+	/**
+	\brief Log an event: written to ZomBerry's log file (except logins and logouts) and kept in the in-game log
+		\param type \p int ZBerryEventType
+		\param actor \p PlayerIdentity who did it (NULL: nobody, or singleplayer)
+		\param target \p PlayerIdentity whom it was done to (NULL: nobody)
+		\param text \p string with {actor} and {target} where the players go, e.g. "{actor} kicked {target}: spam"
+		\param flags \p int ZBerryEventFlags
+	*/
+	static ZBerryLogEvent LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0, vector position = "0 0 0", bool hasPosition = false ) {
+		string actorId, actorName, targetId, targetName;
+		DescribeIdentity(actor, actorId, actorName);
+		DescribeIdentity(target, targetId, targetName);
+		return LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags, NULL, NULL, position, hasPosition);
+	}
+
+	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name
+	//extraIds/extraNames: further targets of a function run on several players at once ({target} names them all)
+	//position: where it happened, for "Teleport here" in the Logs tab (only with hasPosition). Returns the event, NULL on clients
+	static ZBerryLogEvent LogEventRaw( int type, string actorId, string actorName, string targetId, string targetName, string text, int flags = 0, TStringArray extraIds = NULL, TStringArray extraNames = NULL, vector position = "0 0 0", bool hasPosition = false ) {
+		if (!GetGame() || !GetGame().IsServer()) return NULL;
+
+		ZBerryLogEvent logEvent = GetZBerryEventLog().Add(type, actorId, actorName, targetId, targetName, text, flags, extraIds, extraNames, position, hasPosition);
+		if (ZBerryEventType.IsInGameOnly(type)) return logEvent;
+
+		string line = logEvent.Format(false); //The server's language
+		if (type == ZBerryEventType.REFUSED) line = "WARN: " + line;
+		GetLogger().Log( ZBerryEventType.GetModule(type), line );
+		return logEvent;
+	}
+
+	//Steam64 id and name of a player for an event, "" and "Singleplayer" for none in singleplayer
+	static void DescribeIdentity(PlayerIdentity identity, out string id, out string name) {
+		id = "";
+		name = "";
+		if (!identity) {
+			if (!GetGame().IsMultiplayer()) name = "Singleplayer";
+			return;
+		}
+		id = identity.GetPlainId();
+		name = identity.GetName();
 	}
 
 	static void DebugLog( int dLvl, string module, string toLog ) {
@@ -72,11 +124,31 @@ class ZomberryBase {
 	void OnServerReady() {
 		m_Auth.LoadAdmins();
 		m_Bans.Load(GetConfig().GetConfigDir() + ZBerryBans.CONFIG_FILE);
+		m_Locations.Load(GetConfig().GetConfigDir() + ZBerryLocations.CONFIG_FILE);
+		m_Loadouts.Load(GetConfig().GetConfigDir());
+		if (GetGame().IsMultiplayer()) {
+			GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
+			g_ZBerryDeathLoadouts.Load(GetConfig().GetConfigDir(), GetZBerryEventLog().GetNextEventId()); //After the log: the ids it has
+			g_ZBerryTeleportReturns.Load(GetConfig().GetConfigDir(), GetZBerryEventLog().GetNextEventId());
+		}
+	}
+
+	//Server, before the log's last save: repeated calls still held back are logged, death loadouts and teleport returns
+	//saved
+	void OnServerStopping() {
+		if (m_ServerRPC) m_ServerRPC.FlushCallGroups();
+		if (g_ZBerryDeathLoadouts && GetGame().IsMultiplayer()) g_ZBerryDeathLoadouts.Save(GetConfig().GetConfigDir());
+		if (g_ZBerryTeleportReturns && GetGame().IsMultiplayer()) g_ZBerryTeleportReturns.Save(GetConfig().GetConfigDir());
 	}
 
 	//Server only, NULL on clients
 	ZBerryBans GetBans() {
 		return m_Bans;
+	}
+
+	//Server only, NULL on clients
+	ZBerryStreamServer GetStreams() {
+		return m_Streams;
 	}
 
 	string GetRemoteVersion() {
@@ -112,6 +184,13 @@ modded class MissionServer {
 		GetZomberryBase().OnServerReady();
 	}
 
+	//A clean shutdown only: after a crash the next start finds the last periodic save
+	override void OnMissionFinish() {
+		if (m_ZomberryBase) m_ZomberryBase.OnServerStopping();
+		if (g_ZBerryEventLog) g_ZBerryEventLog.OnServerStopping();
+		super.OnMissionFinish();
+	}
+
 	//Before the character is loaded: banned players never get into the world
 	override void OnClientPrepareEvent(PlayerIdentity identity, out bool useDB, out vector pos, out float yaw, out int preloadTimeout) {
 		super.OnClientPrepareEvent(identity, useDB, pos, yaw, preloadTimeout);
@@ -119,16 +198,79 @@ modded class MissionServer {
 		ZBerryBanEntry ban = FindZBerryBan(identity);
 		if (!ban) return;
 
-		ZomberryBase.Log( "ZomBerryBans", "INFO: Banned player " + identity.GetName() + " (" + identity.GetPlainId() + ") tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
-		GetGame().DisconnectPlayer(identity, identity.GetId());
+		ZomberryBase.LogEvent( ZBerryEventType.JOIN_REFUSED, NULL, identity, "Banned player {target} tried to join, refused: " + ban.Reason + ", " + ban.DescribeUntil() );
+		ZBerryBans.SendKickNotice(identity, ban.Reason, true, ban.Until);
+		//Not during the event: DisconnectPlayer frees the identity the engine still uses after it returns (crashed the
+		//server). A moment later, so the notice gets there first
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(RefuseBannedJoin, REFUSE_DELAY, false, identity.GetPlayerId(), identity.GetId());
+	}
+
+	static const int REFUSE_DELAY = 1000; //ms between telling a banned player why and disconnecting them
+
+	protected void RefuseBannedJoin(int sessionId, string uid) {
+		PlayerIdentity identity = ZBGetIdentityById(sessionId);
+		if (!identity || identity.GetId() != uid) return; //Left by themselves meanwhile; InvokeOnConnect still kicks a character that got in
+
+		GetGame().DisconnectPlayer(identity, uid);
 	}
 
 	//In case the engine still let the character in
 	override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity) {
 		super.InvokeOnConnect(player, identity);
+		GetZBerryEventLog().OnPlayerConnected(identity, player);
 
 		ZBerryBanEntry ban = FindZBerryBan(identity);
-		if (ban) m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+		if (ban) {
+			ZBerryBans.SendKickNotice(identity, ban.Reason, true, ban.Until);
+			m_ZomberryBase.GetBans().KickPlayer(player, "You are banned: " + ban.Reason + ", " + ban.DescribeUntil());
+		}
+
+		//Frozen players stay frozen across relogs; a moment later, so their client is ready for the feature
+		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(m_ZomberryBase.m_ZomberryStockFunctions.ReapplyFreeze, 5000, false, player);
+
+		//Invisible players stay invisible across relogs and respawns: right away, so nobody sees them arrive
+		if (m_ZomberryBase && m_ZomberryBase.m_ZomberryStockFunctions) m_ZomberryBase.m_ZomberryStockFunctions.ReapplyInvisibility(player);
+	}
+
+	//Vanilla kills a character that respawns or logs out while unconscious or restrained: the log says so instead of "died"
+	override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player) {
+		NoteForcedDeath(player, " respawned");
+		super.OnClientRespawnEvent(identity, player);
+	}
+
+	override void HandleBody(PlayerBase player) {
+		if (player && player.IsAlive() && ShouldPlayerBeKilled(player)) NoteForcedDeath(player, " logged out");
+		super.HandleBody(player);
+	}
+
+	protected void NoteForcedDeath(PlayerBase player, string how) {
+		if (!player || !player.IsAlive()) return;
+
+		if (player.IsRestrained()) {
+			player.ZBSetDeathNote(how + " while restrained");
+		} else if (player.IsUnconscious()) {
+			player.ZBSetDeathNote(how + " while unconscious");
+		}
+	}
+
+	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed) {
+		//Left from FreeCam or spectating: back into the body, so it logs out (and is saved) like any other.
+		//Looked up first: switching the client features off below ends spectating, which reattaches it too
+		PlayerBase body;
+		if (identity) body = ZBerryBodies.GetBody(identity.GetPlayerId());
+
+		//Before super: the identity may be gone after it. The body left behind in FreeCam or spectating is where they are
+		PlayerBase leftAt = body;
+		if (!leftAt) leftAt = player;
+		GetZBerryEventLog().OnPlayerDisconnected(identity, leftAt);
+		if (g_ZBerryClientFeatures) g_ZBerryClientFeatures.OnPlayerDisconnected(identity);
+
+		if (body) {
+			ZomberryStockFunctions.FreezeBody(body, false);
+			ZBerryBodies.Reattach(body);
+			if (!player) player = body;
+		}
+		super.OnClientDisconnectedEvent(identity, player, logoutTime, authFailed);
 	}
 
 	protected ZBerryBanEntry FindZBerryBan(PlayerIdentity identity) {
@@ -143,12 +285,33 @@ modded class MissionGameplay {
 	ref ZomberryBase m_ZomberryBase;
 	ref ZomberryMenu m_ZomberryMenu;
 	ref ZBerryTokenDialog m_ZBerryTokenDialog;
+	ref ZBerryESPOverlay m_ZBerryESP;
 
 	void MissionGameplay() {
 		m_ZomberryBase = new ZomberryBase;
 		GetZBerryClientAuth();
+		GetZBerryStreams();
+		GetZBerryClientFeatures();
+		GetZBerryClientLoadouts();
+		GetZBerryEventLog();
+		m_ZBerryESP = new ZBerryESPOverlay;
+		GetZBerrySpectate(); //Registers its client features: spectating, and reporting the camera mode while watched
 
 		ZomberryBase.Log( "ZomBerry", "Starting Client side " + ZBerryVersion.GetFullVersion() );
+	}
+
+	//Leaving the server: the client side is built anew for the next one (constructor above), so nothing of this one may
+	//stay registered. Handlers left pointing at deleted objects crashed the game on the next join
+	override void OnMissionFinish() {
+		GetZBerryRPC().RemoveMissionHandlers();
+		g_ZBerryClientAuth = NULL;
+		g_ZBerryClientFeatures = NULL;
+		g_ZBerryStreamClient = NULL;
+		g_ZBerryClientLoadouts = NULL;
+		g_ZBerryClientTeleports = NULL;
+		g_ZBerrySpectate = NULL;
+		if (GetGame().IsClient()) g_ZBerryEventLog = NULL; //Singleplayer: it's the server's log too, written while the mission ends
+		super.OnMissionFinish();
 	}
 
 	void ~MissionGameplay() {
@@ -161,13 +324,20 @@ modded class MissionGameplay {
 		if ( !m_ZomberryMenu ) {
 			m_ZomberryMenu = new ZomberryMenu;
 			m_ZomberryMenu.Init();
-			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncPlayers, "SyncPlayers", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.SyncFunctions, "SyncFunctions", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryRPC().AddRPC( ZBerryRPCOp.BansData, "BansData", m_ZomberryMenu, ZBerrySPExec.Client );
 			GetZBerryClientAuth().SetMenu(m_ZomberryMenu);
 		}
 
 		return m_ZomberryMenu;
+	}
+
+	//The menu key, Esc and the menu's close button. Callers check GetCloseClearance where a stray key could close it
+	void CloseZomberryMenu() {
+		if (!m_ZomberryMenu || !m_ZomberryMenu.GetLayoutRoot() || !m_ZomberryMenu.GetLayoutRoot().IsVisible()) return;
+
+		GetUIManager().HideScriptedMenu( m_ZomberryMenu );
+		PlayerControlEnable(false);
 	}
 
 	private ZBerryTokenDialog GetTokenDialog() {
@@ -212,6 +382,7 @@ modded class MissionGameplay {
 
 	override void OnUpdate(float timeslice) {
 		super.OnUpdate(timeslice);
+		if (m_ZBerryESP) m_ZBerryESP.Update();
 
 		if (GetUApi().GetInputByName("UAZBerryOpenAdminMenu").LocalPress() && !IsTokenDialogOpen()) { //The token may contain the menu key's letter
 			ZBerryClientAuth auth = GetZBerryClientAuth();
@@ -222,8 +393,7 @@ modded class MissionGameplay {
 				GetUIManager().ShowScriptedMenu( GetZomberryMenu(), NULL );
 				PlayerControlDisable(INPUT_EXCLUDE_ALL);
 			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
-				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
-				PlayerControlEnable(false);
+				CloseZomberryMenu();
 			} else if (!ZBerryVersion.IsCompatible(r_zbryVer, g_zbryVer)) {
 				DisplayMessage("[ZomBerry]: Admin auth succeeded, but clientside was disabled due to version mismatch. C: " + g_zbryVer + ", S: " + r_zbryVer);
 			} else if (!menu && auth.IsSetupPending()) {
@@ -241,8 +411,7 @@ modded class MissionGameplay {
 			if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().CloseDialogs()) {
 				//Only the dialog
 			} else if (GetZomberryMenu().GetLayoutRoot().IsVisible() && GetZomberryMenu().GetCloseClearance()) {
-				GetUIManager().HideScriptedMenu( GetZomberryMenu() );
-				PlayerControlEnable(false);
+				CloseZomberryMenu();
 			}
 			CloseTokenDialog();
 		}

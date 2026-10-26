@@ -1,76 +1,151 @@
+//The first run of Clean up around cursor: what it found, so the confirming run deletes exactly that
+class ZBerryPendingCleanup {
+	string Key; //Kind, radius and spot (to 10 m)
+	int Time; //GetGame().GetTime()
+	ref array<EntityAI> Entities; //Entries turn NULL when an object is deleted meanwhile
+
+	void ZBerryPendingCleanup(string key, int time, array<EntityAI> entities) {
+		Key = key;
+		Time = time;
+		Entities = entities;
+	}
+};
+
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
-	autoptr TIntStringMap m_deleteList = new TIntStringMap;
+	protected ref map<int, string> m_PendingKeys = new map<int, string>; //Admin session id -> what the last first run would do
+	protected ref map<int, int> m_PendingTimes = new map<int, int>; //... and when
+	protected ref map<int, ref ZBerryPendingCleanup> m_PendingCleanups = new map<int, ref ZBerryPendingCleanup>; //Admin session id -> the first Clean up run
+	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
+	protected ref TStringArray m_Invisible = new TStringArray; //Steam64 ids: invisible until switched off, also across relogs
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
+
+	static const string FEATURE_FREEZE = "zomberry_freeze";
+	static const string FEATURE_INFINITE_AMMO = "zomberry_infinite_ammo";
+
+	static const string CATEGORY_TELEPORT = "Teleport";
+	static const string CATEGORY_PLAYER = "Player";
+	static const string CATEGORY_PUNISH = "Punish";
+	static const string CATEGORY_CAMERA = "Camera";
+	static const string CATEGORY_WORLD = "World";
+	static const string CATEGORY_OBJECTS = "Objects";
 
 	void ZomberryStockFunctions() {
 		m_ZomberryCmdAPI = GetZomberryCmdAPI();
+		m_ZomberryCmdAPI.RegisterClientFeature(FEATURE_FREEZE, this, "OnFreezeFeature"); //Client side of freezing
+		m_ZomberryCmdAPI.RegisterClientFeature(FEATURE_INFINITE_AMMO, this, "OnInfiniteAmmoFeature");
 	}
 
+	//Categories by what the functions act on. Other mods' commands for the pre-0.8.0 categories (OnTarget, ==, OnServer)
+	//still find a home, see ZomberryCmdAPI.AddCommand
 	void Init() {
-		m_ZomberryCmdAPI.AddCategory("OnTarget", 0xFF42AAFF);
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, "OnTarget", false);
-		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, "OnTarget", false);
-		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, "OnTarget");
-		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, "OnTarget");
-		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, "OnTarget", false);
-		m_ZomberryCmdAPI.AddCommand("Partial heal", "HealTargetPart", this, "OnTarget", false, {
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_TELEPORT, 0xFF42AAFF);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Cursor", "TPCur", this, CATEGORY_TELEPORT, false, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, CATEGORY_TELEPORT, false);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, CATEGORY_TELEPORT);
+		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, CATEGORY_TELEPORT, true, NULL, true);
+
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_PLAYER, 0xFF7CD67C);
+		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, CATEGORY_PLAYER, false);
+		m_ZomberryCmdAPI.AddCommand("Partial heal", "HealTargetPart", this, CATEGORY_PLAYER, false, {
 			new ZBerryFuncParam("Heal diseases", {0, 1, 1,}, {"No", "Yes"}),
 			new ZBerryFuncParam("Heal wounds", {0, 1, 1,}, {"No", "Yes"}),
 			new ZBerryFuncParam("Feed", {0, 1, 1,}, {"No", "Yes"}),
 		});
-		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, "OnTarget", false);
-		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, "OnTarget", false);
-		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, "OnTarget", false);
+		m_ZomberryCmdAPI.AddCommand("Toggle god", "GodTarget", this, CATEGORY_PLAYER, false, NULL, true); //Can switch an admin's god mode off
+		m_ZomberryCmdAPI.AddCommand("Toggle invisibility", "InvisibleTarget", this, CATEGORY_PLAYER, false, NULL, true); //Can switch it off for an admin
+		m_ZomberryCmdAPI.AddCommand("Toggle infinite ammo", "InfiniteAmmoTarget", this, CATEGORY_PLAYER, false, NULL, true); //Can switch it off for an admin
+		m_ZomberryCmdAPI.AddCommand("Toggle freeze", "FreezeTarget", this, CATEGORY_PLAYER, true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Repair item in hands", "RepairTargetHands", this, CATEGORY_PLAYER, false);
+		m_ZomberryCmdAPI.AddCommand("Repair all gear", "RepairTargetGear", this, CATEGORY_PLAYER, false);
 
-		m_ZomberryCmdAPI.AddCategory("==", 0xFFFF7C75);
-		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, "==");
-		m_ZomberryCmdAPI.AddCommand("Bite", "BiteTarget", this, "==", true, {
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_PUNISH, 0xFFFF7C75);
+		m_ZomberryCmdAPI.AddCommand("Kill", "KillTarget", this, CATEGORY_PUNISH, true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Bite", "BiteTarget", this, CATEGORY_PUNISH, true, {
 			new ZBerryFuncParam("Bites", {1, 25, 1,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, "==");
-		m_ZomberryCmdAPI.AddCommand("Induce vomiting", "RejectBellyTarget", this, "==", true, {
+		}, true);
+		m_ZomberryCmdAPI.AddCommand("Strip", "StripTarget", this, CATEGORY_PUNISH, true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Induce vomiting", "RejectBellyTarget", this, CATEGORY_PUNISH, true, {
 			new ZBerryFuncParam("Seconds", {5, 30, 5,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, "==");
-		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, "==");
-		m_ZomberryCmdAPI.AddCommand("Set health", "SetHealthTarget", this, "==", true, {
+		}, true);
+		m_ZomberryCmdAPI.AddCommand("Induce laughter", "PsycoTarget", this, CATEGORY_PUNISH, true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Induce sneeze", "SneezeTarget", this, CATEGORY_PUNISH, true, NULL, true);
+		m_ZomberryCmdAPI.AddCommand("Set health", "SetHealthTarget", this, CATEGORY_PUNISH, true, {
 			new ZBerryFuncParam("Health", {1, 100, 100,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Set blood", "SetBloodTarget", this, "==", true, {
+		}, true);
+		m_ZomberryCmdAPI.AddCommand("Set blood", "SetBloodTarget", this, CATEGORY_PUNISH, true, {
 			new ZBerryFuncParam("Blood", {1, 5000, 5000,}),
-		});
+		}, true);
 
-		m_ZomberryCmdAPI.AddCategory("OnServer", 0xFF909090);
-		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, "OnServer", false);
-		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, "OnServer", false, {
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_CAMERA, 0xFFC490FF);
+		m_ZomberryCmdAPI.AddCommand("FreeCam", "FreeCamAdm", this, CATEGORY_CAMERA, false);
+		m_ZomberryCmdAPI.AddCommand("Spectate target", "SpectateTarget", this, CATEGORY_CAMERA, true);
+		m_ZomberryCmdAPI.AddCommand("ESP", "ESPToggle", this, CATEGORY_CAMERA, false); //No parameters, so it can be keybound
+
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_WORLD, 0xFFE8C860);
+		m_ZomberryCmdAPI.AddCommand("Time - Day", "TimeDay", this, CATEGORY_WORLD, false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Time - Night", "TimeNight", this, CATEGORY_WORLD, false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Set time", "SetTime", this, CATEGORY_WORLD, false, {
 			new ZBerryFuncParam("Hour", {0, 23, 12,}),
 			new ZBerryFuncParam("Minute", {0, 59, 0,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Set date", "SetDate", this, "OnServer", false, {
-			new ZBerryFuncParam("Day", {1, 30, 1,}),
+		}, false, true);
+		m_ZomberryCmdAPI.AddCommand("Set date", "SetDate", this, CATEGORY_WORLD, false, {
+			new ZBerryFuncParam("Day", {1, 31, 1,}),
 			new ZBerryFuncParam("Month", {1, 12, 1,}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}),
 			new ZBerryFuncParam("Year", {1970, 2119, 2019,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Set weather", "SetWeather", this, "OnServer", false, {
+		}, false, true);
+		m_ZomberryCmdAPI.AddCommand("Set weather", "SetWeather", this, CATEGORY_WORLD, false, {
 			new ZBerryFuncParam("Fog", {0, 100, 0,}),
 			new ZBerryFuncParam("Overcast", {0, 100, 0,}),
 			new ZBerryFuncParam("Rain", {0, 100, 0,}),
-		});
-		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, "OnServer", false);
+		}, false, true);
+
+		m_ZomberryCmdAPI.AddCategory(CATEGORY_OBJECTS, 0xFF909090);
+		m_ZomberryCmdAPI.AddCommand("Delete object near cursor", "DeleteObj", this, CATEGORY_OBJECTS, false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Clean up around cursor", "CleanupArea", this, CATEGORY_OBJECTS, false, {
+			new ZBerryFuncParam("Radius (m)", {5, 200, 50,}),
+			new ZBerryFuncParam("What", {0, 3, 0,}, ZBerryWorldTools.GetCleanNames()),
+		}, false, true);
+		m_ZomberryCmdAPI.AddCommand("Flip vehicle near cursor", "FlipVehicle", this, CATEGORY_OBJECTS, false, NULL, false, true);
+		m_ZomberryCmdAPI.AddCommand("Refuel and repair", "RefuelAndRepair", this, CATEGORY_OBJECTS, false);
+
+		//These act on one player each and make sense on several selected players at once
+		TStringArray multiTarget = {"TPCur", "TPToAdmin", "HealTarget", "HealTargetPart", "GodTarget", "InvisibleTarget", "InfiniteAmmoTarget", "FreezeTarget", "RepairTargetHands", "RepairTargetGear", "KillTarget", "BiteTarget", "StripTarget", "RejectBellyTarget", "PsycoTarget", "SneezeTarget", "SetHealthTarget", "SetBloodTarget"};
+		foreach (string multiName : multiTarget) {
+			ZBerryFunction multiFunc = m_ZomberryCmdAPI.GetFuncByName(multiName);
+			if (multiFunc) multiFunc.SetMultiTarget(true);
+		}
 	}
 
 	static void MessagePlayer(PlayerBase player, string msg) {
-		Param1<string> param = new Param1<string>( "[ZomBerry]: " + msg );
 		if (GetGame().IsMultiplayer()) {
-			if (!player || !player.GetIdentity()) return; //Admin disconnected meanwhile
+			if (!player || !ZBGetIdentity(player)) return; //Admin disconnected meanwhile
 
-			GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, param, true, player.GetIdentity());
+			ZBerryMessages.SendToChat(player, "[ZomBerry]: " + msg);
 		} else {
 			GetGame().GetMission().OnEvent(ChatMessageEventTypeID, new ChatMessageEventParams(CCAdmin, "[ZomBerry]", msg, ""));
+		}
+	}
+
+	//Tells the admin why nothing happened, and has the call logged as refused instead of as run
+	protected void Refuse(PlayerBase admin, string message) {
+		MessagePlayer(admin, message);
+		m_ZomberryCmdAPI.RefuseCall(message);
+	}
+
+	//The first of two runs: the call isn't logged, the confirmed one is
+	protected void AskToConfirm(PlayerBase admin, string message) {
+		MessagePlayer(admin, message);
+		m_ZomberryCmdAPI.AwaitConfirmation();
+	}
+
+	//"{actor} <what> for {target}", or "for themselves" when the admin selected themselves
+	protected void DescribeOnTarget(int adminId, int targetId, string what) {
+		if (adminId == targetId) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} " + what + " for themselves");
+		} else {
+			m_ZomberryCmdAPI.DescribeCall("{actor} " + what + " for {target}");
 		}
 	}
 
@@ -80,12 +155,13 @@ class ZomberryStockFunctions {
 		admin = ZBGetPlayerById(adminId);
 		target = ZBGetPlayerById(targetId);
 		if (!admin) {
-			ZomberryBase.Log( "ZomBerryFnc", "WARN: Admin #" + adminId + " has no character, function skipped" );
+			ZomberryBase.Log( "ZomBerryFnc", "WARN: " + ZBDescribePlayer(ZBGetIdentityById(adminId)) + " has no character, function skipped" );
+			m_ZomberryCmdAPI.RefuseCall("No character (dead or respawning)");
 			return false;
 		}
 		if (target) return true;
 
-		MessagePlayer(admin, "Target not found (probably disconnected?)");
+		Refuse(admin, "Target not found (probably disconnected?)");
 		return false;
 	}
 
@@ -107,9 +183,9 @@ class ZomberryStockFunctions {
 
 	//Players have no identity in singleplayer
 	static string GetPlayerName(PlayerBase player) {
-		if (!player || !player.GetIdentity()) return "Player";
+		if (!player || !ZBGetIdentity(player)) return "Player";
 
-		return player.GetIdentity().GetName();
+		return ZBGetIdentity(player).GetName();
 	}
 
 	void TPForward( string funcName, int adminId, int targetId, vector cursor ) {
@@ -131,19 +207,31 @@ class ZomberryStockFunctions {
 
 		targetPos[1] = GetGame().SurfaceY(targetPos[0], targetPos[2]);
 
+		vector startPos = GetPosSafe(admin);
 		if (!SetPosSafe(admin, targetPos)) {
-			MessagePlayer(admin, "Unable to teleport: admin in vehicle");
+			Refuse(admin, "Unable to teleport: admin in vehicle");
+			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(admin, startPos);
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported " + tpDist + " m forward to " + ZBDescribePosition(targetPos));
 	}
 
 	void TPCur( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(target, cursor)) {
-			MessagePlayer(admin, "Target teleported");
+		vector startPos = GetPosSafe(target);
+		vector destination = GetDestination(cursor);
+		if (!SetPosSafe(target, destination)) {
+			Refuse(admin, "Unable to teleport: target in vehicle");
+			return;
+		}
+		m_ZomberryCmdAPI.RecordMove(target, startPos);
+		MessagePlayer(admin, "Target teleported");
+		if (adminId == targetId) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported to the cursor at " + ZBDescribePosition(cursor));
 		} else {
-			MessagePlayer(admin, "Unable to teleport: target in vehicle");
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to the cursor at " + ZBDescribePosition(cursor));
 		}
 	}
 
@@ -151,21 +239,34 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(admin, GetPosSafe(target))) {
-			MessagePlayer(admin, "Teleported to target");
-		} else {
-			MessagePlayer(admin, "Unable to teleport: get out of vehicle!");
+		vector destination = GetPosSafe(target);
+		vector startPos = GetPosSafe(admin);
+		if (!SetPosSafe(admin, destination)) {
+			Refuse(admin, "Unable to teleport: get out of vehicle!");
+			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(admin, startPos);
+		MessagePlayer(admin, "Teleported to target");
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported from " + ZBDescribePosition(startPos) + " to {target} at " + ZBDescribePosition(destination));
 	}
 
 	void TPToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (SetPosSafe(target, GetPosSafe(admin))) {
-			MessagePlayer(admin, "Target teleported");
-		} else {
-			MessagePlayer(admin, "Unable to teleport: target in vehicle");
+		vector center = GetPosSafe(admin);
+		vector destination = GetDestination(center);
+		vector startPos = GetPosSafe(target);
+		if (!SetPosSafe(target, destination)) {
+			Refuse(admin, "Unable to teleport: target in vehicle");
+			return;
+		}
+		m_ZomberryCmdAPI.RecordMove(target, startPos);
+		MessagePlayer(admin, "Target teleported");
+		if (IsOneTarget()) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} from " + ZBDescribePosition(startPos) + " to themselves at " + ZBDescribePosition(center));
+		} else { //Alike for every player, so the run is logged as one event naming them all
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to themselves at " + ZBDescribePosition(center));
 		}
 	}
 
@@ -252,6 +353,7 @@ class ZomberryStockFunctions {
 			target.ZBSetGod(false);
 			MessagePlayer(target, "God mode deactivated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode deactivated for " + GetPlayerName(target));
+			DescribeOnTarget(adminId, targetId, "switched god mode off");
 
 		} else {
 			HealPlayer(target, true, true, true);
@@ -259,7 +361,17 @@ class ZomberryStockFunctions {
 			target.ZBSetGod(true);
 			MessagePlayer(target, "God mode activated");
 			if (adminId != targetId) MessagePlayer(admin, "God mode activated for " + GetPlayerName(target));
+			DescribeOnTarget(adminId, targetId, "switched god mode on");
 		}
+	}
+
+	//Full health, also for gear that god mode or invisibility keep from being damaged: SetAllowDamage(false) blocks
+	//SetHealth too, so it's let through for the repair and switched back
+	static void RepairItem(EntityAI item) {
+		bool wasProtected = !item.GetAllowDamage();
+		if (wasProtected) item.SetAllowDamage(true);
+		item.SetHealthMax("", "");
+		if (wasProtected) item.SetAllowDamage(false);
 	}
 
 	void RepairTargetHands( string funcName, int adminId, int targetId, vector cursor ) {
@@ -269,7 +381,7 @@ class ZomberryStockFunctions {
 		InventoryItem target_item = target.GetItemInHands();
 
 		if (!target_item) {
-			MessagePlayer(admin, "No item in target's hands");
+			Refuse(admin, "No item in target's hands");
 			return;
 		}
 
@@ -279,14 +391,45 @@ class ZomberryStockFunctions {
 		if (target_item_inv)
 			target_item_inv.EnumerateInventory(InventoryTraversalType.INORDER, sub_items);
 
-		target_item.SetHealthMax("","");
+		RepairItem(target_item);
 		for (int i = 0; i < sub_items.Count(); i++)
 		{
 			EntityAI item = sub_items.Get(i);
-			item.SetHealthMax("","");
+			RepairItem(item);
 		}
 
 		MessagePlayer(admin, "Repaired item to the best condition it can achieve");
+	}
+
+	//Everything the target wears and carries, what's inside and attached to it, and the item in hands
+	void RepairTargetGear( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+
+		array<EntityAI> items = new array<EntityAI>;
+		target.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items);
+		EntityAI inHands = target.GetHumanInventory().GetEntityInHands();
+		if (inHands) {
+			array<EntityAI> handItems = new array<EntityAI>;
+			inHands.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, handItems);
+			foreach (EntityAI handItem : handItems) {
+				if (items.Find(handItem) == -1) items.Insert(handItem);
+			}
+		}
+
+		int repaired = 0;
+		foreach (EntityAI item : items) {
+			if (!item || item == target) continue; //The character itself is in the list
+			RepairItem(item);
+			++repaired;
+		}
+		if (repaired == 0) {
+			Refuse(admin, GetPlayerName(target) + " has nothing to repair");
+			return;
+		}
+
+		MessagePlayer(admin, "Repaired " + repaired + " items of " + GetPlayerName(target));
+		DescribeOnTarget(adminId, targetId, "repaired all gear (" + repaired + " items)");
 	}
 
 	void RefuelAndRepair( string funcName, int adminId, int targetId, vector cursor ) {
@@ -433,14 +576,14 @@ class ZomberryStockFunctions {
 		if (!target.GetCommand_Vehicle()) {
 			SymptomBase symptom = target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_VOMIT);
 			if (!symptom) {
-				MessagePlayer(admin, "Target can't vomit right now (already sick?)");
+				Refuse(admin, "Target can't vomit right now (already sick?)");
 				return;
 			}
 
 			symptom.SetDuration(fValues[0]);
 			MessagePlayer(admin, "Target is gonna be sick for " + fValues[0] + " seconds");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -452,7 +595,7 @@ class ZomberryStockFunctions {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_LAUGHTER);
 			MessagePlayer(admin, "Target is laughing...");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -464,7 +607,7 @@ class ZomberryStockFunctions {
 			target.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_SNEEZE);
 			MessagePlayer(admin, "Target sneezed");
 		} else {
-			MessagePlayer(admin, "Target in vehicle, this action might cause game crash");
+			Refuse(admin, "Target in vehicle, this action might cause game crash");
 		}
 	}
 
@@ -486,6 +629,169 @@ class ZomberryStockFunctions {
 		MessagePlayer(admin, "Target blood level was set to " + fValues[0]);
 	}
 
+	//Other players don't see or hear the target (voice chat aside), infected ignore them, and they can't be hurt.
+	//Independent of god mode. Survives relogs, see ReapplyInvisibility
+	void InvisibleTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+
+		bool invisible = !target.ZBIsInvisible();
+		SetInvisible(target, invisible);
+
+		if (invisible) {
+			MessagePlayer(target, "You are invisible: other players can't see or hear you (voice chat still works), infected ignore you, nothing can hurt you");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " is invisible");
+			DescribeOnTarget(adminId, targetId, "switched invisibility on");
+		} else {
+			MessagePlayer(target, "You are visible again");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " is visible again");
+			DescribeOnTarget(adminId, targetId, "switched invisibility off");
+		}
+	}
+
+	protected void SetInvisible(PlayerBase target, bool invisible) {
+		string steamId = GetSteamId(target);
+		m_Invisible.RemoveItem(steamId);
+		if (invisible && steamId != "") m_Invisible.Insert(steamId);
+
+		target.ZBSetInvisible(invisible);
+	}
+
+	//The target's magazine stays full while they shoot (PlayerBase.ZBRefillAfterShot): topped up after every shot on the
+	//server and on their own client, which predicts its shots. Weapons without a detachable magazine aren't covered.
+	//Belongs to the character: it ends with death or logging out
+	void InfiniteAmmoTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+
+		bool on = !target.ZBHasInfiniteAmmo();
+		target.ZBSetInfiniteAmmo(on);
+		int low, high;
+		target.GetNetworkID(low, high);
+		TIntArray args = {low, high}; //Their client refills only for this character, not a later one after a respawn
+		m_ZomberryCmdAPI.SetClientFeature(ZBGetIdentity(target), FEATURE_INFINITE_AMMO, on, args);
+
+		if (on) {
+			MessagePlayer(target, "Infinite ammo: your magazine stays full");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " has infinite ammo");
+			DescribeOnTarget(adminId, targetId, "switched infinite ammo on");
+		} else {
+			MessagePlayer(target, "Infinite ammo is off");
+			if (adminId != targetId) MessagePlayer(admin, GetPlayerName(target) + " no longer has infinite ammo");
+			DescribeOnTarget(adminId, targetId, "switched infinite ammo off");
+		}
+	}
+
+	//Client side of infinite ammo. args: the character's network id low, high
+	void OnInfiniteAmmoFeature(bool enabled, TIntArray args) {
+		if (!enabled || args.Count() < 2) {
+			PlayerBase.ZBSetLocalInfiniteAmmo(false, 0, 0);
+			return;
+		}
+		PlayerBase.ZBSetLocalInfiniteAmmo(true, args[0], args[1]);
+	}
+
+	//An invisible player who relogged or respawned: their new character is made invisible again
+	void ReapplyInvisibility(PlayerBase player) {
+		if (!player || m_Invisible.Find(GetSteamId(player)) == -1) return;
+
+		player.ZBSetInvisible(true);
+		MessagePlayer(player, "You are still invisible, run Toggle invisibility to be seen again");
+	}
+
+	//The admin's body doesn't react to input while they're in FreeCam or spectating. It stays where it is in FreeCam,
+	//and goes along with the target while spectating
+	static void FreezeBody(PlayerBase body, bool frozen) {
+		HumanInputController input = body.GetInputController();
+		if (!input) return;
+
+		input.OverrideMovementSpeed(frozen, 0);
+		input.OverrideRaise(frozen, false);
+		input.OverrideAimChangeX(frozen, 0);
+		input.OverrideAimChangeY(frozen, 0);
+	}
+
+	//The selected player can't move, turn or raise their hands until unfrozen: on the server (their body's input)
+	//and on their client (FEATURE_FREEZE), which drives their movement. Survives relogs, see ReapplyFreeze
+	void FreezeTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin, target;
+		if (!GetTargets(adminId, targetId, admin, target)) return;
+		if (target == admin) {
+			Refuse(admin, "Select another player to freeze");
+			return;
+		}
+
+		string steamId = GetSteamId(target);
+		bool freeze = m_Frozen.Find(steamId) == -1;
+		SetFrozen(target, freeze);
+
+		if (freeze) {
+			MessagePlayer(admin, GetPlayerName(target) + " is frozen, run Toggle freeze again to release them");
+			m_ZomberryCmdAPI.DescribeCall("{actor} froze {target}");
+		} else {
+			MessagePlayer(admin, GetPlayerName(target) + " is released");
+			m_ZomberryCmdAPI.DescribeCall("{actor} released {target}");
+		}
+	}
+
+	protected void SetFrozen(PlayerBase target, bool freeze) {
+		string steamId = GetSteamId(target);
+		m_Frozen.RemoveItem(steamId);
+		if (freeze) m_Frozen.Insert(steamId);
+
+		FreezeBody(target, freeze);
+		m_ZomberryCmdAPI.SetClientFeature(ZBGetIdentity(target), FEATURE_FREEZE, freeze);
+		if (freeze) {
+			MessagePlayer(target, "An admin froze you, please wait");
+		} else {
+			MessagePlayer(target, "An admin released you");
+		}
+	}
+
+	static string GetSteamId(PlayerBase player) {
+		if (!ZBGetIdentity(player)) return "";
+		return ZBGetIdentity(player).GetPlainId();
+	}
+
+	//A frozen player who relogged: freeze them again (their client lost the feature with the old session)
+	void ReapplyFreeze(PlayerBase player) {
+		if (!player || m_Frozen.Find(GetSteamId(player)) == -1) return;
+
+		SetFrozen(player, true);
+	}
+
+	//Client side of FreezeTarget
+	void OnFreezeFeature(bool enabled, TIntArray args) {
+		PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+		if (player) FreezeBody(player, enabled);
+	}
+
+	//Through the selected player's eyes (or over their shoulder while they're in third person). Run it again to stop
+	void SpectateTarget( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return;
+
+		ZBerrySpectate spectate = GetZBerrySpectate();
+		if (spectate.IsWatching(adminId)) {
+			spectate.Stop(adminId, "Returned to player body");
+			m_ZomberryCmdAPI.DescribeCall("{actor} stopped spectating");
+			return;
+		}
+		if (m_spectatingList.Find(adminId) != -1) {
+			Refuse(admin, "Leave FreeCam first");
+			return;
+		}
+
+		PlayerBase target = ZBGetPlayerById(targetId);
+		string problem;
+		if (!spectate.Start(admin, target, ZBerryPermissions.FunctionNode(funcName), problem)) {
+			Refuse(admin, "Can't spectate: " + problem);
+			return;
+		}
+		MessagePlayer(admin, "Spectating " + GetPlayerName(target) + ", run Spectate target again to return");
+		m_ZomberryCmdAPI.DescribeCall("{actor} started spectating {target}");
+	}
+
 	void FreeCamAdm( string funcName, int adminId, int targetId, vector cursor ) {
 		int listId = m_spectatingList.Find(adminId);
 		PlayerBase adminPly = ZBGetPlayerById(adminId);
@@ -493,30 +799,31 @@ class ZomberryStockFunctions {
 			if (listId != -1) m_spectatingList.Remove(listId);
 			return;
 		}
+		if (GetZBerrySpectate().IsWatching(adminId)) {
+			Refuse(adminPly, "Stop spectating first");
+			return;
+		}
 
-		PlayerIdentity adminIdent = adminPly.GetIdentity();
-		HumanInputController adminInput = adminPly.GetInputController();
+		PlayerIdentity adminIdent = ZBGetIdentity(adminPly);
 
 		if (listId != -1) {
-			adminInput.OverrideMovementSpeed(false, 0);
-			adminInput.OverrideRaise(false, false);
-			adminInput.OverrideAimChangeX(false, 0);
-			adminInput.OverrideAimChangeY(false, 0);
-
+			MessagePlayer(adminPly, "Returned to player body"); //First: while detached it reaches their client without the body
+			FreezeBody(adminPly, false);
 			m_spectatingList.Remove(listId);
 
-			GetGame().SelectPlayer(adminIdent, adminPly);
-			MessagePlayer(ZBGetPlayerById(adminId), "Returned to player body");
+			ZBerryBodies.Reattach(adminPly);
+			m_ZomberryCmdAPI.DescribeCall("{actor} left FreeCam");
 		} else {
-			adminInput.OverrideMovementSpeed(true, 0);
-			adminInput.OverrideRaise(true, false);
-			adminInput.OverrideAimChangeX(true, 0);
-			adminInput.OverrideAimChangeY(true, 0);
-
+			FreezeBody(adminPly, true);
 			m_spectatingList.Insert(adminId);
 
-			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", (adminPly.GetPosition() + Vector(0,1.75,0)));
-			MessagePlayer(ZBGetPlayerById(adminId), "Entered FreeCam, use MWheel to change camera speed");
+			vector facing = adminPly.GetDirection();
+			facing[1] = 0;
+			facing.Normalize();
+			GetGame().SelectSpectator(adminIdent, "ZomBerryCamFree", adminPly.GetPosition() - facing * 1.2 + Vector(0, 2, 0)); //Behind the head, not inside it
+			ZBerryBodies.Detach(adminPly); //The network bubble follows the camera
+			MessagePlayer(adminPly, "Entered FreeCam, use MWheel to change camera speed");
+			m_ZomberryCmdAPI.DescribeCall("{actor} entered FreeCam");
 		}
 	}
 
@@ -549,18 +856,45 @@ class ZomberryStockFunctions {
 	}
 
 	void SetWeather( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
-		Weather WMgr = GetGame().GetWeather();
-
-		SetWeatherPhenomenon(WMgr.GetFog(), fValues[0] / 100.0);
-		SetWeatherPhenomenon(WMgr.GetOvercast(), fValues[1] / 100.0);
-		SetWeatherPhenomenon(WMgr.GetRain(), fValues[2] / 100.0);
-		WMgr.SetStorm((fValues[1]*fValues[2])/10000, 0.7, 3600/((fValues[2]/2)+0.1));
-
-		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed (due to sync problems you might need to relog)");
+		ApplyWeather(fValues[0], fValues[1], fValues[2]);
+		int holdMinutes = WEATHER_HOLD / 60;
+		MessagePlayer(ZBGetPlayerById(adminId), "Weather changed, it holds for " + holdMinutes + " minutes");
 	}
 
-	//Sets a weather phenomenon right away, then restores the server's own limits so its weather settings keep working
-	protected void SetWeatherPhenomenon(WeatherPhenomenon phenomenon, float value) {
+	static const float WEATHER_HOLD = 360; //Seconds the admin's weather lasts before the server's own weather takes over
+
+	//Fog, overcast and rain in percent. Rain only starts above the world's overcast threshold (0.6 on Chernarus), and
+	//below it the world stops the rain itself, over a minute. So overcast and rain change at once, in that order when
+	//clouds come in and the other way round when they clear
+	static void ApplyWeather(int fogPercent, int overcastPercent, int rainPercent) {
+		Weather WMgr = GetGame().GetWeather();
+		float overcast = overcastPercent / 100.0;
+		bool cloudsComeIn = overcast >= WMgr.GetOvercast().GetActual();
+
+		if (cloudsComeIn) SetWeatherPhenomenon(WMgr.GetOvercast(), overcast, 0);
+		SetWeatherPhenomenon(WMgr.GetRain(), rainPercent / 100.0, 0);
+		if (!cloudsComeIn) SetWeatherPhenomenon(WMgr.GetOvercast(), overcast, 0);
+		SetWeatherPhenomenon(WMgr.GetFog(), fogPercent / 100.0, 1);
+		WMgr.SetStorm(GetStormDensity(overcastPercent, rainPercent), 0.7, GetStormTimeout(rainPercent));
+	}
+
+	//0-1: overcast and rain (0-100 each) together make a storm. Typed float locals: int maths gave 0 below 100/100
+	static float GetStormDensity(int overcastPercent, int rainPercent) {
+		float overcast = overcastPercent;
+		float rain = rainPercent;
+		return Math.Clamp((overcast / 100.0) * (rain / 100.0), 0, 1);
+	}
+
+	//Seconds between lightning strikes: shorter the heavier the rain
+	static float GetStormTimeout(int rainPercent) {
+		float rain = rainPercent;
+		return 3600 / (rain / 2.0 + 0.1);
+	}
+
+	//Sets a weather phenomenon (reached in changeTime seconds, kept for WEATHER_HOLD), then restores the server's own
+	//limits so its weather settings keep working. No SetNextChange: an early next change let the world's weather logic
+	//replace the value straight away (a storm's rain came out at its own forecast, clear weather kept raining for a minute)
+	protected static void SetWeatherPhenomenon(WeatherPhenomenon phenomenon, float value, float changeTime) {
 		float fcMin, fcMax, fnMin, fnMax, ftMin, ftMax;
 		phenomenon.GetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.GetLimits(fnMin, fnMax);
@@ -570,44 +904,189 @@ class ZomberryStockFunctions {
 		phenomenon.SetLimits(0, 1);
 		phenomenon.SetForecastTimeLimits(0, 3600);
 
-		phenomenon.Set(value, 1, 360);
-		phenomenon.SetNextChange(0.01);
+		phenomenon.Set(value, changeTime, WEATHER_HOLD);
 
 		phenomenon.SetForecastChangeLimits(fcMin, fcMax);
 		phenomenon.SetLimits(fnMin, fnMax);
 		phenomenon.SetForecastTimeLimits(ftMin, ftMax);
 	}
 
+	//Switches the ESP overlay on the admin's own client on or off (ZBerryESPOverlay). What it draws is set on that
+	//client's ESP tab; while it's on, the server streams everyone's position and health to that admin if those
+	//settings use them (ZBerryStreamServer.WantsEsp)
+	void ESPToggle( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		if (!admin) return;
+
+		PlayerIdentity identity = ZBGetIdentity(admin);
+		bool on = !GetZomberryCmdAPI().IsClientFeatureActive(identity, ZBerryESPOverlay.FEATURE);
+		GetZomberryCmdAPI().SetClientFeature(identity, ZBerryESPOverlay.FEATURE, on, NULL, ZBerryPermissions.FunctionNode(funcName));
+		ZBerryStreamServer streams = ZBerryStreamServer.Get();
+		if (streams) streams.SetEspActive(identity, on);
+
+		if (on) {
+			MessagePlayer(admin, "ESP on");
+			m_ZomberryCmdAPI.DescribeCall("{actor} switched ESP on");
+		} else {
+			MessagePlayer(admin, "ESP off");
+			m_ZomberryCmdAPI.DescribeCall("{actor} switched ESP off");
+		}
+	}
+
+	static const float RING_SPACING = 2; //Metres between players put on a ring
+
+	//Only this call's player: no several selected players to spread around
+	protected bool IsOneTarget() {
+		ZBerryCall call = m_ZomberryCmdAPI.GetCurrentCall();
+		return !call || call.GetTargetCount() <= 1;
+	}
+
+	//Where a teleport puts its player: the spot itself, or with several selected players their place on a ring around it,
+	//so they don't end up inside each other
+	protected vector GetDestination(vector center) {
+		ZBerryCall call = m_ZomberryCmdAPI.GetCurrentCall();
+		if (IsOneTarget()) return center;
+		return GetRingPosition(center, call.GetTargetIndex(), call.GetTargetCount());
+	}
+
+	//Same for a character across relogs, new after a death
+	static TIntArray GetCharacterId(PlayerBase player) {
+		int b1, b2, b3, b4;
+		player.GetPersistentID(b1, b2, b3, b4);
+		TIntArray characterId = {b1, b2, b3, b4};
+		return characterId;
+	}
+
+	//Characters without an id (no database, singleplayer) count as the same
+	static bool SameCharacter(TIntArray a, TIntArray b) {
+		bool aKnown = a[0] != 0 || a[1] != 0 || a[2] != 0 || a[3] != 0;
+		bool bKnown = b[0] != 0 || b[1] != 0 || b[2] != 0 || b[3] != 0;
+		if (!aKnown || !bKnown) return true;
+
+		return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+	}
+
+	//Evenly spread on a circle around center, RING_SPACING apart, at least 3 m out, on the surface
+	static vector GetRingPosition(vector center, int index, int count) {
+		float circumference = Math.Max(count, 1) * RING_SPACING;
+		float radius = Math.Max(3, circumference / Math.PI2);
+		float angle = Math.PI2 * index / Math.Max(count, 1);
+
+		float x = center[0] + Math.Cos(angle) * radius;
+		float z = center[2] + Math.Sin(angle) * radius;
+		return Vector(x, GetGame().SurfaceY(x, z), z);
+	}
+
+	static const int CONFIRM_MS = 10000;
+
+	//Destructive functions run twice: the first run says what would happen, the second one (with the same key
+	//within CONFIRM_MS) does it. Returns true on the confirming run
+	protected bool IsConfirmed(int adminId, string key) {
+		string pendingKey;
+		int pendingTime;
+		int now = GetGame().GetTime();
+		bool confirmed = m_PendingKeys.Find(adminId, pendingKey) && pendingKey == key && m_PendingTimes.Find(adminId, pendingTime) && now - pendingTime <= CONFIRM_MS;
+
+		if (confirmed) {
+			m_PendingKeys.Remove(adminId);
+			m_PendingTimes.Remove(adminId);
+		} else {
+			m_PendingKeys.Set(adminId, key);
+			m_PendingTimes.Set(adminId, now);
+		}
+		return confirmed;
+	}
+
+	//The object the cursor is on (by bounding box, within 1 m): items, vehicles, bodies, base parts, infected, animals.
+	//Never living players or map objects. Confirmed by running it again on the same object
 	void DeleteObj( string funcName, int adminId, int targetId, vector cursor ) {
-		ref array<Object> nearest_objects = new array<Object>;
-		ref array<CargoBase> proxy_cargos = new array<CargoBase>;
-		Object toBeDeleted;
-
-		GetGame().GetObjectsAtPosition3D(cursor, 1.5, nearest_objects, proxy_cargos);
-		if (nearest_objects.Count() < 1) return;
-		toBeDeleted = NULL;
-
-		for (int i = 0; i < nearest_objects.Count(); ++i) {
-			string tempObjId = nearest_objects.Get(i).ToString(); tempObjId.ToLower();
-			if (nearest_objects.Get(i).IsKindOf("SurvivorBase") || tempObjId.Contains("static")) continue;
-			if (nearest_objects.Get(i).IsWell() || nearest_objects.Get(i).IsBush()) continue;
-			if (nearest_objects.Get(i).IsRock() || nearest_objects.Get(i).IsTree()) continue;
-
-			toBeDeleted = nearest_objects.Get(i);
-			break;
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		EntityAI entity = ZBerryWorldTools.PickAt(cursor, 1.0);
+		if (!entity) {
+			Refuse(admin, "Nothing to delete under the cursor (map objects and living players can't be deleted)");
+			return;
 		}
-		if (!toBeDeleted) return;
 
-		if (!m_deleteList.Contains(adminId)) {
-			m_deleteList.Insert(adminId, toBeDeleted.ToString());
-			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
-		} else if (m_deleteList.Get(adminId) != toBeDeleted.ToString()) {
-			m_deleteList.Set(adminId, toBeDeleted.ToString());
-			MessagePlayer(ZBGetPlayerById(adminId), "You're going to annihilate " + toBeDeleted.ToString() + ", execute this function again to continue.");
-		} else if (m_deleteList.Get(adminId) == toBeDeleted.ToString()) {
-			MessagePlayer(ZBGetPlayerById(adminId), toBeDeleted.ToString() + " annihilated.");
-			GetGame().ObjectDelete(toBeDeleted);
-			m_deleteList.Remove(adminId);
+		int low, high;
+		entity.GetNetworkID(low, high);
+		string description = entity.GetDisplayName() + " (" + entity.GetType() + ")";
+		if (!IsConfirmed(adminId, "delete:" + low + ":" + high)) {
+			AskToConfirm(admin, "Delete " + description + "? Run it again within " + (CONFIRM_MS / 1000) + " seconds on the same object to confirm.");
+			return;
 		}
+
+		m_ZomberryCmdAPI.SetCallPosition(entity.GetPosition());
+		m_ZomberryCmdAPI.DescribeCall("{actor} deleted " + ZBerryLocText.Name(entity) + " (" + entity.GetType() + ") at " + ZBDescribePosition(entity.GetPosition()));
+		GetGame().ObjectDelete(entity);
+		MessagePlayer(admin, "Deleted " + description);
+	}
+
+	//Removes one kind of thing within a radius of the cursor: infected, dead bodies, loose items or ruined items.
+	//Built and placed things (bases, tents, storage, stashes, fireplaces) are never touched. Confirmed by running it again
+	void CleanupArea( string funcName, int adminId, int targetId, vector cursor, TIntArray fValues ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		float radius = Math.Clamp(fValues[0], 5, 200);
+		int kind = Math.Clamp(fValues[1], 0, ZBerryWorldTools.GetCleanNames().Count() - 1);
+		string kindName = ZBerryWorldTools.GetCleanNames()[kind];
+		kindName.ToLower(); //In place
+
+		//Same kind, radius and spot (to 10 m) as the first run
+		float x = cursor[0];
+		float z = cursor[2];
+		int cellX = Math.Floor(x / 10);
+		int cellZ = Math.Floor(z / 10);
+		string key = kind.ToString() + ":" + radius + ":" + cellX + ":" + cellZ;
+		int now = GetGame().GetTime();
+		ZBerryPendingCleanup pending = m_PendingCleanups.Get(adminId);
+		if (pending && pending.Key == key && now - pending.Time <= CONFIRM_MS) {
+			//What the prompt counted, not what's there now: objects that came since stay. Those gone meanwhile are
+			//skipped, and so are items someone picked up (they'd vanish from a player's inventory)
+			int deleted = 0;
+			foreach (EntityAI entity : pending.Entities) {
+				if (!entity || entity.GetHierarchyParent()) continue;
+
+				GetGame().ObjectDelete(entity);
+				++deleted;
+			}
+			int counted = pending.Entities.Count();
+			m_PendingCleanups.Remove(adminId);
+
+			string gone = "";
+			if (deleted < counted) gone = " (" + (counted - deleted) + " were already gone or picked up)";
+			m_ZomberryCmdAPI.SetCallPosition(cursor);
+			m_ZomberryCmdAPI.DescribeCall("{actor} cleaned up " + deleted + " " + kindName + " within " + radius + " m of " + ZBDescribePosition(cursor) + gone);
+			MessagePlayer(admin, "Deleted " + deleted + " " + kindName + gone);
+			return;
+		}
+
+		array<EntityAI> found = ZBerryWorldTools.FindForCleanup(cursor, radius, kind);
+		if (found.Count() == 0) {
+			m_PendingCleanups.Remove(adminId);
+			Refuse(admin, "No " + kindName + " within " + radius + " m");
+			return;
+		}
+
+		m_PendingCleanups.Set(adminId, new ZBerryPendingCleanup(key, now, found));
+		AskToConfirm(admin, "Found " + found.Count() + " " + kindName + " within " + radius + " m. Run it again within " + (CONFIRM_MS / 1000) + " seconds to delete them.");
+	}
+
+	//The car or boat nearest to the cursor (within 5 m of its body), back on its wheels
+	void FlipVehicle( string funcName, int adminId, int targetId, vector cursor ) {
+		PlayerBase admin = ZBGetPlayerById(adminId);
+		Transport vehicle = Transport.Cast(ZBerryWorldTools.PickAt(cursor, 5, true));
+		if (!vehicle) {
+			Refuse(admin, "No vehicle near the cursor");
+			return;
+		}
+
+		string problem = ZBerryWorldTools.FlipVehicle(vehicle);
+		if (problem != "") {
+			Refuse(admin, "Can't flip " + vehicle.GetDisplayName() + ": " + problem);
+			return;
+		}
+
+		m_ZomberryCmdAPI.SetCallPosition(vehicle.GetPosition());
+		m_ZomberryCmdAPI.DescribeCall("{actor} flipped " + ZBerryLocText.Name(vehicle) + " at " + ZBDescribePosition(vehicle.GetPosition()));
+		MessagePlayer(admin, vehicle.GetDisplayName() + " is back on its wheels");
 	}
 };

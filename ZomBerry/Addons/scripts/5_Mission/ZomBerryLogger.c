@@ -1,20 +1,34 @@
+//ZomBerry's log file (or the script log). Plain lines come through ZomberryBase.Log; events (admin actions, kicks, bans,
+//kills, refusals) through ZomberryBase.LogEvent, which writes them here with these modules and keeps them in the
+//in-game log (ZBerryEventLog) too
 class ZomberryLogger {
+	static const string MODULE_ADMIN = "ZomBerryAdmin"; //Admin actions
+	static const string MODULE_BANS = "ZomBerryBans"; //Kicks, bans, refused joins
+	static const string MODULE_AUTH = "ZomBerryAuth"; //Setup token, versions
+	static const string MODULE_KILLS = "ZomBerryKills"; //Player deaths
+
 	private string file_path;
 	private bool defaultIO = true;
 
 	void Log(string module, string txt) {
+		Write(module, txt);
+	}
+
+	//The file, or the script log when there's none (or it can't be written)
+	private void Write(string module, string txt) {
 		if (defaultIO) {
 			Print(GetDate() + " [" + module + "]: " + txt);
+			return;
+		}
+
+		FileHandle logFile = OpenFile(file_path, FileMode.APPEND);
+		if (logFile != 0) {
+			FPrintln(logFile, GetDate() + " [" + module + "]: " + txt);
+			CloseFile(logFile);
 		} else {
-			FileHandle logFile = OpenFile(file_path, FileMode.APPEND);
-			if (logFile != 0) {
-				FPrintln(logFile, GetDate() + " [" + module + "]: " + txt);
-				CloseFile(logFile);
-			} else {
-				defaultIO = true;
-				Log("ZomBerryLogger", "WARN: !!! Falling back to scripts.txt, can't write to " + file_path);
-				Log(module, txt);
-			}
+			defaultIO = true;
+			Write("ZomBerryLogger", "WARN: !!! Falling back to scripts.txt, can't write to " + file_path);
+			Write(module, txt);
 		}
 	}
 
