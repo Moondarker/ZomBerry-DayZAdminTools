@@ -366,6 +366,9 @@ class ZomberryMenu extends UIScriptedMenu {
 	void OnBindKeyPress( int key ) {
 		if (m_MessageDialog) m_MessageDialog.OnKeyPressed(key); //It follows the caret of its hidden edit box
 
+		bool ctrl = KeyState(KeyCode.KC_LCONTROL) != 0 || KeyState(KeyCode.KC_RCONTROL) != 0;
+		if (key == KeyCode.KC_A && ctrl && m_PlayersPanel && m_PlayersPanel.IsMouseOverList()) m_PlayersPanel.SelectAll();
+
 		foreach (ZBerryUITab tab : m_Tabs) {
 			tab.OnBindKeyPress(key);
 		}

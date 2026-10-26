@@ -519,6 +519,34 @@ class ZBerryUIPlayersPanel extends ZBerryUIComponent {
 		return true;
 	}
 
+	//Ctrl+A: every player in the list but the admin, in list order, so the last row is the one single-player functions use
+	void SelectAll() {
+		if (m_PermsMode || m_BansMode) return;
+
+		int selfId = ZBerryUIUtils.GetLocalPlayerId();
+		m_SelectedIds.Clear();
+		for (int row = 0; row < m_PlayersList.GetNumItems(); ++row) {
+			Param4<int, bool, int, int> rowData;
+			m_PlayersList.GetItemData( row, 0, rowData );
+			if (!rowData || rowData.param1 == selfId || m_SelectedIds.Find(rowData.param1) != -1) continue;
+			m_SelectedIds.Insert(rowData.param1);
+		}
+		m_AnchorId = -1;
+		if (m_SelectedIds.Count() > 0) m_AnchorId = m_SelectedIds[0];
+		ApplySelection();
+	}
+
+	//Whether the mouse is over the players list (Ctrl+A applies there only)
+	bool IsMouseOverList() {
+		if (!IsVisible()) return false;
+		Widget hovered = GetWidgetUnderCursor();
+		while (hovered) {
+			if (hovered == m_PlayersList) return true;
+			hovered = hovered.GetParent();
+		}
+		return false;
+	}
+
 	//The last selected player is "the" selected one: the server sends their details, the info lines show them
 	protected void ApplySelection() {
 		m_SelectedPlayerId = -1;
