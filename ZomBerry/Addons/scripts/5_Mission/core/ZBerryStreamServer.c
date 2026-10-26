@@ -337,7 +337,13 @@ class ZBerryStreamServer {
 			details.SteamId = identity.GetPlainId();
 			details.Ping = identity.GetPingAct();
 			int loginTime = GetZBerryEventLog().GetLoginTime(details.SteamId);
-			if (loginTime > 0) details.OnlineSeconds = Math.Max(0, ZBerryTime.Now() - loginTime);
+			if (loginTime > 0) {
+				//Whole numbers: Math.Max works in floats, which only hold times this large in 128 s steps
+				int now = ZBerryTime.Now();
+				int onlineSeconds = now - loginTime;
+				if (onlineSeconds < 0) onlineSeconds = 0;
+				details.OnlineSeconds = onlineSeconds;
+			}
 		}
 
 		if (withPosition) {
