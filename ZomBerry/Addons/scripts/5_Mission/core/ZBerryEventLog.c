@@ -42,6 +42,7 @@ class ZBerryEventType {
 
 class ZBerryEventFlags {
 	static const int HARMFUL = 1; //A harmful function (see AddCommand)
+	static const int REVERTABLE = 2; //A teleport whose moved players' positions are kept (ZBerryTeleportReturns)
 };
 
 //One event of the in-game log. Text is a template: {actor} and {target} stand for the players, so the log view can

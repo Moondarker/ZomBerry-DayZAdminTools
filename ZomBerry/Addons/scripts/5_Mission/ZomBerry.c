@@ -31,6 +31,7 @@ class ZomberryBase {
 			m_Streams = new ZBerryStreamServer(m_Auth, m_Locations);
 			m_Loadouts = new ZBerryLoadoutServer(m_Auth);
 			g_ZBerryDeathLoadouts = new ZBerryDeathLoadouts();
+			g_ZBerryTeleportReturns = new ZBerryTeleportReturns();
 			GetZBerryEventLog().SetAuth(m_Auth);
 			GetZomberryPermAPI().SetAuth(m_Auth);
 			m_ZomberryStockFunctions.Init();
@@ -128,13 +129,16 @@ class ZomberryBase {
 		if (GetGame().IsMultiplayer()) {
 			GetZBerryEventLog().StartPersisting(GetConfig().GetConfigDir() + ZBerryEventLog.FILE_NAME);
 			g_ZBerryDeathLoadouts.Load(GetConfig().GetConfigDir(), GetZBerryEventLog().GetNextEventId()); //After the log: the ids it has
+			g_ZBerryTeleportReturns.Load(GetConfig().GetConfigDir(), GetZBerryEventLog().GetNextEventId());
 		}
 	}
 
-	//Server, before the log's last save: repeated calls still held back are logged, death loadouts saved
+	//Server, before the log's last save: repeated calls still held back are logged, death loadouts and teleport returns
+	//saved
 	void OnServerStopping() {
 		if (m_ServerRPC) m_ServerRPC.FlushCallGroups();
 		if (g_ZBerryDeathLoadouts && GetGame().IsMultiplayer()) g_ZBerryDeathLoadouts.Save(GetConfig().GetConfigDir());
+		if (g_ZBerryTeleportReturns && GetGame().IsMultiplayer()) g_ZBerryTeleportReturns.Save(GetConfig().GetConfigDir());
 	}
 
 	//Server only, NULL on clients

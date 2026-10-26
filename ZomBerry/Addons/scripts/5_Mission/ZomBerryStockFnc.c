@@ -749,7 +749,7 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	protected static string GetSteamId(PlayerBase player) {
+	static string GetSteamId(PlayerBase player) {
 		if (!ZBGetIdentity(player)) return "";
 		return ZBGetIdentity(player).GetPlainId();
 	}
@@ -1043,7 +1043,7 @@ class ZomberryStockFunctions {
 	}
 
 	//Same for a character across relogs, new after a death
-	protected static TIntArray GetCharacterId(PlayerBase player) {
+	static TIntArray GetCharacterId(PlayerBase player) {
 		int b1, b2, b3, b4;
 		player.GetPersistentID(b1, b2, b3, b4);
 		TIntArray characterId = {b1, b2, b3, b4};
@@ -1051,7 +1051,7 @@ class ZomberryStockFunctions {
 	}
 
 	//Characters without an id (no database, singleplayer) count as the same
-	protected static bool SameCharacter(TIntArray a, TIntArray b) {
+	static bool SameCharacter(TIntArray a, TIntArray b) {
 		bool aKnown = a[0] != 0 || a[1] != 0 || a[2] != 0 || a[3] != 0;
 		bool bKnown = b[0] != 0 || b[1] != 0 || b[2] != 0 || b[3] != 0;
 		if (!aKnown || !bKnown) return true;
