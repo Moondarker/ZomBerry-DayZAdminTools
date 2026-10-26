@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 (in development)
+
+Nothing yet.
+
 ## 0.8.0
 
 An admin and kill log you can act on, map markers and saved locations, loadouts, messages, rank protection, a dozen new functions, and much less network traffic.
