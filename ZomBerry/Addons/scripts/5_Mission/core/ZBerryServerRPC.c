@@ -416,9 +416,22 @@ class ZBerryServerRPC {
 		} else if (adminPly.GetCommand_Vehicle()) {
 			ZomberryBase.Log( "ZomBerryAdmin", Who(sender) + " tried to teleport, but was in vehicle");
 		} else {
+			vector startPos = adminPly.GetPosition();
 			adminPly.SetPosition(position);
-			ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, NULL, "{actor} teleported to " + where );
+			LogMove(sender, NULL, adminPly, startPos, "{actor} teleported from " + ZBDescribePosition(startPos) + " to " + where, 0);
 		}
+	}
+
+	//A teleport outside a command call (map, locations): logged, with where the player was kept for "Teleport back"
+	protected void LogMove(PlayerIdentity sender, PlayerIdentity target, PlayerBase moved, vector startPos, string text, int flags) {
+		ZBerryTeleportRecordArray moves = new ZBerryTeleportRecordArray;
+		ZBerryTeleportRecord record = ZBerryTeleportReturns.MakeRecord(moved, startPos);
+		if (record.SteamId != "") {
+			moves.Insert(record);
+			flags = flags | ZBerryEventFlags.REVERTABLE;
+		}
+		ZBerryLogEvent logged = ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, target, text, flags );
+		AttachMoves(logged, moves);
 	}
 
 	//Another player: harmful, so the rank protections apply
@@ -435,12 +448,13 @@ class ZBerryServerRPC {
 			Tell(sender, "Can't teleport " + ZBGetIdentity(targetPly).GetName() + ": their group is protected from your rank");
 			return;
 		}
+		vector startPos = ZomberryStockFunctions.GetPosSafe(targetPly);
 		if (!ZomberryStockFunctions.SetPosSafe(targetPly, position)) {
 			Tell(sender, "Teleport failed: " + ZBGetIdentity(targetPly).GetName() + " is in a vehicle");
 			return;
 		}
 
-		ZomberryBase.LogEvent( ZBerryEventType.TELEPORT, sender, ZBGetIdentity(targetPly), "{actor} teleported {target} to " + where, ZBerryEventFlags.HARMFUL );
+		LogMove(sender, ZBGetIdentity(targetPly), targetPly, startPos, "{actor} teleported {target} from " + ZBDescribePosition(startPos) + " to " + where, ZBerryEventFlags.HARMFUL);
 		Tell(sender, "Teleported " + ZBGetIdentity(targetPly).GetName());
 	}
 
