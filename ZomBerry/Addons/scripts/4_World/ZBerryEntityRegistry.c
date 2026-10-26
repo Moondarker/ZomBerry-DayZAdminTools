@@ -104,6 +104,18 @@ modded class BoatScript {
 	}
 };
 
+modded class MotorbikeScript {
+	override void EEInit() {
+		super.EEInit();
+		ZBerryEntityRegistry.Register(ZBerryEntityCategory.VEHICLES, this);
+	}
+
+	override void EEDelete(EntityAI parent) {
+		ZBerryEntityRegistry.Unregister(ZBerryEntityCategory.VEHICLES, this);
+		super.EEDelete(parent);
+	}
+};
+
 //Packed tents register too: whether a tent is pitched is checked when markers are built
 modded class TentBase {
 	override void EEInit() {

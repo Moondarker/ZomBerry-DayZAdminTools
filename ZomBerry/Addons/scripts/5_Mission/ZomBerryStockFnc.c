@@ -442,13 +442,22 @@ class ZomberryStockFunctions {
 		vector position = GetPosSafe(target);
 		GetGame().GetObjectsAtPosition(position, 15, nearestObjects, proxyCargos);
 
+		int repaired = 0;
 		foreach(Object nearObject: nearestObjects) {
-			if (nearObject.IsKindOf("CarScript")) RepairCar(Car.Cast(nearObject));
+			Transport vehicle = Transport.Cast(nearObject); //Cars, motorbikes and boats
+			if (!vehicle) continue;
+
+			RepairVehicle(vehicle);
+			++repaired;
 		}
-		MessagePlayer(admin, "Refueled and repaired vehicles near to target");
+		if (repaired == 0) {
+			Refuse(admin, "No vehicles within 15 m of the target");
+			return;
+		}
+		MessagePlayer(admin, "Refueled and repaired " + repaired + " vehicles near the target");
 	}
 
-	protected void RepairCar(Car carObject) {
+	protected void RepairVehicle(Transport carObject) {
 		TStringArray slotsCar = new TStringArray;
 		map<string, ref TStringArray> partsBySlot = GetPartsBySlot();
 		TStringArray slotParts;
@@ -488,17 +497,42 @@ class ZomberryStockFunctions {
 			}
 		}
 
-		carObject.SetHealth("Engine", "", carObject.GetMaxHealth("Engine", ""));
+		//Every damage zone (engine, fuel tank, chassis...) and the vehicle as a whole
+		TStringArray zones = new TStringArray;
+		carObject.GetDamageZones(zones);
+		foreach (string zone : zones) carObject.SetHealthMax(zone, "");
+		carObject.SetHealthMax("", "");
 
-		// Refuel
-		float fuelReq = carObject.GetFluidCapacity( CarFluid.FUEL ) - (carObject.GetFluidCapacity( CarFluid.FUEL ) * carObject.GetFluidFraction( CarFluid.FUEL ));
-		float oilReq = carObject.GetFluidCapacity( CarFluid.OIL ) - (carObject.GetFluidCapacity( CarFluid.OIL ) * carObject.GetFluidFraction( CarFluid.OIL ));
-		float coolantReq = carObject.GetFluidCapacity( CarFluid.COOLANT ) - (carObject.GetFluidCapacity( CarFluid.COOLANT ) * carObject.GetFluidFraction( CarFluid.COOLANT ));
-		float brakeReq = carObject.GetFluidCapacity( CarFluid.BRAKE ) - (carObject.GetFluidCapacity( CarFluid.BRAKE ) * carObject.GetFluidFraction( CarFluid.BRAKE ));
-		carObject.Fill( CarFluid.FUEL, fuelReq );
-		carObject.Fill( CarFluid.OIL, oilReq );
-		carObject.Fill( CarFluid.COOLANT, coolantReq );
-		carObject.Fill( CarFluid.BRAKE, brakeReq );
+		RefillVehicle(carObject);
+	}
+
+	//Cars, motorbikes and boats each have their own fluid API. Fluids a vehicle has no tank for have no capacity
+	protected void RefillVehicle(Transport vehicle) {
+		CarScript car = CarScript.Cast(vehicle);
+		MotorbikeScript bike = MotorbikeScript.Cast(vehicle);
+		BoatScript boat = BoatScript.Cast(vehicle);
+		TIntArray fluids = {ETransportFluid.FUEL, ETransportFluid.OIL, ETransportFluid.BRAKE, ETransportFluid.COOLANT};
+		foreach (int fluid : fluids) {
+			float capacity = 0; //Typed locals: method results mixed into one expression broke the math
+			float fraction = 0;
+			if (car) {
+				capacity = car.GetFluidCapacity(fluid);
+				fraction = car.GetFluidFraction(fluid);
+			} else if (bike) {
+				capacity = bike.GetFluidCapacity(fluid);
+				fraction = bike.GetFluidFraction(fluid);
+			} else if (boat) {
+				capacity = boat.GetFluidCapacity(fluid);
+				fraction = boat.GetFluidFraction(fluid);
+			}
+			if (capacity < 0.01) continue; //No tank for it: the motorbike reports a tiny garbage capacity for coolant
+			float missing = capacity - capacity * fraction;
+			if (missing <= 0) continue;
+
+			if (car) car.Fill(fluid, missing);
+			if (bike) bike.Fill(fluid, missing);
+			if (boat) boat.Fill(fluid, missing);
+		}
 	}
 
 	//Every non-ruined Inventory_Base item by the slot it fits, in config order. Built on first use:

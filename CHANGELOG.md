@@ -2,7 +2,10 @@
 
 ## 0.8.1 (in development)
 
-Nothing yet.
+### Fixed
+
+- **Motorbikes:** Refuel and repair now covers them, and boats too; it only knew cars. Motorbikes also show up as vehicle markers on the map and on the ESP.
+- **Refuel and repair** restores every damaged part of a vehicle (fuel tank, chassis...), not just the engine, and says when there's no vehicle within 15 m of the target.
 
 ## 0.8.0
 
