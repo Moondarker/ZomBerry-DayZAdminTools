@@ -1,6 +1,6 @@
 # ZomBerry Admin Tools
 
-A lightweight in-game admin menu for DayZ: player management, a function list (heal, teleport, weather, time and more), an object spawner and a live map. The function list is defined on the server, so missions and server-side mods can add their own commands.
+A lightweight in-game admin menu for DayZ: player management, a function list (heal, teleport, ESP, spectating, weather, time and more), an object spawner with loadouts, a live map with object markers, and an admin and kill log. The function list is defined on the server, so missions and server-side mods can add their own commands.
 
 ZomBerry has **no dependencies**, so it doesn't need Community Framework or any other mod. It's still in an early testing stage, so please report any issues, and mention your game and ZomBerry versions in the issue.
 
@@ -24,10 +24,15 @@ ZomBerry is a client **and** server mod. Admins need it loaded on their game, an
 4. **Become the first admin.** Start the server, take the setup token from its log, join, press `O` and enter it. See [First start](#first-start).
 5. **Open the menu in-game with `O`.** Add more admins and groups on the Permissions tab, under the gear icon in the header.
 
-Client and server must run the same major and minor version (for example 0.7.x on both). Otherwise the client refuses to open the menu and says why in chat.
+Client and server must run the same major and minor version (for example 0.8.x on both). Otherwise the client refuses to open the menu and says why in chat.
+
+**Upgrading from 0.7.x:**
+- Update both sides: 0.7.x and 0.8.x clients and servers can't talk to each other.
+- New permissions are only granted by `*` or a matching wildcard. Groups with hand-picked permissions need the new ones added, and wildcards such as the moderator's `zomberry.map.*` now cover more (see [Permissions](#permissions)).
+- The [changelog](CHANGELOG.md#upgrading-from-070) lists everything else.
 
 **Upgrading from 0.6.x:**
-- Update both sides: a 0.6.x client gets no answer from a 0.7 server, and the other way round.
+- Update both sides: a 0.6.x client gets no answer from a 0.7 or later server, and the other way round.
 - Community Framework is no longer needed.
 - Your `admins.cfg` is imported on the first start (see [Upgrading from admins.cfg](#upgrading-from-adminscfg)).
 - The [changelog](CHANGELOG.md#upgrading-from-06x) lists everything else.
@@ -81,7 +86,7 @@ By default, any admin may run any function they have on anyone, including higher
 
 Harmful functions are the ones that hurt, move or work against the target:
 - teleport target to cursor, and teleport target to you;
-- toggle god mode;
+- toggle god mode, invisibility, infinite ammo and freeze;
 - kill, bite and strip;
 - vomiting, laughter and sneezing;
 - set health and set blood.
@@ -220,7 +225,7 @@ The left panel lists everyone online. Admins are green, and the item in a player
 
   These details refresh every 5 seconds, and only for the selected player.
 - **Several players:** `Ctrl` + double-click adds a player to the selection or takes them out, `Shift` + double-click selects everyone from the last plain double-click to this one, and `Ctrl` + `A` with the mouse over the list selects everyone but you. Functions that work on several players (teleport target to cursor or to you, heal, god mode, invisibility, freeze, kill and the other Player and Punish functions) run on all of them and are logged once with every name. Any other function acts on the player selected last, the dark orange one; while such a function is selected, the others aren't highlighted. The info lines show the player selected last.
-- **Refreshing:** the list updates itself every 5 seconds while the menu is open, the ban list every 30 seconds.
+- **Refreshing:** players who join or leave show up right away, health and the selected player's details update every 5 seconds, and the ban list every 30 seconds.
 - **Kick and Ban:** select a player, then press **Kick** or **Ban**, enter a reason and, for bans, pick a duration. **Ban** with nobody selected bans an offline player by Steam64 ID or GUID.
 - **Message:** sends a private message to the selected player, or an announcement to everyone. The **To** button switches between the two (with nobody selected, it's an announcement). Players see it as a notification at the side of the screen for 15 seconds, and in chat. Messages are up to 300 characters, and every one is logged with its text.
 - **Bans:** switches the list to the ban list, showing time left. Double-click a ban to see who banned them and why, then press **Unban** to lift it. **Players** switches back.
@@ -244,7 +249,7 @@ The stock set:
 | Category | Functions |
 |---|---|
 | Teleport | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you |
-| Player | Heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, toggle infinite ammo, toggle freeze, repair item in hands |
+| Player | Heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, toggle infinite ammo, toggle freeze, repair item in hands, repair all gear |
 | Punish | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | Camera | FreeCam, spectate target, ESP |
 | World | Time to day or night, set time, set date, set weather (fog, overcast, rain) |
@@ -254,11 +259,11 @@ Set time, set date and set weather start from the game's current time, date and 
 
 **God mode:** the target takes no damage and their stamina stays full until the function is run again. Nothing they wear or carry is damaged either, weapons included, and their body temperature stays comfortable. Toggling it on also heals them fully. Mods that switch damage back on by themselves, such as safe zones, can end it early unless they check ZomBerry's god mode (see [God mode and other mods](#god-mode-and-other-mods)).
 
-**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them or their gear until it's switched off again, and their body temperature stays comfortable. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
+**Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them or their gear until it's switched off again, and their body temperature stays comfortable. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard. Other players walk through them and get no actions on them, such as checking their pulse. Logging out or respawning doesn't end it.
 
 **Teleporting several players:** select them in the players list, then run Teleport - Target to Me or Teleport - Target to Cursor. They're placed on a ring around the spot, 2 m apart, so they don't end up inside each other. Players in vehicles stay where they are, and so do admins protected from your rank.
 
-**Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
+**Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot, and an empty one is filled too; an empty chamber still needs a reload. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
 **Toggle freeze:** the selected player can't move, turn or raise their hands until you run it again. They get a chat message. Logging out doesn't escape it: a frozen player who rejoins is frozen again. It's harmful, so the protection nodes apply.
 
@@ -269,13 +274,16 @@ Set time, set date and set weather start from the game's current time, date and 
 - **Stopping:** run the function again, or it ends by itself when they die or leave, or when you lose the permission.
 - **Can't be combined:** you can't use it together with FreeCam.
 
-**ESP:** draws players, vehicles, infected and animals through walls on your own screen. Running it switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on the [ESP tab](#esp).
+**Repair all gear:** like repair item in hands, for everything the target wears and carries, what's attached to or inside it, and the item in hands.
+
+**ESP:** draws players, vehicles, infected, animals and loot through walls on your own screen. Running it switches ESP on, and running it again switches it off. It has no parameters, so it can be bound to a key. What it draws is set on the [ESP tab](#esp).
 - **Players:** a box with name, distance, health and blood, and a skeleton within 150 m. Players beyond what your game loads (about 1 km) show as a name and distance.
 - **Vehicles:** a box with the name, within 1.5 km.
 - **Infected and animals:** a box, within 300 m.
+- **Loot:** items on the ground, with name and distance, within 50 m.
 - **Who sees what:** only you see it, and it stays on when the menu is closed. It switches off by itself if you lose the permission.
 
-**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character. What your game loads moves with the camera, so you see players and vehicles wherever you fly. Your body stays frozen where you left it.
+**FreeCam:** move with the usual movement keys and change the speed with the mouse wheel. Run the function again to return to your character. What your game loads moves with the camera, so you see players and vehicles wherever you fly. Your body stays frozen where you left it, hidden on your screen. The camera also works in underground areas, and goes through the ground where something is built below it.
 
 ### Spawn
 
@@ -307,7 +315,7 @@ The **Loadouts** button (with `zomberry.loadouts.use`) swaps the spawn list for 
 
 ### Map
 
-With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. They update every 2 seconds while the map is open.
+With `zomberry.map.player_markers`, players appear as markers, green for admins and blue for everyone else. A small arrow in front of each marker shows which way the player is facing. Their positions update every 2 seconds while the map is open.
 
 **Filters**, top left, opens a list of marker types when you point at it, and closes shortly after the mouse leaves. Each type only appears with its permission.
 - **Players:** on by default.
@@ -358,7 +366,7 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
   - **kicks and bans:** where the player was, if they were online;
   - **saved and deleted locations.**
 
-  Time and weather entries, messages and loadout entries have no position. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Older entries may have no position: deaths, teleports and spawns have one since 0.8.0 pre-release 11, the rest since pre-release 12.
+  Time and weather entries, messages and loadout entries have no position. The height is kept, so a death on an upper floor takes you to that floor. It's a teleport like any other, logged and revertable. Entries logged by 0.8.0 pre-releases may have no position.
 - **Teleport back:** with `zomberry.teleport.revert`, right-click a teleport and choose **Teleport back**. Every teleport is kept this way: the Teleport functions, Map tab teleports and saved locations. Each player goes back to where they were before that teleport, even if they've moved since.
   - **One player:** they're moved back at once, and chat says how it went.
   - **Several players:** a window lists them, with where they were and whether they can be moved back now. Click players to tick them, then choose **Teleport selected back**, or **Teleport all back**.
@@ -368,6 +376,7 @@ Admins with `zomberry.logs.view` get this tab. It shows what the server logged, 
 - **Language:** names from the game (animals, vehicles, weapons, objects) show in your game's language. The server's log file has them in the server's language.
 - **The left panel** lists everyone the log mentions, online or not. Double-click one to see only their events, or press **Show all** to go back.
 - **Search** matches the text, names and Steam64 ids. **Types** filters by kind of event.
+- **Copying:** right-click any line for **Copy this line** or **Copy the shown log**, with date, type and Steam64 ids.
 - **Live and Paused:** the header button stops the list from updating while you read it.
 - **Details:** select a row to see it in full below the list, wrapped over up to three lines.
 
@@ -391,7 +400,7 @@ Admins with `zomberry.permissions.manage` open this tab from the gear icon in th
 - **The menu doesn't open:**
   - Check that both client and server load ZomBerry, and that your ID is in a group in `ZomBerryPermissions.json`.
   - The server log shows "Auth respond to admin <name>" for admins. A chat message when you press `O` tells you about a version mismatch.
-  - A 0.6.x client on a 0.7 server (or the other way round) gets no answer at all, so update both sides.
+  - A client and server of different minor versions (0.7.x and 0.8.x, say) don't work together, so update both sides. A 0.6.x client gets no answer at all.
   - If `ZomBerryPermissions.json` can't be read (broken JSON), the server says so in its ZomBerry log and nobody is an admin until it's fixed. ZomBerry never overwrites a broken file.
 - **A tab or function is missing:** the admin's group lacks the permission for it.
 - **A keybind does nothing:** keybinds don't run while chat, the inventory or any other menu is open.
@@ -600,10 +609,10 @@ DayZ_x64.exe "-mod=@ZomBerry" "-mission=.\Missions\offlineTest.chernarusplus" -w
 
 | Path | Contents |
 |---|---|
-| `3_Game/ZBerryRPC.c` | ZomBerry's own RPC layer. All its traffic uses one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp` |
-| `4_World/` | God mode on `PlayerBase` (`ZBIsGod`, `ZBSetGod`), and the free and spectator cameras |
-| `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, bans, spawning, version and build info |
-| `5_Mission/ui/` | Admin menu components, one class per tab or panel |
+| `3_Game/` | ZomBerry's own RPC layer (`ZBerryRPC.c`: one engine RPC id, `74635`, and each message starts with an opcode from `ZBerryRPCOp`), the kick notice shown in the main menu, localized game names |
+| `4_World/` | God mode and invisibility on `PlayerBase` (`ZBIsGod`, `ZBSetGod`, `ZBIsInvisible`) and what they protect (stamina, bleeding, gear, temperature), death causes, the entity registry for map markers, ESP drawing, the free and spectator cameras |
+| `5_Mission/core/` | Permissions (matching, groups, JSON, the Permissions API), server and client auth, request handlers, streams to the menu, the event log, bans, kick notices, spawning, loadouts, saved locations, messages, teleport returns, spectating, client features, world tools, version and build info |
+| `5_Mission/ui/` | Admin menu components, one class per tab, panel or dialog, plus the ESP overlay |
 | `5_Mission/layouts/` | Layouts of the menu and its components |
 | `5_Mission/*.c` | Mission hooks, command API, stock functions, config, logger, keybinds |
 
@@ -617,8 +626,8 @@ Pack `ZomBerry/Addons/scripts` into `scripts.pbo` with the PBO prefix `ZomBerry\
 
 Open ideas and known issues are tracked on [GitHub issues](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues). Among them:
 - Keybinds for functions with parameters
-- New functions from the community's suggestions, such as FreeCam camera modes, teleporting a player to a map spot or flipping cars ([#42](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/42))
+- Configurable Spawn tab categories ([#56](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/56))
+- More of the community's suggestions, such as FreeCam camera modes ([#42](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/42))
 - Translations ([#36](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/36))
-- Client-side functions registered by other mods ([#38](https://github.com/Moondarker/ZomBerry-DayZAdminTools/issues/38))
 
 What's done is in the [changelog](CHANGELOG.md).
