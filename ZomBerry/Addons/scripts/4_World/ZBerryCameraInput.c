@@ -1,17 +1,23 @@
-//Vanilla's player cameras keep the input controller they were created with. Spectating and FreeCam detach the admin's
-//body from their client (ZBerryBodies) and give it back afterwards; the cameras survive that, but the controller they
-//kept doesn't, and the first camera update after taking the body back read through it and crashed the game.
-//Every camera that reads the input in its update now takes the character's current controller first
+//Vanilla's player cameras keep the input controller and the weapons command modifier they were created with.
+//Spectating and FreeCam hand the admin's client a spectator camera and give the body back afterwards (ZBerryBodies);
+//the cameras survive that, but what they kept doesn't, and the first camera update after taking the body back read
+//through it and crashed the game (UpdateUDAngleUnlocked reads both). Every camera that reads them in its update now
+//takes the character's current ones first, and skips the update while the character has no input controller (in the
+//middle of the handover), rather than keep the old one
 modded class DayZPlayerCameraBase {
-	protected void ZBRefreshInput() {
-		if (!m_pPlayer) return;
+	protected bool ZBRefreshInput() {
+		if (!m_pPlayer) return false;
 
+		HumanCommandWeapons weapons = m_pPlayer.GetCommandModifier_Weapons();
+		if (weapons) m_CommandWeapons = weapons;
 		HumanInputController input = m_pPlayer.GetInputController();
-		if (input) m_pInput = input;
+		if (!input) return false;
+		m_pInput = input;
+		return true;
 	}
 
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 
@@ -24,77 +30,77 @@ modded class DayZPlayerCameraBase {
 //Each class below overrides OnUpdate and may read the input before calling up the chain
 modded class DayZPlayerCamera1stPerson {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera1stPersonUnconscious {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPerson {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonJump {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonErcSpr {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonCrouch {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonProneBase {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCameraIronsights {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera1stPersonVehicle {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonVehicle {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
 
 modded class DayZPlayerCamera3rdPersonVehicleMotorbike {
 	override void OnUpdate(float pDt, out DayZPlayerCameraResult pOutResult) {
-		ZBRefreshInput();
+		if (!ZBRefreshInput()) return;
 		super.OnUpdate(pDt, pOutResult);
 	}
 };
