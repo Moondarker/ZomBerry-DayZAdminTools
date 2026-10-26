@@ -11,25 +11,12 @@ class ZBerryPendingCleanup {
 	}
 };
 
-//Where Teleport - All players to Me found a player, for Teleport - All players back
-class ZBerryTPReturn {
-	vector Position;
-	ref TIntArray CharacterId; //GetPersistentID: a new character after a death doesn't go back to the old one's spot
-
-	void ZBerryTPReturn(vector position, TIntArray characterId) {
-		Position = position;
-		CharacterId = characterId;
-	}
-};
-
 class ZomberryStockFunctions {
 	ref ZomberryCmdAPI m_ZomberryCmdAPI;
 	autoptr TIntArray m_spectatingList = new TIntArray;
 	protected ref map<int, string> m_PendingKeys = new map<int, string>; //Admin session id -> what the last first run would do
 	protected ref map<int, int> m_PendingTimes = new map<int, int>; //... and when
 	protected ref map<int, ref ZBerryPendingCleanup> m_PendingCleanups = new map<int, ref ZBerryPendingCleanup>; //Admin session id -> the first Clean up run
-	protected ref map<int, int> m_TPAllPending = new map<int, int>; //Admin session id -> game time of the first press
-	protected ref map<string, ref ZBerryTPReturn> m_TPAllReturns = new map<string, ref ZBerryTPReturn>; //Steam64 id -> where the first unreverted teleport-all found them
 	protected ref TStringArray m_Frozen = new TStringArray; //Steam64 ids: frozen until an admin unfreezes them, also across relogs
 	protected ref TStringArray m_Invisible = new TStringArray; //Steam64 ids: invisible until switched off, also across relogs
 	protected static ref map<string, ref TStringArray> m_PartsBySlot; //See GetPartsBySlot
@@ -58,8 +45,6 @@ class ZomberryStockFunctions {
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me 10 meters Forward", "TPForward", this, CATEGORY_TELEPORT, false);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Me to Target", "TPToTarget", this, CATEGORY_TELEPORT);
 		m_ZomberryCmdAPI.AddCommand("Teleport - Target to Me", "TPToAdmin", this, CATEGORY_TELEPORT, true, NULL, true);
-		m_ZomberryCmdAPI.AddCommand("Teleport - All players to Me", "TPAllToAdmin", this, CATEGORY_TELEPORT, false, NULL, true, true);
-		m_ZomberryCmdAPI.AddCommand("Teleport - All players back", "TPAllBack", this, CATEGORY_TELEPORT, false, NULL, true, true, false); //Menu only
 
 		m_ZomberryCmdAPI.AddCategory(CATEGORY_PLAYER, 0xFF7CD67C);
 		m_ZomberryCmdAPI.AddCommand("Heal", "HealTarget", this, CATEGORY_PLAYER, false);
@@ -222,10 +207,12 @@ class ZomberryStockFunctions {
 
 		targetPos[1] = GetGame().SurfaceY(targetPos[0], targetPos[2]);
 
+		vector startPos = GetPosSafe(admin);
 		if (!SetPosSafe(admin, targetPos)) {
 			Refuse(admin, "Unable to teleport: admin in vehicle");
 			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(admin, startPos);
 		m_ZomberryCmdAPI.DescribeCall("{actor} teleported " + tpDist + " m forward to " + ZBDescribePosition(targetPos));
 	}
 
@@ -233,10 +220,13 @@ class ZomberryStockFunctions {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		if (!SetPosSafe(target, cursor)) {
+		vector startPos = GetPosSafe(target);
+		vector destination = GetDestination(cursor);
+		if (!SetPosSafe(target, destination)) {
 			Refuse(admin, "Unable to teleport: target in vehicle");
 			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(target, startPos);
 		MessagePlayer(admin, "Target teleported");
 		if (adminId == targetId) {
 			m_ZomberryCmdAPI.DescribeCall("{actor} teleported to the cursor at " + ZBDescribePosition(cursor));
@@ -250,25 +240,34 @@ class ZomberryStockFunctions {
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
 		vector destination = GetPosSafe(target);
+		vector startPos = GetPosSafe(admin);
 		if (!SetPosSafe(admin, destination)) {
 			Refuse(admin, "Unable to teleport: get out of vehicle!");
 			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(admin, startPos);
 		MessagePlayer(admin, "Teleported to target");
-		m_ZomberryCmdAPI.DescribeCall("{actor} teleported to {target} at " + ZBDescribePosition(destination));
+		m_ZomberryCmdAPI.DescribeCall("{actor} teleported from " + ZBDescribePosition(startPos) + " to {target} at " + ZBDescribePosition(destination));
 	}
 
 	void TPToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
 		PlayerBase admin, target;
 		if (!GetTargets(adminId, targetId, admin, target)) return;
 
-		vector destination = GetPosSafe(admin);
+		vector center = GetPosSafe(admin);
+		vector destination = GetDestination(center);
+		vector startPos = GetPosSafe(target);
 		if (!SetPosSafe(target, destination)) {
 			Refuse(admin, "Unable to teleport: target in vehicle");
 			return;
 		}
+		m_ZomberryCmdAPI.RecordMove(target, startPos);
 		MessagePlayer(admin, "Target teleported");
-		m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to themselves at " + ZBDescribePosition(destination));
+		if (IsOneTarget()) {
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} from " + ZBDescribePosition(startPos) + " to themselves at " + ZBDescribePosition(center));
+		} else { //Alike for every player, so the run is logged as one event naming them all
+			m_ZomberryCmdAPI.DescribeCall("{actor} teleported {target} to themselves at " + ZBDescribePosition(center));
+		}
 	}
 
 	void HealTarget( string funcName, int adminId, int targetId, vector cursor ) {
@@ -934,112 +933,20 @@ class ZomberryStockFunctions {
 		}
 	}
 
-	static const int TP_ALL_CONFIRM_MS = 10000;
-	static const float TP_ALL_SPACING = 2; //Metres between players on the ring
+	static const float RING_SPACING = 2; //Metres between players put on a ring
 
-	//Run twice within TP_ALL_CONFIRM_MS: it moves everyone at once. Players go on a ring around the admin, so they don't
-	//end up inside each other. Skips players in vehicles and admins whose group is protected from this admin's rank
-	void TPAllToAdmin( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase admin = ZBGetPlayerById(adminId);
-		if (!admin) return;
-
-		int now = GetGame().GetTime();
-		int firstPress;
-		if (!m_TPAllPending.Find(adminId, firstPress) || now - firstPress > TP_ALL_CONFIRM_MS) {
-			m_TPAllPending.Set(adminId, now);
-			AskToConfirm(admin, "This teleports every player to you. Run it again within " + (TP_ALL_CONFIRM_MS / 1000) + " seconds to confirm.");
-			return;
-		}
-		m_TPAllPending.Remove(adminId);
-
-		array<PlayerBase> targets = new array<PlayerBase>;
-		int inVehicles = 0;
-		int protectedCount = 0;
-		array<Man> players = new array<Man>;
-		GetGame().GetPlayers(players);
-		foreach (Man man : players) {
-			PlayerBase player = PlayerBase.Cast(man);
-			if (!player || player == admin || !player.IsAlive()) continue;
-			if (player.GetCommand_Vehicle()) {
-				++inVehicles;
-				continue;
-			}
-			if (ZBGetIdentity(admin) && ZBGetIdentity(player) && !GetZomberryPermAPI().CanTarget(ZBGetIdentity(admin), ZBGetIdentity(player), true)) {
-				++protectedCount;
-				continue;
-			}
-			targets.Insert(player);
-		}
-
-		vector center = GetPosSafe(admin);
-		for (int i = 0; i < targets.Count(); ++i) {
-			//A second run before reverting keeps the first spot, so the revert goes back to where they really were
-			string steamId = GetSteamId(targets[i]);
-			TIntArray characterId = GetCharacterId(targets[i]); //Local: a temporary argument may be freed early
-			if (!m_TPAllReturns.Contains(steamId)) m_TPAllReturns.Set(steamId, new ZBerryTPReturn(targets[i].GetPosition(), characterId));
-			targets[i].SetPosition(GetRingPosition(center, i, targets.Count()));
-		}
-
-		string skipped = "";
-		if (inVehicles > 0) skipped += ", " + inVehicles + " skipped (in vehicles)";
-		if (protectedCount > 0) skipped += ", " + protectedCount + " skipped (protected from your rank)";
-		MessagePlayer(admin, "Teleported " + targets.Count() + " players" + skipped);
-		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players to " + ZBDescribePosition(center) + ": " + targets.Count() + " moved" + skipped);
+	//Only this call's player: no several selected players to spread around
+	protected bool IsOneTarget() {
+		ZBerryCall call = m_ZomberryCmdAPI.GetCurrentCall();
+		return !call || call.GetTargetCount() <= 1;
 	}
 
-	//Undoes Teleport - All players to Me: everyone it moved goes back to where it found them. Players in vehicles,
-	//protected from this admin's rank or offline stay saved for a later run; a player who died meanwhile is dropped
-	void TPAllBack( string funcName, int adminId, int targetId, vector cursor ) {
-		PlayerBase admin = ZBGetPlayerById(adminId);
-		if (!admin) return;
-		if (m_TPAllReturns.Count() == 0) {
-			Refuse(admin, "Nobody to teleport back: Teleport - All players to Me wasn't run since the last revert or server start");
-			return;
-		}
-
-		int moved = 0;
-		int inVehicles = 0;
-		int protectedCount = 0;
-		int newCharacters = 0;
-		TStringArray done = new TStringArray;
-		array<Man> players = new array<Man>;
-		GetGame().GetPlayers(players);
-		foreach (Man man : players) {
-			PlayerBase player = PlayerBase.Cast(man);
-			if (!player || !player.IsAlive()) continue;
-			string steamId = GetSteamId(player);
-			ZBerryTPReturn saved;
-			if (!m_TPAllReturns.Find(steamId, saved)) continue;
-
-			TIntArray characterId = GetCharacterId(player);
-			if (!SameCharacter(saved.CharacterId, characterId)) {
-				++newCharacters;
-				done.Insert(steamId);
-				continue;
-			}
-			if (player.GetCommand_Vehicle()) {
-				++inVehicles;
-				continue;
-			}
-			if (player != admin && ZBGetIdentity(admin) && ZBGetIdentity(player) && !GetZomberryPermAPI().CanTarget(ZBGetIdentity(admin), ZBGetIdentity(player), true)) {
-				++protectedCount;
-				continue;
-			}
-			player.SetPosition(saved.Position);
-			++moved;
-			done.Insert(steamId);
-		}
-		foreach (string doneId : done) m_TPAllReturns.Remove(doneId);
-
-		string skipped = "";
-		if (inVehicles > 0) skipped += ", " + inVehicles + " skipped (in vehicles)";
-		if (protectedCount > 0) skipped += ", " + protectedCount + " skipped (protected from your rank)";
-		if (newCharacters > 0) skipped += ", " + newCharacters + " forgotten (died meanwhile)";
-		int offline = m_TPAllReturns.Count() - inVehicles - protectedCount;
-		if (offline > 0) skipped += ", " + offline + " offline";
-		if (m_TPAllReturns.Count() > 0) skipped += ". Run it again later for the " + m_TPAllReturns.Count() + " still saved";
-		MessagePlayer(admin, "Teleported " + moved + " players back" + skipped);
-		m_ZomberryCmdAPI.DescribeCall("{actor} teleported all players back to where they were before: " + moved + " moved" + skipped);
+	//Where a teleport puts its player: the spot itself, or with several selected players their place on a ring around it,
+	//so they don't end up inside each other
+	protected vector GetDestination(vector center) {
+		ZBerryCall call = m_ZomberryCmdAPI.GetCurrentCall();
+		if (IsOneTarget()) return center;
+		return GetRingPosition(center, call.GetTargetIndex(), call.GetTargetCount());
 	}
 
 	//Same for a character across relogs, new after a death
@@ -1059,9 +966,9 @@ class ZomberryStockFunctions {
 		return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
 	}
 
-	//Evenly spread on a circle around center, TP_ALL_SPACING apart, at least 3 m out, on the surface
+	//Evenly spread on a circle around center, RING_SPACING apart, at least 3 m out, on the surface
 	static vector GetRingPosition(vector center, int index, int count) {
-		float circumference = Math.Max(count, 1) * TP_ALL_SPACING;
+		float circumference = Math.Max(count, 1) * RING_SPACING;
 		float radius = Math.Max(3, circumference / Math.PI2);
 		float angle = Math.PI2 * index / Math.Max(count, 1);
 

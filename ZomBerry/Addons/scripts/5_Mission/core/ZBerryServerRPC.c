@@ -186,18 +186,27 @@ class ZBerryServerRPC {
 		array<ref ZBerryCall> done = new array<ref ZBerryCall>;
 		TIntArray seen = new TIntArray;
 
+		TIntArray targets = new TIntArray; //Each once, still online and not protected: their order places them on a ring
 		foreach (int targetId : targetIds) {
 			if (seen.Find(targetId) != -1) continue;
 			seen.Insert(targetId);
 
 			PlayerBase targetPly = ZBGetPlayerById(targetId);
 			if (!targetPly || !MayTarget(sender, cmdFunc, targetId, targetPly)) continue; //Left meanwhile, or protected
+			targets.Insert(targetId);
+		}
+
+		for (int index = 0; index < targets.Count(); ++index) {
+			int runTargetId = targets[index];
+			PlayerBase runTarget = ZBGetPlayerById(runTargetId);
+			if (!runTarget) continue;
 
 			PlayerIdentity targetIdentity = NULL;
-			if (targetId != adminId) targetIdentity = ZBGetIdentity(targetPly);
+			if (runTargetId != adminId) targetIdentity = ZBGetIdentity(runTarget);
 
 			ZBerryCall cmdCall = api.BeginCall(cmdFunc, sender, targetIdentity);
-			RunFunction(cmdFunc, adminId, targetId, cursor, values);
+			cmdCall.SetTargetPosition(index, targets.Count());
+			RunFunction(cmdFunc, adminId, runTargetId, cursor, values);
 			api.EndCall(cmdCall);
 
 			if (cmdCall.GetOutcome() == ZBerryCallOutcome.DONE) {
@@ -228,6 +237,12 @@ class ZBerryServerRPC {
 		if (done[0].GetFunction().IsHarmful()) flags = ZBerryEventFlags.HARMFUL;
 		int type = ZBerryEventType.FUNCTION_PLAYER;
 		if (IsTeleport(done[0].GetFunction())) type = ZBerryEventType.TELEPORT;
+		ZBerryTeleportRecordArray moves = new ZBerryTeleportRecordArray;
+		foreach (ZBerryCall movedCall : done) {
+			ZBerryTeleportRecordArray callMoves = movedCall.GetMoves(); //A local: foreach over a method's result repeats the first
+			foreach (ZBerryTeleportRecord move : callMoves) moves.Insert(move);
+		}
+		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
 
 		string actorId, actorName;
 		ZomberryBase.DescribeIdentity(sender, actorId, actorName);
@@ -247,7 +262,14 @@ class ZBerryServerRPC {
 				extraNames.Insert(name);
 			}
 		}
-		ZomberryBase.LogEventRaw(type, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(type, actorId, actorName, firstId, firstName, text, flags, extraIds, extraNames);
+		AttachMoves(logged, moves);
+	}
+
+	//The positions a teleport event's players had, kept for "Teleport back" in the Logs tab
+	static void AttachMoves(ZBerryLogEvent logged, ZBerryTeleportRecordArray moves) {
+		if (!logged || !moves || moves.Count() == 0 || !g_ZBerryTeleportReturns) return;
+		g_ZBerryTeleportReturns.Attach(logged.Id, moves);
 	}
 
 	//Functions in the Teleport category (stock or from mods) are logged as teleports, like map teleports
@@ -290,11 +312,14 @@ class ZBerryServerRPC {
 		if (IsTeleport(cmdCall.GetFunction())) type = ZBerryEventType.TELEPORT;
 		if (cmdCall.GetDescription() != "") text = cmdCall.GetDescription();
 
+		ZBerryTeleportRecordArray moves = cmdCall.GetMoves();
 		if (groupKey != "") {
-			m_CallGroups.Add(groupKey, type, admin, target, text, flags, hasPositions, from, to);
+			m_CallGroups.Add(groupKey, type, admin, target, text, flags, hasPositions, from, to, moves);
 			return;
 		}
-		ZomberryBase.LogEvent( type, admin, target, text, flags );
+		if (moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
+		ZBerryLogEvent logged = ZomberryBase.LogEvent( type, admin, target, text, flags );
+		AttachMoves(logged, moves);
 	}
 
 	//Calls the function with the (funcName, adminId, targetId, cursor, values) signature

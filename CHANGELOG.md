@@ -54,8 +54,7 @@
 - **Toggle invisibility:** a new stock function. Other players don't see or hear the target (voice chat still works), infected and animals ignore them, and nothing can hurt them while it lasts. It survives logging out and respawning. Mods can check it with `PlayerBase.ZBIsInvisible()`, on the server and on clients.
 - **Toggle freeze:** a new stock function that stops the selected player in place until released. It survives logging out and back in.
 - **Spawning for the selected player:** the Spawn tab's target button now also offers *Player's feet* and *Player's inv.* (new permission `zomberry.spawn.player`, rank protections apply).
-- **Teleport - All players to Me** (#57): a new stock function. You confirm it by running it twice, and players are placed in a ring around you. It skips players in vehicles and admins protected from your rank.
-- **Teleport - All players back:** undoes Teleport - All players to Me, moving everyone back to where they were. Players who are offline or in a vehicle at the time stay saved for a later run. It can't be bound to a key, so it never runs by accident.
+- **Teleporting several players at once** (#57): with several players selected, Teleport - Target to Me and Teleport - Target to Cursor place them on a ring around the spot, so they don't end up inside each other. This replaces pre-release 2's "Teleport - All players to Me" and "Teleport - All players back".
 - **Spectate target** (#60): a new stock function that shows the selected player's view.
   - **What it follows:** where their own camera looks, up and down and free look included. In third person the camera sits over their shoulder. While they're watched, their game reports which mode they use and where they look.
   - **Anywhere on the map:** the area your game loads moves with the camera, and the camera follows a target who teleports or drives away. FreeCam works the same way.

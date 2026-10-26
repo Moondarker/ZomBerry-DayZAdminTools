@@ -13,6 +13,9 @@ class ZBerryCall {
 	protected int m_Outcome = ZBerryCallOutcome.DONE;
 	protected string m_Reason = "";
 	protected string m_Description = "";
+	protected ref ZBerryTeleportRecordArray m_Moves = new ZBerryTeleportRecordArray; //RecordMove: who this call moved, from where
+	protected int m_TargetIndex = 0; //This call's target among the selected players (RunOnTargets), 0 of 1 otherwise
+	protected int m_TargetCount = 1;
 
 	void ZBerryCall(ZBerryFunction function, PlayerIdentity admin, PlayerIdentity target) {
 		m_Function = function;
@@ -57,6 +60,27 @@ class ZBerryCall {
 
 	void Describe(string text) {
 		m_Description = text;
+	}
+
+	ZBerryTeleportRecordArray GetMoves() {
+		return m_Moves;
+	}
+
+	void AddMove(ZBerryTeleportRecord record) {
+		m_Moves.Insert(record);
+	}
+
+	int GetTargetIndex() {
+		return m_TargetIndex;
+	}
+
+	int GetTargetCount() {
+		return m_TargetCount;
+	}
+
+	void SetTargetPosition(int index, int count) {
+		m_TargetIndex = index;
+		m_TargetCount = count;
 	}
 };
 
@@ -166,6 +190,22 @@ class ZomberryCmdAPI {
 			return;
 		}
 		call.Describe(text);
+	}
+
+	/**
+	\brief Server, from inside a command that moves a player: where they were before, so the teleport can be reverted from
+		the Logs tab. Call it after the move succeeded, with the position read before it
+		\param player \p PlayerBase the moved player (players without a Steam64 id, as in singleplayer, aren't recorded)
+		\param from \p vector where they were
+	*/
+	void RecordMove(PlayerBase player, vector from) {
+		ZBerryCall call = GetCurrentCall();
+		if (!call) {
+			ZomberryBase.Log( "ZomBerryCmdAPI", "WARN: RecordMove outside a command call, ignored" );
+			return;
+		}
+		ZBerryTeleportRecord record = ZBerryTeleportReturns.MakeRecord(player, from);
+		if (record.SteamId != "") call.AddMove(record);
 	}
 
 	//The command call running right now, NULL outside one (a CallLater callback runs after its call has ended)

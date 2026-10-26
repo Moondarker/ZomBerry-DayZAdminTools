@@ -79,11 +79,11 @@ class ZomberryBase {
 		\param text \p string with {actor} and {target} where the players go, e.g. "{actor} kicked {target}: spam"
 		\param flags \p int ZBerryEventFlags
 	*/
-	static void LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0 ) {
+	static ZBerryLogEvent LogEvent( int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags = 0 ) {
 		string actorId, actorName, targetId, targetName;
 		DescribeIdentity(actor, actorId, actorName);
 		DescribeIdentity(target, targetId, targetName);
-		LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags);
+		return LogEventRaw(type, actorId, actorName, targetId, targetName, text, flags);
 	}
 
 	//LogEvent for players who may be offline or have no identity: Steam64 id ("" for none) and name

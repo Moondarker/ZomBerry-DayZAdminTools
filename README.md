@@ -234,7 +234,7 @@ The left panel lists everyone online. Admins are green, and the item in a player
     - The first run says how many it found, and running it again within 10 seconds deletes them.
   - "Flip vehicle near cursor" puts the car or boat under the cursor back on its wheels, keeping its heading. It refuses while someone is inside.
 - **Keys:** each function's key is shown after its name in the list.
-- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound, and neither can "Teleport - All players back", so it never runs by accident; the button has no caption while such a function is selected.
+- **Binding a key:** select a function, press **Bind** (it shows `[...]`), then press the key. Functions with parameters can't be bound; the button has no caption while such a function is selected.
 - **Removing a key:** select the function and press its key button twice. The first press shows `[...]` and the second removes the bind.
 - **Removing all binds:** select any function that can be bound, hold `A` and press the button twice.
 
@@ -242,7 +242,7 @@ The stock set:
 
 | Category | Functions |
 |---|---|
-| Teleport | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you, teleport all players to you and back |
+| Teleport | Teleport target to cursor, teleport 10 m forward, teleport to target, teleport target to you |
 | Player | Heal, partial heal (diseases, wounds, food and water), toggle god mode, toggle invisibility, toggle infinite ammo, toggle freeze, repair item in hands |
 | Punish | Kill, bite (bleeding), strip, induce vomiting, laughter or sneezing, set health, set blood |
 | Camera | FreeCam, spectate target, ESP |
@@ -255,9 +255,7 @@ Set time, set date and set weather start from the game's current time, date and 
 
 **Toggle invisibility:** other players don't see the target or their gear and don't hear them, apart from voice chat. Infected and animals ignore them, and nothing can hurt them or their gear until it's switched off again, and their body temperature stays comfortable. It's separate from god mode. Sounds of other objects (doors, gunshots, vehicles) can still be heard, and players still bump into them. Logging out or respawning doesn't end it.
 
-**Teleport - All players to Me:** run it twice within 10 seconds to confirm. Players are placed in a ring around you. Players in vehicles, and admins protected from your rank, stay where they are.
-
-**Teleport - All players back:** undoes it. Everyone who was moved goes back to where they were before the first teleport since the last revert. Players who are offline, in a vehicle or protected from your rank stay saved, so a later run moves them too. Players who died meanwhile are forgotten. The saved spots don't survive a server restart.
+**Teleporting several players:** select them in the players list, then run Teleport - Target to Me or Teleport - Target to Cursor. They're placed on a ring around the spot, 2 m apart, so they don't end up inside each other. Players in vehicles stay where they are, and so do admins protected from your rank.
 
 **Toggle infinite ammo:** the magazine in the target's weapon stays full while they shoot. Weapons without a detachable magazine (shotguns, most bolt-action rifles) aren't covered. It lasts until it's switched off, or until the character dies or logs out. It can switch it off for a protected admin, so it counts as harmful.
 
@@ -437,9 +435,10 @@ Helpers:
 - **`GetZomberryCmdAPI().RefuseCall(string reason)`**: call it from your command when it does nothing (no valid target, nothing to act on). The admin log then files the call as refused, with the reason, instead of as run. Tell the admin yourself with `MessagePlayer`.
 - **`GetZomberryCmdAPI().AwaitConfirmation()`**: call it when this run only asked the admin to run the command again to confirm. That run isn't logged; the confirmed one is.
 - **`GetZomberryCmdAPI().DescribeCall(string text)`**: what this run did, logged instead of "AdminName ran My command". Write `{actor}` for the admin and `{target}` for the selected player, e.g. `"{actor} gave {target} a medkit"` or `"{actor} switched night vision on"`. The log view highlights both names.
-- **`GetZomberryCmdAPI().GetCurrentCall()`**: the running call (`ZBerryCall`): `GetFunction()`, `GetAdmin()` and `GetTarget()` (identities, the target is `NULL` when the admin selected themselves).
+- **`GetZomberryCmdAPI().RecordMove(PlayerBase player, vector from)`**: for a command that teleports players. Call it after each successful move, with where the player was before it. The log event is then marked revertable, and admins can teleport the player back from the Logs tab. Players without a Steam64 id (singleplayer) aren't recorded.
+- **`GetZomberryCmdAPI().GetCurrentCall()`**: the running call (`ZBerryCall`): `GetFunction()`, `GetAdmin()` and `GetTarget()` (identities, the target is `NULL` when the admin selected themselves). For a command run on several selected players, `GetTargetIndex()` and `GetTargetCount()` say which of them this run is for.
 
-The three helpers above only work while your command runs. Called later, from a `CallLater` callback, they write a warning to the log and change nothing.
+The helpers above only work while your command runs. Called later, from a `CallLater` callback, they write a warning to the log and change nothing.
 
 ```c
 void MyModHeal( string funcName, int adminId, int targetId, vector cursor ) {

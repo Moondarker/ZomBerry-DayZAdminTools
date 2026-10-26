@@ -8,6 +8,7 @@ class ZBerryCallGroup {
 	bool HasPositions;
 	vector From, To; //Where the moved player was before the first call and after the last
 	int LastMs; //GetGame().GetTime() of the last call
+	ref ZBerryTeleportRecordArray Moves = new ZBerryTeleportRecordArray; //RecordMove's, the first per player: reverting goes back to the run's start
 };
 
 //Some functions are run again and again in quick succession: stepping forward 10 m at a time, putting a player at the
@@ -37,7 +38,7 @@ class ZBerryCallGroups {
 		return funcName == "TPCur";
 	}
 
-	void Add(string key, int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags, bool hasPositions, vector from, vector to) {
+	void Add(string key, int type, PlayerIdentity actor, PlayerIdentity target, string text, int flags, bool hasPositions, vector from, vector to, ZBerryTeleportRecordArray moves = NULL) {
 		int now = GetGame().GetTime();
 		ZBerryCallGroup group = m_Groups.Get(key);
 		if (group && now - group.LastMs > GAP_MS) {
@@ -61,6 +62,14 @@ class ZBerryCallGroups {
 		group.Text = text;
 		group.To = to;
 		group.LastMs = now;
+		if (!moves) return;
+		foreach (ZBerryTeleportRecord move : moves) {
+			bool known = false;
+			foreach (ZBerryTeleportRecord kept : group.Moves) {
+				if (kept.SteamId == move.SteamId) known = true;
+			}
+			if (!known) group.Moves.Insert(move);
+		}
 	}
 
 	protected void Tick() {
@@ -83,14 +92,17 @@ class ZBerryCallGroups {
 		if (!group) return;
 
 		string text = group.Text;
+		string from = ZBDescribePosition(group.From);
 		if (group.Count > 1) {
 			text += ", " + group.Count + " times in a row";
-			if (group.HasPositions) {
-				string from = ZBDescribePosition(group.From);
-				text += " from " + from;
-			}
+			if (group.HasPositions) text += " from " + from;
+		} else if (group.HasPositions) {
+			text += ", from " + from;
 		}
-		ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, group.Flags);
+		int flags = group.Flags;
+		if (group.Moves.Count() > 0) flags = flags | ZBerryEventFlags.REVERTABLE;
+		ZBerryLogEvent logged = ZomberryBase.LogEventRaw(group.Type, group.ActorId, group.ActorName, group.TargetId, group.TargetName, text, flags);
+		ZBerryServerRPC.AttachMoves(logged, group.Moves);
 		m_Groups.Remove(key);
 	}
 };
